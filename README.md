@@ -6,22 +6,23 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 
 | Demo | Topic | Key Concepts |
 |------|-------|--------------|
-| [Gaudí's Hyperboloid](gaudi_hyperboloid.html) | Ruled Surfaces | Hyperboloid of one sheet, doubly ruled surfaces |
-| [Hyperbolic Paraboloid](hyperbolic_paraboloid.html) | Ruled Surfaces | Saddle surface, two families of rulings |
-| [Wave Ruled Surface](wave_ruled_surface.html) | Ruled Surfaces | Sinusoidal curves, phase shift, traveling waves |
-| [Brachistochrone](brachistochrone.html) | Calculus of Variations | Cycloid, fastest descent, variational problems |
-| [Double Integral Visualizer](indefinite_integral.html) | Multivariable Calculus | Improper integrals, convergence criteria |
-| [Ellipse Billiard](ellipse_billiard.html) | Conic Sections | Focal properties, reflection law |
-| [Rule of 72](rule_of_72.html) | Financial Mathematics | Compound interest, exponential growth |
-| [Stirling's Formula](stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
-| [Small World Network](smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
-| [PageRank](pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
+| [Gaudí's Hyperboloid](https://so-okada.github.io/math_teaching_materials/gaudi_hyperboloid.html) | Ruled Surfaces | Hyperboloid of one sheet, doubly ruled surfaces |
+| [Hyperbolic Paraboloid](https://so-okada.github.io/math_teaching_materials/hyperbolic_paraboloid.html) | Ruled Surfaces | Saddle surface, two families of rulings |
+| [Wave Ruled Surface](https://so-okada.github.io/math_teaching_materials/wave_ruled_surface.html) | Ruled Surfaces | Sinusoidal curves, phase shift, traveling waves |
+| [Brachistochrone](https://so-okada.github.io/math_teaching_materials/brachistochrone.html) | Calculus of Variations | Cycloid, fastest descent, variational problems |
+| [Double Integral Visualizer](https://so-okada.github.io/math_teaching_materials/indefinite_integral.html) | Multivariable Calculus | Improper integrals, convergence criteria |
+| [Ellipse Billiard](https://so-okada.github.io/math_teaching_materials/ellipse_billiard.html) | Conic Sections | Focal properties, reflection law |
+| [Rule of 72](https://so-okada.github.io/math_teaching_materials/rule_of_72.html) | Financial Mathematics | Compound interest, exponential growth |
+| [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
+| [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
+| [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
+| [Maxwell's Equations FDTD](https://so-okada.github.io/math_teaching_materials/maxwell.html) | Electromagnetism | Wave propagation, finite-difference methods |
 
 ---
 
 ## Ruled Surfaces
 
-### [Gaudí's Hyperboloid](gaudi_hyperboloid.html)
+### [Gaudí's Hyperboloid](https://so-okada.github.io/math_teaching_materials/gaudi_hyperboloid.html)
 **File:** `gaudi_hyperboloid.html`
 
 Interactive visualization of the hyperboloid of one sheet, demonstrating how twisting straight lines between two parallel circles generates a curved surface.
@@ -40,7 +41,7 @@ It is a *doubly ruled surface*—every point lies on exactly two straight lines 
 
 ---
 
-### [Hyperbolic Paraboloid](hyperbolic_paraboloid.html)
+### [Hyperbolic Paraboloid](https://so-okada.github.io/math_teaching_materials/hyperbolic_paraboloid.html)
 **File:** `hyperbolic_paraboloid.html`
 
 Visualization of the saddle surface $z = xy$, showing both families of straight lines (rulings) that lie on the surface.
@@ -63,7 +64,7 @@ This surface appears in tensile roof structures (e.g., Pringles chip shape).
 
 ---
 
-### [Wave Ruled Surface](wave_ruled_surface.html)
+### [Wave Ruled Surface](https://so-okada.github.io/math_teaching_materials/wave_ruled_surface.html)
 **File:** `wave_ruled_surface.html`
 
 Straight rods connecting two sinusoidal curves create a ruled surface with wave-like geometry.
@@ -87,7 +88,7 @@ When $\varphi = 0$, all rods are horizontal. As $\varphi$ increases, the rods ti
 
 ## Calculus & Analysis
 
-### [Brachistochrone](brachistochrone.html)
+### [Brachistochrone](https://so-okada.github.io/math_teaching_materials/brachistochrone.html)
 **File:** `brachistochrone.html`
 
 Physics simulation comparing descent times along three paths: linear, circular arc, and cycloid.
@@ -107,7 +108,7 @@ This was solved independently by Johann Bernoulli, Newton, Leibniz, L'Hôpital, 
 
 ---
 
-### [Double Integral Visualizer](indefinite_integral.html)
+### [Double Integral Visualizer](https://so-okada.github.io/math_teaching_materials/indefinite_integral.html)
 **File:** `indefinite_integral.html`
 
 Interactive 3D visualization of the improper double integral:
@@ -127,7 +128,7 @@ $$I = \left(\int_{1}^{\infty} x^{-n} dx\right)^2$$
 
 ---
 
-### [Stirling's Formula](stirling_formula.html)
+### [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html)
 **File:** `stirling_formula.html`
 
 Compare the exact factorial $n!$ with Stirling's approximation:
@@ -145,7 +146,7 @@ The ratio $\dfrac{\text{Stirling}}{n!} \to 1$ as $n \to \infty$. Even for small 
 
 ## Geometry
 
-### [Ellipse Billiard](ellipse_billiard.html)
+### [Ellipse Billiard](https://so-okada.github.io/math_teaching_materials/ellipse_billiard.html)
 **File:** `ellipse_billiard.html`
 
 Demonstrates the reflection property of ellipses: a ray from one focus always passes through the other focus after reflection.
@@ -164,7 +165,7 @@ The defining property—that the sum of distances from any point on the ellipse 
 
 ## Financial Mathematics
 
-### [Rule of 72](rule_of_72.html)
+### [Rule of 72](https://so-okada.github.io/math_teaching_materials/rule_of_72.html)
 **File:** `rule_of_72.html`
 
 Visualizes the "Rule of 72" approximation for compound interest doubling time.
@@ -187,7 +188,7 @@ This approximation works well for rates between 2% and 20%.
 
 ## Graph Theory
 
-### [Small World Network](smallworld.html)
+### [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html)
 **File:** `smallworld.html`
 
 Interactive simulation of the Watts-Strogatz small world model, demonstrating the "six degrees of separation" phenomenon.
@@ -210,7 +211,7 @@ The key insight is that a small number of random "shortcuts" dramatically reduce
 
 ---
 
-### [PageRank](pagerank.html)
+### [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html)
 **File:** `pagerank.html`
 
 Visualization of Google's original PageRank algorithm for ranking web pages by importance.
@@ -234,6 +235,38 @@ This is equivalent to finding the principal eigenvector of the modified adjacenc
 - **Reset**: Generate a new random graph
 - **Drag nodes**: Rearrange the force-directed layout
 - Node size reflects current PageRank value
+
+---
+
+## Electromagnetism
+
+### [Maxwell's Equations FDTD](https://so-okada.github.io/math_teaching_materials/maxwell.html)
+**File:** `maxwell.html`
+
+Real-time simulation of electromagnetic wave propagation using the Finite-Difference Time-Domain (FDTD) method.
+
+**Mathematical Background:**
+This simulation solves the 2D Transverse Magnetic (TMz) mode of Maxwell's equations. Three field components are computed:
+
+- $E_z$: Electric field perpendicular to the screen
+- $H_x$, $H_y$: Magnetic field components in the plane
+
+The FDTD method discretizes Faraday's and Ampère's laws:
+$$\nabla \times \mathbf{E} = -\frac{\partial \mathbf{B}}{\partial t}, \quad \nabla \times \mathbf{H} = \frac{\partial \mathbf{D}}{\partial t}$$
+
+The Courant number $C = c \cdot \Delta t / \Delta x$ must satisfy $C < 1/\sqrt{2}$ for numerical stability in 2D.
+
+**Controls:**
+- **Draw on canvas**: Create conducting walls (perfect electric conductors)
+- **Frequency**: Adjust source oscillation frequency
+- **Speed**: Simulation steps per frame
+- **Pause/Resume**: Stop or continue the simulation
+- **Clear Walls**: Remove all obstacles
+
+**Features:**
+- Observe wave reflection, diffraction, and interference
+- Build waveguides, slits, and barriers interactively
+- Color mapping: Cyan/blue = positive $E_z$, Red/orange = negative $E_z$
 
 ---
 

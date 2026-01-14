@@ -11,6 +11,7 @@
             --text-color: #e2e8f0;
             --accent-color: #38bdf8;
             --danger-color: #ef4444;
+            --success-color: #22c55e;
         }
 
         body {
@@ -45,7 +46,7 @@
             display: block;
             background-color: #000;
             cursor: crosshair;
-            touch-action: none; /* Prevent scrolling on mobile while drawing */
+            touch-action: none;
         }
 
         .controls {
@@ -60,8 +61,8 @@
         }
 
         button {
-            background-color: var(--accent-color);
-            color: #0f172a;
+            background-color: #475569; /* Default inactive */
+            color: #e2e8f0;
             border: none;
             padding: 0.5rem 1rem;
             border-radius: 6px;
@@ -76,14 +77,28 @@
             transform: translateY(-1px);
         }
 
-        button.secondary {
-            background-color: #475569;
-            color: white;
+        button.active {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
         }
 
         button.danger {
             background-color: var(--danger-color);
             color: white;
+        }
+        
+        button.success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .mode-group {
+            display: flex;
+            gap: 0.5rem;
+            padding: 0.25rem;
+            background: rgba(0,0,0,0.2);
+            border-radius: 8px;
         }
 
         .slider-group {
@@ -95,7 +110,7 @@
 
         input[type="range"] {
             accent-color: var(--accent-color);
-            width: 120px;
+            width: 100px;
         }
 
         .overlay {
@@ -105,21 +120,13 @@
             color: rgba(255, 255, 255, 0.5);
             font-size: 0.8rem;
             pointer-events: none;
+            text-shadow: 0 1px 2px black;
         }
         
-        /* Mobile adjustments */
         @media (max-width: 600px) {
-            canvas {
-                width: 100%;
-                height: auto;
-            }
-            .controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .slider-group {
-                justify-content: space-between;
-            }
+            canvas { width: 100%; height: auto; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .slider-group { justify-content: space-between; }
         }
     </style>
 </head>
@@ -129,14 +136,22 @@
 
     <div class="container">
         <canvas id="simCanvas"></canvas>
-        <div class="overlay">Ez Field | Mouse to Draw Walls</div>
+        <div class="overlay" id="statusText">Ez Field | Mode: Draw Walls</div>
         
         <div class="controls">
-            <button id="btnPause">Pause</button>
+            <button id="btnPause" class="success">Pause</button>
+            
+            <div class="mode-group">
+                <button id="btnModeWall" class="active">Draw Wall</button>
+                <button id="btnModeSource">Add Source</button>
+            </div>
+
             <button id="btnClear" class="danger">Clear Walls</button>
+            <button id="btnClearSources" class="danger">Clear Sources</button>
+            <button id="btnReset" class="danger">Reset All</button>
             
             <div class="slider-group">
-                <label for="freq">Frequency</label>
+                <label for="freq">Freq</label>
                 <input type="range" id="freq" min="1" max="20" value="7">
             </div>
 
@@ -150,145 +165,108 @@
 <script>
     /**
      * MAXWELL'S EQUATIONS FDTD SIMULATION
-     * * This simulation solves the 2D Transverse Magnetic (TMz) mode equations.
-     * We simulate 3 field components:
-     * 1. Ez (Electric field in Z direction - perpendicular to screen)
-     * 2. Hx (Magnetic field in X direction)
-     * 3. Hy (Magnetic field in Y direction)
      */
 
     const canvas = document.getElementById('simCanvas');
-    const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for speed
+    const ctx = canvas.getContext('2d', { alpha: false });
     
-    // Simulation grid dimensions (Internal resolution)
-    // We keep this lower than screen resolution for performance and nicer wave aesthetics
+    // Grid Setup
     const width = 200;
     const height = 150;
-    const scale = 3; // Upscale factor for display
+    const scale = 3; 
 
-    // Set canvas display size
     canvas.width = width * scale;
     canvas.height = height * scale;
 
-    // Simulation Arrays (Float32 for performance)
+    // Physics Arrays
     const size = width * height;
     const Ez = new Float32Array(size);
     const Hx = new Float32Array(size);
     const Hy = new Float32Array(size);
-    
-    // Material Grid: 0 = Vacuum, 1 = Metal (Conductor)
-    const Material = new Uint8Array(size);
+    const Material = new Uint8Array(size); // 0=Air, 1=Metal
 
-    // Canvas Image Data buffer for direct pixel manipulation
+    // Rendering Buffer
     const imgData = ctx.createImageData(canvas.width, canvas.height);
-    const pixels = new Uint32Array(imgData.data.buffer); // 32-bit view for faster writes
+    const pixels = new Uint32Array(imgData.data.buffer);
 
-    // Physics Constants
-    const COURANT_NUMBER = 0.5; // Renamed from C to avoid conflicts. (c * dt / dx), must be < 1/√2 for stability in 2D
-    
-    // State
+    // Constants & State
+    const COURANT_NUMBER = 0.5;
     let running = true;
     let tick = 0;
-    let frequency = 0.1;
+    let frequency = 0.14;
     let simSpeed = 1;
+    
+    // Interaction State
     let drawing = false;
-    let drawMode = 1; // 1 = Wall, 0 = Eraser (future use)
+    let lastDrawPos = null;
+    let drawMode = 1; // 1 = Wall, 2 = Source
+    
+    // Source Management
+    let sources = [];
+    
+    // Initialize default source
+    sources.push(Math.floor(height/2) * width + Math.floor(width/4));
 
-    // --- Core Physics Solver ---
+    // --- Physics ---
     function updateMaxwell() {
-        // 1. Update Magnetic Fields (H) from Electric Field (E)
-        // Faraday's Law: Curl(E) = -dB/dt
+        // H-fields
         for (let y = 0; y < height - 1; y++) {
             for (let x = 0; x < width - 1; x++) {
                 const idx = y * width + x;
-                const idx_right = idx + 1;
-                const idx_down = idx + width;
-
-                // Hx depends on dEz/dy
-                Hx[idx] -= COURANT_NUMBER * (Ez[idx_down] - Ez[idx]);
-                
-                // Hy depends on dEz/dx
-                Hy[idx] += COURANT_NUMBER * (Ez[idx_right] - Ez[idx]);
+                Hx[idx] -= COURANT_NUMBER * (Ez[idx + width] - Ez[idx]);
+                Hy[idx] += COURANT_NUMBER * (Ez[idx + 1] - Ez[idx]);
             }
         }
 
-        // 2. Update Electric Field (E) from Magnetic Fields (H)
-        // Ampere's Law: Curl(H) = dD/dt
+        // E-field
         for (let y = 1; y < height - 1; y++) {
             for (let x = 1; x < width - 1; x++) {
                 const idx = y * width + x;
                 
-                // If this cell is a conductor (wall), E stays at 0
                 if (Material[idx] === 1) {
                     Ez[idx] = 0;
                     continue;
                 }
 
-                const idx_left = idx - 1;
-                const idx_up = idx - width;
-
-                // Standard FDTD update
-                Ez[idx] += COURANT_NUMBER * ((Hy[idx] - Hy[idx_left]) - (Hx[idx] - Hx[idx_up]));
+                Ez[idx] += COURANT_NUMBER * ((Hy[idx] - Hy[idx - 1]) - (Hx[idx] - Hx[idx - width]));
             }
         }
 
-        // 3. Source Injection (Soft Source)
-        // Inject a sine wave in the middle left
-        const sourceX = Math.floor(width / 4);
-        const sourceY = Math.floor(height / 2);
-        const sourceIdx = sourceY * width + sourceX;
-        
+        // Source Injection
         tick++;
-        // Using a Gaussian-modulated sine for a nice pulse, or pure sine for continuous
-        Ez[sourceIdx] += Math.sin(tick * frequency); 
+        const val = Math.sin(tick * frequency);
+        for(let i = 0; i < sources.length; i++) {
+            Ez[sources[i]] += val;
+        }
     }
 
-    // --- Rendering System ---
+    // --- Rendering ---
     function render() {
-        // We render to the ImageData buffer.
-        // Since the canvas is scaled, we need to map simulation pixels to canvas pixels.
-        
-        // Pre-calculate colors to avoid heavy math in the loop
-        // We assume Little Endian (ABGR) for 32-bit writes
         const WALL_COLOR = 0xFF808080; // Grey
 
         for (let y = 0; y < height; y++) {
             const yOffset = y * width;
-            
             for (let x = 0; x < width; x++) {
                 const idx = yOffset + x;
-                
                 let color;
 
                 if (Material[idx] === 1) {
                     color = WALL_COLOR;
                 } else {
                     const field = Ez[idx];
-                    
-                    // Color Mapping (Heatmap style)
-                    // Positive = Cyan/Blue, Negative = Red/Orange
                     let r = 0, g = 0, b = 0;
-                    
-                    // Simple intensity scaling
+                    // Intensity scaling
                     const val = Math.min(Math.abs(field) * 200, 255);
                     
                     if (field > 0) {
-                        // Cyan/Blue
-                        g = val; 
-                        b = val;
-                        r = val * 0.1; // slight tint
+                        g = val; b = val; r = val * 0.1;
                     } else {
-                        // Red/Orange
-                        r = val;
-                        g = val * 0.2;
+                        r = val; g = val * 0.2;
                     }
-                    
-                    // Pack into 32-bit integer (A B G R)
                     color = (255 << 24) | (b << 16) | (g << 8) | r;
                 }
 
-                // Block Fill: Write this simulation pixel to the N x N block on screen
-                // Direct pixel writing is much faster than ctx.fillRect
+                // Block fill
                 const screenY = y * scale;
                 const screenX = x * scale;
                 const canvasW = canvas.width;
@@ -303,87 +281,164 @@
         }
 
         ctx.putImageData(imgData, 0, 0);
+
+        // Draw Source Markers (White squares)
+        ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+        for(let s of sources) {
+            const sx = (s % width) * scale;
+            const sy = Math.floor(s / width) * scale;
+            ctx.fillRect(sx, sy, scale, scale);
+        }
     }
 
-    // --- Main Loop ---
+    // --- Loop ---
     function loop() {
         if (running) {
-            // Allow speeding up simulation by running multiple physics steps per frame
-            for(let i=0; i<simSpeed; i++) {
-                updateMaxwell();
-            }
+            for(let i=0; i<simSpeed; i++) updateMaxwell();
             render();
         }
         requestAnimationFrame(loop);
     }
 
-    // --- Input Handling ---
-
+    // --- Interaction ---
     function getGridPos(evt) {
         const rect = canvas.getBoundingClientRect();
-        
-        // Handle both touch and mouse events
-        const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-        const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-
+        const clientX = (evt.touches && evt.touches.length > 0) ? evt.touches[0].clientX : evt.clientX;
+        const clientY = (evt.touches && evt.touches.length > 0) ? evt.touches[0].clientY : evt.clientY;
         const x = Math.floor((clientX - rect.left) / (rect.width / width));
         const y = Math.floor((clientY - rect.top) / (rect.height / height));
-        
         return { x, y };
     }
 
-    function paint(evt) {
-        const p = getGridPos(evt);
-        if (p.x >= 0 && p.x < width && p.y >= 0 && p.y < height) {
-            const idx = p.y * width + p.x;
-            Material[idx] = 1; // 1 = Wall
-            
-            // Draw a slightly thicker line for usability
-            if (p.x+1 < width) Material[idx+1] = 1;
-            if (p.y+1 < height) Material[idx+width] = 1;
-            
-            if(!running) render(); // Update visual if paused
+    function setWall(x, y) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+            const idx = y * width + x;
+            Material[idx] = 1;
+            if (x + 1 < width) Material[idx + 1] = 1;
+            if (y + 1 < height) Material[idx + width] = 1;
         }
     }
 
-    // Mouse Listeners
-    canvas.addEventListener('mousedown', (e) => {
-        drawing = true;
-        paint(e);
-    });
-    window.addEventListener('mousemove', (e) => {
-        if (drawing) paint(e);
-    });
-    window.addEventListener('mouseup', () => drawing = false);
+    function drawLine(x0, y0, x1, y1) {
+        const dx = Math.abs(x1 - x0);
+        const dy = Math.abs(y1 - y0);
+        const sx = (x0 < x1) ? 1 : -1;
+        const sy = (y0 < y1) ? 1 : -1;
+        let err = dx - dy;
+        while (true) {
+            setWall(x0, y0);
+            if (x0 === x1 && y0 === y1) break;
+            const e2 = 2 * err;
+            if (e2 > -dy) { err -= dy; x0 += sx; }
+            if (e2 < dx) { err += dx; y0 += sy; }
+        }
+    }
 
-    // Touch Listeners (Mobile support)
-    canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // Stop scroll
+    function handleStart(evt) {
         drawing = true;
-        paint(e);
-    }, { passive: false });
-    canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
-        if (drawing) paint(e);
-    }, { passive: false });
-    window.addEventListener('touchend', () => drawing = false);
+        const pos = getGridPos(evt);
+        
+        if (drawMode === 1) {
+            // Wall
+            lastDrawPos = pos;
+            setWall(pos.x, pos.y);
+        } else if (drawMode === 2) {
+            // Source (Single click only)
+            if (pos.x >= 0 && pos.x < width && pos.y >= 0 && pos.y < height) {
+                const idx = pos.y * width + pos.x;
+                if (!sources.includes(idx)) sources.push(idx);
+            }
+        }
+        
+        if(!running) render();
+    }
 
-    // UI Controls
+    function handleMove(evt) {
+        if (!drawing) return;
+        
+        // Only drag for walls
+        if (drawMode === 1) {
+            const pos = getGridPos(evt);
+            if (lastDrawPos) {
+                drawLine(lastDrawPos.x, lastDrawPos.y, pos.x, pos.y);
+            } else {
+                setWall(pos.x, pos.y);
+            }
+            lastDrawPos = pos;
+            if(!running) render();
+        }
+    }
+
+    function handleEnd() {
+        drawing = false;
+        lastDrawPos = null;
+    }
+
+    // Listeners
+    canvas.addEventListener('mousedown', handleStart);
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleStart(e); }, { passive: false });
+    window.addEventListener('touchmove', (e) => { e.preventDefault(); handleMove(e); }, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+
+    // Controls
     const btnPause = document.getElementById('btnPause');
+    const btnModeWall = document.getElementById('btnModeWall');
+    const btnModeSource = document.getElementById('btnModeSource');
+    const statusText = document.getElementById('statusText');
+
     btnPause.addEventListener('click', () => {
         running = !running;
         btnPause.innerText = running ? "Pause" : "Resume";
+        btnPause.className = running ? "success" : "secondary"; // Visual feedback
         if (running) loop();
     });
 
+    // Mode Switching
+    function setMode(mode) {
+        drawMode = mode;
+        if (mode === 1) {
+            btnModeWall.className = 'active';
+            btnModeSource.className = '';
+            statusText.innerText = "Ez Field | Mode: Draw Walls (Drag)";
+        } else {
+            btnModeWall.className = '';
+            btnModeSource.className = 'active';
+            statusText.innerText = "Ez Field | Mode: Add Sources (Click)";
+        }
+    }
+
+    btnModeWall.addEventListener('click', () => setMode(1));
+    btnModeSource.addEventListener('click', () => setMode(2));
+
     document.getElementById('btnClear').addEventListener('click', () => {
         Material.fill(0);
-        // We leave the fields active so waves pass through the cleared space
+        if(!running) render();
+    });
+
+    document.getElementById('btnClearSources').addEventListener('click', () => {
+        sources = [];
+        if(!running) render();
+    });
+
+    document.getElementById('btnReset').addEventListener('click', () => {
+        // Reset Physics
+        Ez.fill(0);
+        Hx.fill(0);
+        Hy.fill(0);
+        tick = 0;
+        
+        // Reset Environment
+        Material.fill(0);
+        
+        // Reset Sources to default
+        sources = [Math.floor(height/2) * width + Math.floor(width/4)];
+        
         if(!running) render();
     });
 
     document.getElementById('freq').addEventListener('input', (e) => {
-        // Map 1-20 slider to 0.02 - 0.4 frequency
         frequency = e.target.value * 0.02;
     });
 
