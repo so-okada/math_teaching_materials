@@ -17,6 +17,8 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
 | [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
 | [Maxwell's Equations FDTD](https://so-okada.github.io/math_teaching_materials/maxwell.html) | Electromagnetism | Wave propagation, finite-difference methods |
+| [Binomial to Gaussian](https://so-okada.github.io/math_teaching_materials/binomialtogaussian.html) | Probability & Statistics | Central limit theorem, de Moivre-Laplace |
+| [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 
 ---
 
@@ -270,6 +272,57 @@ The Courant number $C = c \cdot \Delta t / \Delta x$ must satisfy $C < 1/\sqrt{2
 
 ---
 
+## Probability & Statistics
+
+### [Binomial to Gaussian](https://so-okada.github.io/math_teaching_materials/binomialtogaussian.html)
+**File:** `binomialtogaussian.html`
+
+Interactive visualization of the binomial distribution converging to the Gaussian (normal) distribution as the number of trials increases.
+
+**Mathematical Background:**
+The binomial distribution $B(n, p)$ gives the probability of $k$ successes in $n$ independent trials:
+$$P(X = k) = \binom{n}{k} p^k (1-p)^{n-k}$$
+
+The **de Moivre-Laplace theorem** (a special case of the Central Limit Theorem) states that as $n \to \infty$:
+$$\frac{X - np}{\sqrt{np(1-p)}} \xrightarrow{d} N(0,1)$$
+
+The binomial distribution approaches a normal distribution with mean $\mu = np$ and standard deviation $\sigma = \sqrt{np(1-p)}$.
+
+**Controls:**
+- **Number of Trials (n)**: 1–150, observe convergence as n increases
+- **Probability (p)**: Success probability per trial (0.05–0.95)
+- **Show Gaussian Curve**: Toggle the fitted normal distribution overlay
+- **Animate Convergence**: Watch n increase automatically
+- Click on bars to see exact $\binom{n}{k}$ values
+
+---
+
+## Trigonometry
+
+### [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html)
+**File:** `xsinx.html`
+
+Demonstrates the small angle approximation $\sin x \approx x$ (for $x$ in radians) through unit circle and function graph visualizations.
+
+**Mathematical Background:**
+The Taylor series expansion of sine is:
+$$\sin x = x - \frac{x^3}{3!} + \frac{x^5}{5!} - \cdots$$
+
+For small $|x|$, the higher-order terms become negligible, yielding $\sin x \approx x$. This approximation is fundamental in physics (pendulum motion, optics, wave mechanics) and engineering.
+
+**Error Analysis:**
+- At $x = 0.1$ rad (5.7°): Error ≈ 0.17%
+- At $x = 0.5$ rad (28.6°): Error ≈ 4.2%
+- At $x = 1.0$ rad (57.3°): Error ≈ 18.8%
+
+**Controls:**
+- **Angle slider**: Adjust angle from $-\pi/2$ to $\pi/2$ radians
+- **Preset buttons**: Quick access to small, medium, and large angles
+- **Unit circle view**: Shows arc length (x) vs. vertical height (sin x)
+- **Graph view**: Compares $y = x$ and $y = \sin x$ curves
+
+---
+
 ## Technical Notes
 
 **Browser Compatibility:** All demos use vanilla JavaScript and HTML5 Canvas. Tested on Chrome, Firefox, Safari, and Edge.
@@ -282,6 +335,8 @@ The Courant number $C = c \cdot \Delta t / \Delta x$ must satisfy $C < 1/\sqrt{2
 - `ellipse_billiard.html`: Uses Tailwind CSS (CDN)
 - `smallworld.html`: Uses Tailwind CSS (CDN)
 - `pagerank.html`: Uses Tailwind CSS (CDN)
+- `binomialtogaussian.html`: Uses Tailwind CSS (CDN)
+- `xsinx.html`: Uses Tailwind CSS and math.js (CDN)
 
 **Mobile Support:** All demos include touch event handlers for drag-to-rotate functionality on mobile devices.
 
