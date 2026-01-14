@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Stirling Calculator</title>
+    <!-- Tailwind CSS for clean layout -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js for the graph -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; background-color: #f3f4f6; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-3xl bg-white rounded-xl shadow-lg p-8">
+        <h1 class="text-2xl font-bold text-center text-gray-800 mb-8">Stirling's Formula Comparator</h1>
+
+        <!-- Input Slider -->
+        <div class="mb-8 bg-gray-50 p-4 rounded-lg">
+            <div class="flex justify-between items-center mb-2">
+                <label for="n-slider" class="font-bold text-gray-700">Value of n:</label>
+                <span id="n-display" class="text-2xl font-bold text-indigo-600">10</span>
+            </div>
+            <input type="range" id="n-slider" min="1" max="140" value="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- Comparison Display -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <!-- Exact n! -->
+            <div class="border-2 border-blue-100 bg-blue-50 rounded-lg p-6 text-center">
+                <h2 class="text-sm font-bold text-blue-800 uppercase tracking-wide mb-1">Exact n!</h2>
+                <div id="exact-val" class="text-2xl md:text-3xl font-mono font-bold text-blue-600 break-all">
+                    3,628,800
+                </div>
+            </div>
+
+            <!-- Stirling Approx -->
+            <div class="border-2 border-indigo-100 bg-indigo-50 rounded-lg p-6 text-center">
+                <h2 class="text-sm font-bold text-indigo-800 uppercase tracking-wide mb-1">Stirling Approx</h2>
+                <div id="stirling-val" class="text-2xl md:text-3xl font-mono font-bold text-indigo-600 break-all">
+                    3,598,695
+                </div>
+                <div class="text-xs text-indigo-400 mt-2 font-mono">Formula: &radic;(2&pi;n) &middot; (n/e)<sup>n</sup></div>
+            </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="flex flex-col sm:flex-row justify-center gap-8 text-center text-gray-600 text-sm mb-8 border-t border-b border-gray-100 py-4">
+            <div>
+                <span class="font-semibold block mb-1">Difference</span>
+                <span id="diff-val" class="font-mono">30,104</span>
+            </div>
+            <div>
+                <span class="font-semibold block mb-1">Ratio (Approx / Actual)</span>
+                <span id="ratio-val" class="font-mono text-lg text-purple-600 font-bold">0.9917</span>
+            </div>
+        </div>
+
+        <!-- Simple Graph -->
+        <div class="h-64 w-full">
+            <canvas id="comparisonChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Math Functions ---
+        function factorial(n) {
+            if (n === 0 || n === 1) return 1;
+            let result = 1;
+            for (let i = 2; i <= n; i++) result *= i;
+            return result;
+        }
+
+        function stirling(n) {
+            if (n === 0) return 1;
+            return Math.sqrt(2 * Math.PI * n) * Math.pow((n / Math.E), n);
+        }
+
+        // --- 2. Chart Initialization ---
+        const ctx = document.getElementById('comparisonChart').getContext('2d');
+        
+        // Pre-calculate data for graph (fixed range 1-50 for clarity)
+        const labels = [];
+        const dataFact = [];
+        const dataStir = [];
+        
+        for(let i=1; i<=50; i++) {
+            labels.push(i);
+            dataFact.push(factorial(i));
+            dataStir.push(stirling(i));
+        }
+
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Exact n!',
+                        data: dataFact,
+                        borderColor: '#2563eb', // Blue
+                        backgroundColor: '#2563eb',
+                        borderWidth: 3,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Stirling',
+                        data: dataStir,
+                        borderColor: '#f43f5e', // Red/Pink
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ctx.dataset.label + ': ' + ctx.raw.toExponential(2)
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'logarithmic', // Log scale is essential for factorials
+                        display: true,
+                        title: { display: true, text: 'Value (Log Scale)' }
+                    },
+                    x: {
+                        display: true,
+                        title: { display: true, text: 'n' }
+                    }
+                }
+            }
+        });
+
+        // --- 3. UI Update Logic ---
+        const slider = document.getElementById('n-slider');
+        const displayN = document.getElementById('n-display');
+        const elExact = document.getElementById('exact-val');
+        const elStirling = document.getElementById('stirling-val');
+        const elDiff = document.getElementById('diff-val');
+        const elRatio = document.getElementById('ratio-val');
+
+        function update() {
+            const n = parseInt(slider.value);
+            displayN.textContent = n;
+
+            const exact = factorial(n);
+            const approx = stirling(n);
+            const diff = exact - approx;
+            const ratio = approx / exact;
+
+            // Formatting
+            const format = (num) => {
+                if (num > 1e9 || (num < 1e-3 && num > 0)) return num.toExponential(4);
+                return num.toLocaleString(undefined, {maximumFractionDigits: 0});
+            };
+
+            elExact.textContent = format(exact);
+            elStirling.textContent = format(approx);
+            elDiff.textContent = format(Math.abs(diff));
+            elRatio.textContent = ratio.toFixed(6);
+        }
+
+        slider.addEventListener('input', update);
+        update(); // Initial run
+    </script>
+</body>
+</html>

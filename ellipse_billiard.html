@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simplified Ellipse Billiard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #020617;
+            color: #f8fafc;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="absolute top-6 left-6 z-10 pointer-events-none">
+        <h1 class="text-2xl font-bold text-white mb-2">Focus-to-Focus Demo</h1>
+        <p class="text-slate-400">Move your mouse to aim the ball from the left focus.</p>
+        <p class="text-blue-400 text-sm mt-1">Every bounce will pass through the opposite focus.</p>
+    </div>
+
+    <canvas id="billiardCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('billiardCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width, height, centerX, centerY;
+        let a = 350; // Semi-major axis
+        let b = 220; // Semi-minor axis
+        let c = Math.sqrt(a * a - b * b); // Focal distance
+        
+        let mouse = { x: 0, y: 0 };
+        let ball = {
+            x: -c,
+            y: 0,
+            dx: 0,
+            dy: 0,
+            speed: 5,
+            radius: 8,
+            active: false
+        };
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            centerX = width / 2;
+            centerY = height / 2;
+        }
+
+        function reflectBall() {
+            // Ellipse: (x/a)^2 + (y/b)^2 = 1
+            // Normal at (x, y) is (x/a^2, y/b^2)
+            let nx = ball.x / (a * a);
+            let ny = ball.y / (b * b);
+            const nlen = Math.sqrt(nx * nx + ny * ny);
+            nx /= nlen;
+            ny /= nlen;
+
+            // Reflection formula: R = D - 2(D·N)N
+            const dot = ball.dx * nx + ball.dy * ny;
+            ball.dx = ball.dx - 2 * dot * nx;
+            ball.dy = ball.dy - 2 * dot * ny;
+
+            // Push ball slightly away from boundary to prevent sticking
+            ball.x += ball.dx * 0.1;
+            ball.y += ball.dy * 0.1;
+        }
+
+        function update() {
+            if (!ball.active) {
+                // Aim logic: point from left focus to mouse
+                const targetX = mouse.x - centerX;
+                const targetY = mouse.y - centerY;
+                const angle = Math.atan2(targetY - 0, targetX - (-c));
+                ball.dx = Math.cos(angle) * ball.speed;
+                ball.dy = Math.sin(angle) * ball.speed;
+            } else {
+                // Move ball
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+
+                // Check collision with ellipse boundary
+                // (x/a)^2 + (y/b)^2 >= 1
+                if ((ball.x * ball.x) / (a * a) + (ball.y * ball.y) / (b * b) >= 0.98) {
+                    reflectBall();
+                }
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#020617';
+            ctx.fillRect(0, 0, width, height);
+
+            ctx.save();
+            ctx.translate(centerX, centerY);
+
+            // 1. Draw Ellipse
+            ctx.beginPath();
+            ctx.ellipse(0, 0, a, b, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 6;
+            ctx.stroke();
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 2. Draw Foci
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(-c, 0, 5, 0, Math.PI * 2);
+            ctx.arc(c, 0, 5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.font = '12px Inter, sans-serif';
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText('F1', -c - 8, 20);
+            ctx.fillText('F2', c - 8, 20);
+
+            // 3. Draw Aim Line (only if not active)
+            if (!ball.active) {
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(-c, 0);
+                ctx.lineTo(mouse.x - centerX, mouse.y - centerY);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // 4. Draw Ball
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#60a5fa';
+            ctx.fillStyle = '#60a5fa';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+
+            update();
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', resize);
+        
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('mousedown', () => {
+            if (!ball.active) {
+                ball.active = true;
+            } else {
+                // Reset ball to left focus
+                ball.active = false;
+                ball.x = -c;
+                ball.y = 0;
+            }
+        });
+
+        // Touch support
+        window.addEventListener('touchstart', e => {
+            mouse.x = e.touches[0].clientX;
+            mouse.y = e.touches[0].clientY;
+            if (!ball.active) ball.active = true;
+            else {
+                ball.active = false;
+                ball.x = -c;
+                ball.y = 0;
+            }
+        });
+
+        resize();
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

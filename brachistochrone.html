@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brachistochrone Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollb<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brachistochrone Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for the sidebar chat */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 2px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30">
+
+    <!-- SIDEBAR: Controls & Info -->
+    <aside class="w-80 flex-shrink-0 flex flex-col border-r border-slate-800/50 bg-slate-900/50 backdrop-blur-xl z-20 shadow-2xl">
+        <div class="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin">
+            
+            <!-- Header -->
+            <div class="space-y-2">
+                <h1 class="text-2xl font-bold tracking-tight text-white">Brachistochrone</h1>
+                <div class="flex items-center gap-2">
+                    <div class="h-1 w-1 rounded-full bg-blue-500"></div>
+                    <p class="text-[10px] font-mono uppercase tracking-widest text-blue-400">Physics Laboratory</p>
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed pt-2">
+                    Observe how the <span class="text-blue-400 font-medium">Cycloid</span> minimizes descent time through optimal acceleration, beating the shortest path (Linear).
+                </p>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 space-y-3 shadow-inner">
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+                        <span class="text-xs font-medium text-slate-300">Linear</span>
+                    </div>
+                    <span id="time-linear" class="text-xs font-mono font-bold text-rose-400">0.00s</span>
+                </div>
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <span class="text-xs font-medium text-slate-300">Circular Arc</span>
+                    </div>
+                    <span id="time-circle" class="text-xs font-mono font-bold text-emerald-400">0.00s</span>
+                </div>
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                        <span class="text-xs font-medium text-slate-300">Cycloid</span>
+                    </div>
+                    <span id="time-cycloid" class="text-xs font-mono font-bold text-blue-400">0.00s</span>
+                </div>
+            </div>
+
+            <!-- Primary Actions -->
+            <div class="space-y-3">
+                <div class="flex gap-3">
+                    <button id="startBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-900/20 text-xs tracking-wide">
+                        START RACE
+                    </button>
+                    <button id="resetBtn" class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-lg transition-all active:scale-95 border border-slate-700 text-xs tracking-wide">
+                        RESET
+                    </button>
+                </div>
+                <button id="generateScenarioBtn" class="w-full bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:text-indigo-200 font-bold py-2.5 rounded-lg transition-all active:scale-95 text-xs tracking-wide flex items-center justify-center gap-2">
+                    <span>✨</span> GENERATE NEW SCENARIO
+                </button>
+            </div>
+
+            <!-- Gemini AI Chat (Embedded) -->
+            <div class="pt-4 border-t border-slate-800">
+                <div class="flex items-center gap-2 mb-3 text-blue-400">
+                    <span class="text-base animate-pulse">✨</span>
+                    <h2 class="text-xs font-bold uppercase tracking-wider">Physics Assistant</h2>
+                </div>
+                
+                <div id="aiChat" class="h-48 bg-slate-950/50 rounded-lg p-3 overflow-y-auto scrollbar-thin text-xs space-y-3 border border-slate-800 shadow-inner mb-3">
+                    <div class="bg-blue-500/10 border border-blue-500/10 p-2 rounded text-blue-200/70">
+                        Hello! Ask me why the cycloid is faster or request a specific physics explanation.
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <input id="aiInput" type="text" placeholder="Ask a question..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all text-white placeholder-slate-500">
+                    <button id="askAiBtn" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-800 text-[10px] text-slate-600 text-center">
+            Brachistochrone v2.0 • Powered by Gemini
+        </div>
+    </aside>
+
+    <!-- MAIN CANVAS AREA -->
+    <main class="flex-1 relative bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black cursor-crosshair">
+        <canvas id="mainCanvas" class="absolute inset-0 block touch-none"></canvas>
+        
+        <!-- Hint Overlay -->
+        <div class="absolute bottom-8 right-8 pointer-events-none select-none opacity-60">
+            <div class="flex items-center gap-3 text-xs text-slate-400 bg-slate-900/80 px-4 py-2 rounded-full border border-white/5 shadow-xl backdrop-blur-sm">
+                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                Drag the blue endpoint to change geometry
+            </div>
+        </div>
+    </main>
+
+    <script>
+        {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement; // Used for resizing
+            
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const aiInput = document.getElementById('aiInput');
+            const askAiBtn = document.getElementById('askAiBtn');
+            const aiChat = document.getElementById('aiChat');
+            const generateScenarioBtn = document.getElementById('generateScenarioBtn');
+
+            const apiKey = ""; 
+            const GRAVITY_ACCEL = 980; 
+            
+            // Points are now initialized in resize() to fit the main area
+            let startPoint = { x: 100, y: 100 };
+            let endPoint = { x: 500, y: 400 };
+            
+            let isDragging = false;
+            let isRacing = false;
+            let lastTime = 0;
+            
+            const paths = {
+                linear: { color: '#f43f5e', points: [], particle: { x: 0, y: 0, v: 0, s: 0, t: 0, finished: false } },
+                circle: { color: '#10b981', points: [], particle: { x: 0, y: 0, v: 0, s: 0, t: 0, finished: false } },
+                cycloid: { color: '#3b82f6', points: [], particle: { x: 0, y: 0, v: 0, s: 0, t: 0, finished: false } }
+            };
+
+            // --- GEMINI INTEGRATION ---
+            
+            async function callGemini(prompt, systemInstruction) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction || "You are a physics expert." }] }
+                };
+
+                let retries = 3;
+                while (retries > 0) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await response.json();
+                        return result.candidates?.[0]?.content?.parts?.[0]?.text || "Connection error.";
+                    } catch (e) {
+                        retries--;
+                        if (retries === 0) return "Error: Could not reach Gemini.";
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
+            }
+
+            // Chat Functionality
+            const appendMessage = (text, isUser = false) => {
+                const div = document.createElement('div');
+                div.className = isUser 
+                    ? "bg-slate-700/50 p-2 rounded text-slate-200 border border-slate-600/50 ml-4"
+                    : "bg-slate-800/30 p-2 rounded text-slate-300 border border-slate-700/30 mr-2";
+                div.innerText = text;
+                aiChat.appendChild(div);
+                aiChat.scrollTop = aiChat.scrollHeight;
+            };
+
+            const handleAsk = async () => {
+                const query = aiInput.value.trim();
+                if (!query) return;
+                
+                aiInput.value = '';
+                appendMessage(query, true);
+                
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = "text-slate-500 text-[10px] italic pl-1";
+                loadingDiv.innerText = "Analyzing...";
+                aiChat.appendChild(loadingDiv);
+                
+                const context = `Simulation context: Start(${Math.round(startPoint.x)},${Math.round(startPoint.y)}), End(${Math.round(endPoint.x)},${Math.round(endPoint.y)}). Times -> Linear:${document.getElementById('time-linear').innerText}, Cycloid:${document.getElementById('time-cycloid').innerText}.`;
+                
+                const answer = await callGemini(
+                    `User Question: ${query}\nContext: ${context}`, 
+                    "You are a concise, helpful physics tutor. Explain Brachistochrone concepts simply."
+                );
+                
+                aiChat.removeChild(loadingDiv);
+                appendMessage(answer);
+            };
+
+            askAiBtn.onclick = handleAsk;
+            aiInput.onkeypress = (e) => { if(e.key === 'Enter') handleAsk(); };
+
+            // Scenario Generator
+            generateScenarioBtn.onclick = async () => {
+                const originalText = generateScenarioBtn.innerHTML;
+                generateScenarioBtn.innerHTML = `<span class="animate-spin">⚙️</span> GENERATING...`;
+                generateScenarioBtn.disabled = true;
+
+                try {
+                    const w = canvas.width;
+                    const h = canvas.height;
+                    const prompt = `Generate a JSON object with keys "x", "y", "reason". I need a target coordinate for a physics simulation canvas of size ${w}x${h}. Start point is around (100,150). Generate a target that creates a physically interesting slope (steep or long). Return JSON only.`;
+                    
+                    const response = await callGemini(prompt, "Return strictly valid JSON.");
+                    const jsonStr = response.replace(/```json|```/g, '').trim();
+                    const data = JSON.parse(jsonStr);
+                    
+                    if (data.x && data.y) {
+                        endPoint.x = Math.min(Math.max(data.x, 200), w - 50);
+                        endPoint.y = Math.min(Math.max(data.y, 200), h - 50);
+                        calculatePaths();
+                        appendMessage(`Generated Scenario: ${data.reason}`);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    appendMessage("Failed to generate scenario. Try again.");
+                } finally {
+                    generateScenarioBtn.innerHTML = originalText;
+                    generateScenarioBtn.disabled = false;
+                }
+            };
+
+            // --- SIMULATION LOGIC ---
+
+            function resize() {
+                // Resize based on container dimensions, not window
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                
+                // Initialize points if needed, relative to new canvas size
+                startPoint.x = Math.max(50, canvas.width * 0.1);
+                startPoint.y = Math.max(50, canvas.height * 0.15);
+
+                if (!isRacing) {
+                    // Ensure endpoint is reachable and on screen
+                    if (endPoint.x > canvas.width || endPoint.y > canvas.height || endPoint.x === 500) {
+                        endPoint.x = canvas.width * 0.8;
+                        endPoint.y = canvas.height * 0.8;
+                    }
+                    calculatePaths();
+                }
+                draw();
+            }
+
+            function calculatePaths() {
+                const dx = endPoint.x - startPoint.x;
+                const dy = endPoint.y - startPoint.y;
+                const resolution = 400;
+
+                // 1. Linear
+                paths.linear.points = [];
+                for(let i=0; i<=resolution; i++) {
+                    let t = i/resolution;
+                    paths.linear.points.push({ x: startPoint.x + dx * t, y: startPoint.y + dy * t });
+                }
+
+                // 2. Circular Arc (Geometric)
+                paths.circle.points = [];
+                // Constraint: Circle tangent to vertical line at start (center.y == startPoint.y)
+                // This mimics a slide starting with a vertical drop (like cycloid).
+                // Equation: (x2 - (x1+R))^2 + (y2 - y1)^2 = R^2
+                // solving for R: R = (dx^2 + dy^2) / (2*dx)
+                const R_circle = (dx * dx + dy * dy) / (2 * dx);
+                const centerX = startPoint.x + R_circle;
+                const centerY = startPoint.y;
+                
+                const startAngle = Math.PI; 
+                const endAngle = Math.atan2(endPoint.y - centerY, endPoint.x - centerX);
+
+                for(let i=0; i<=resolution; i++) {
+                    let t = i/resolution;
+                    let theta = startAngle + (endAngle - startAngle) * t;
+                    
+                    let px = centerX + R_circle * Math.cos(theta);
+                    let py = centerY + R_circle * Math.sin(theta);
+                    
+                    paths.circle.points.push({ x: px, y: py });
+                }
+                // Force strict snap to start/end to prevent floating point gaps
+                paths.circle.points[0] = { x: startPoint.x, y: startPoint.y };
+                paths.circle.points[paths.circle.points.length-1] = { x: endPoint.x, y: endPoint.y };
+
+                // 3. Cycloid (Binary Search)
+                const targetRatio = dy / dx;
+                let low = 0.001, high = 2 * Math.PI, phi = Math.PI;
+                // Solve R(1-cos(phi)) / R(phi - sin(phi)) = dy/dx
+                // -> (1-cos(phi)) / (phi-sin(phi)) = dy/dx
+                for (let i = 0; i < 30; i++) {
+                    phi = (low + high) / 2;
+                    let val = (1 - Math.cos(phi)) / (phi - Math.sin(phi));
+                    if (val > targetRatio) low = phi; else high = phi;
+                }
+                let r = dy / (1 - Math.cos(phi));
+                
+                paths.cycloid.points = [];
+                for(let i=0; i<=resolution; i++) {
+                    let p = (i/resolution) * phi;
+                    let px = startPoint.x + r * (p - Math.sin(p));
+                    let py = startPoint.y + r * (1 - Math.cos(p));
+                    paths.cycloid.points.push({ x: px, y: py });
+                }
+                // Snap end
+                paths.cycloid.points[paths.cycloid.points.length-1] = { x: endPoint.x, y: endPoint.y };
+
+                resetParticles();
+            }
+
+            function resetParticles() {
+                Object.keys(paths).forEach(key => {
+                    const p = paths[key].particle;
+                    p.x = startPoint.x; p.y = startPoint.y;
+                    p.v = 0; p.s = 0; p.t = 0; p.finished = false;
+                    const el = document.getElementById(`time-${key}`);
+                    if (el) el.innerText = '0.00s';
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Grid Background (Subtle)
+                ctx.strokeStyle = "rgba(255,255,255,0.03)";
+                ctx.lineWidth = 1;
+                const gridSize = 50;
+                ctx.beginPath();
+                for(let x=0; x<canvas.width; x+=gridSize) { ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); }
+                for(let y=0; y<canvas.height; y+=gridSize) { ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); }
+                ctx.stroke();
+
+                // Draw Paths
+                Object.values(paths).forEach(path => {
+                    ctx.beginPath();
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = path.color;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    
+                    // Shadow for depth
+                    ctx.shadowBlur = 0;
+                    if (path === paths.cycloid) {
+                        ctx.shadowColor = path.color;
+                        ctx.shadowBlur = 10;
+                    }
+                    
+                    ctx.moveTo(path.points[0].x, path.points[0].y);
+                    path.points.forEach(pt => ctx.lineTo(pt.x, pt.y));
+                    ctx.stroke();
+                    ctx.shadowBlur = 0; // Reset
+                });
+
+                // Start Point
+                ctx.fillStyle = "#94a3b8";
+                ctx.beginPath(); ctx.arc(startPoint.x, startPoint.y, 6, 0, Math.PI*2); ctx.fill();
+                
+                // End Point (Draggable)
+                ctx.fillStyle = "#3b82f6";
+                ctx.shadowColor = "rgba(59, 130, 246, 0.6)";
+                ctx.shadowBlur = 15;
+                ctx.beginPath(); ctx.arc(endPoint.x, endPoint.y, 10, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Particles
+                Object.values(paths).forEach(path => {
+                    const p = path.particle;
+                    ctx.shadowBlur = 15; 
+                    ctx.shadowColor = path.color;
+                    ctx.fillStyle = "#ffffff";
+                    
+                    ctx.beginPath(); 
+                    ctx.arc(p.x, p.y, 6, 0, Math.PI*2); 
+                    ctx.fill();
+                    
+                    // Trail effect could go here, but kept simple for performance
+                    ctx.shadowBlur = 0;
+                });
+            }
+
+            function animate(timestamp) {
+                if (!lastTime) lastTime = timestamp;
+                // Limit delta time to prevent physics explosions on lag
+                const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+                lastTime = timestamp;
+
+                if (isRacing) {
+                    let allFinished = true;
+                    Object.keys(paths).forEach(key => {
+                        const path = paths[key];
+                        const p = path.particle;
+                        
+                        if (!p.finished) {
+                            allFinished = false;
+                            p.t += dt;
+                            
+                            // Physics: v = sqrt(2gh)
+                            // h is vertical distance from start
+                            const h = Math.max(0, p.y - startPoint.y);
+                            // Add small epsilon to prevent stuck-at-start
+                            p.v = Math.sqrt(2 * GRAVITY_ACCEL * h) + 10; 
+                            
+                            p.s += p.v * dt;
+
+                            // Map distance 's' to coordinates
+                            let currentDist = 0;
+                            let found = false;
+                            
+                            for(let i=0; i<path.points.length-1; i++) {
+                                const p1 = path.points[i];
+                                const p2 = path.points[i+1];
+                                const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                                
+                                if (currentDist + d >= p.s) {
+                                    const ratio = (p.s - currentDist) / d;
+                                    p.x = p1.x + (p2.x - p1.x) * ratio;
+                                    p.y = p1.y + (p2.y - p1.y) * ratio;
+                                    found = true;
+                                    break;
+                                }
+                                currentDist += d;
+                            }
+                            
+                            if (!found) { 
+                                p.x = endPoint.x; 
+                                p.y = endPoint.y; 
+                                p.finished = true; 
+                            }
+                            
+                            const el = document.getElementById(`time-${key}`);
+                            if (el) el.innerText = p.t.toFixed(2) + 's';
+                        }
+                    });
+
+                    if (allFinished) {
+                        isRacing = false;
+                        startBtn.innerText = "RESTART";
+                        startBtn.classList.replace("bg-gray-600", "bg-blue-600");
+                    }
+                }
+                
+                draw();
+                requestAnimationFrame(animate);
+            }
+
+            // --- EVENTS ---
+            
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const dist = Math.hypot(x - endPoint.x, y - endPoint.y);
+                if (dist < 40) isDragging = true;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // Constrain to canvas bounds + margin to prevent overlap with start
+                    endPoint.x = Math.max(startPoint.x + 50, Math.min(x, canvas.width - 20));
+                    endPoint.y = Math.max(startPoint.y + 20, Math.min(y, canvas.height - 20));
+                    calculatePaths();
+                }
+            });
+
+            window.addEventListener('mouseup', () => isDragging = false);
+
+            startBtn.addEventListener('click', () => {
+                resetParticles();
+                isRacing = true;
+                startBtn.innerText = "RACING...";
+            });
+
+            resetBtn.addEventListener('click', () => {
+                isRacing = false;
+                resetParticles();
+                startBtn.innerText = "START RACE";
+            });
+
+            window.addEventListener('resize', resize);
+            
+            // Init
+            resize(); // Sets initial size and calculates paths
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>ar for the sidebar chat */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 2px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-200 font-sans selection:bg-blue-500/30">
+
+    <!-- SIDEBAR: Controls & Info -->
+    <aside class="w-80 flex-shrink-0 flex flex-col border-r border-slate-800/50 bg-slate-900/50 backdrop-blur-xl z-20 shadow-2xl">
+        <div class="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-thin">
+            
+            <!-- Header -->
+            <div class="space-y-2">
+                <h1 class="text-2xl font-bold tracking-tight text-white">Brachistochrone</h1>
+                <div class="flex items-center gap-2">
+                    <div class="h-1 w-1 rounded-full bg-blue-500"></div>
+                    <p class="text-[10px] font-mono uppercase tracking-widest text-blue-400">Physics Laboratory</p>
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed pt-2">
+                    Observe how the <span class="text-blue-400 font-medium">Cycloid</span> minimizes descent time through optimal acceleration, beating the shortest path (Linear).
+                </p>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 space-y-3 shadow-inner">
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+                        <span class="text-xs font-medium text-slate-300">Linear</span>
+                    </div>
+                    <span id="time-linear" class="text-xs font-mono font-bold text-rose-400">0.00s</span>
+                </div>
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                        <span class="text-xs font-medium text-slate-300">Circular Arc</span>
+                    </div>
+                    <span id="time-circle" class="text-xs font-mono font-bold text-emerald-400">0.00s</span>
+                </div>
+                <div class="flex items-center justify-between group">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                        <span class="text-xs font-medium text-slate-300">Cycloid</span>
+                    </div>
+                    <span id="time-cycloid" class="text-xs font-mono font-bold text-blue-400">0.00s</span>
+                </div>
+            </div>
+
+            <!-- Primary Actions -->
+            <div class="space-y-3">
+                <div class="flex gap-3">
+                    <button id="startBtn" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg transition-all active:scale-95 shadow-lg shadow-blue-900/20 text-xs tracking-wide">
+                        START RACE
+                    </button>
+                    <button id="resetBtn" class="px-4 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold py-2.5 rounded-lg transition-all active:scale-95 border border-slate-700 text-xs tracking-wide">
+                        RESET
+                    </button>
+                </div>
+                <button id="generateScenarioBtn" class="w-full bg-indigo-600/10 hover:bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 hover:text-indigo-200 font-bold py-2.5 rounded-lg transition-all active:scale-95 text-xs tracking-wide flex items-center justify-center gap-2">
+                    <span>✨</span> GENERATE NEW SCENARIO
+                </button>
+            </div>
+
+            <!-- Gemini AI Chat (Embedded) -->
+            <div class="pt-4 border-t border-slate-800">
+                <div class="flex items-center gap-2 mb-3 text-blue-400">
+                    <span class="text-base animate-pulse">✨</span>
+                    <h2 class="text-xs font-bold uppercase tracking-wider">Physics Assistant</h2>
+                </div>
+                
+                <div id="aiChat" class="h-48 bg-slate-950/50 rounded-lg p-3 overflow-y-auto scrollbar-thin text-xs space-y-3 border border-slate-800 shadow-inner mb-3">
+                    <div class="bg-blue-500/10 border border-blue-500/10 p-2 rounded text-blue-200/70">
+                        Hello! Ask me why the cycloid is faster or request a specific physics explanation.
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <input id="aiInput" type="text" placeholder="Ask a question..." class="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 transition-all text-white placeholder-slate-500">
+                    <button id="askAiBtn" class="bg-blue-600 hover:bg-blue-500 text-white p-2 rounded-lg transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-800 text-[10px] text-slate-600 text-center">
+            Brachistochrone v2.0 • Powered by Gemini
+        </div>
+    </aside>
+
+    <!-- MAIN CANVAS AREA -->
+    <main class="flex-1 relative bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black cursor-crosshair">
+        <canvas id="mainCanvas" class="absolute inset-0 block touch-none"></canvas>
+        
+        <!-- Hint Overlay -->
+        <div class="absolute bottom-8 right-8 pointer-events-none select-none opacity-60">
+            <div class="flex items-center gap-3 text-xs text-slate-400 bg-slate-900/80 px-4 py-2 rounded-full border border-white/5 shadow-xl backdrop-blur-sm">
+                <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                Drag the blue endpoint to change geometry
+            </div>
+        </div>
+    </main>
+
+    <script>
+        {
+            const canvas = document.getElementById('mainCanvas');
+            const ctx = canvas.getContext('2d');
+            const container = canvas.parentElement; // Used for resizing
+            
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const aiInput = document.getElementById('aiInput');
+            const askAiBtn = document.getElementById('askAiBtn');
+            const aiChat = document.getElementById('aiChat');
+            const generateScenarioBtn = document.getElementById('generateScenarioBtn');
+
+            const apiKey = ""; 
+            const GRAVITY_ACCEL = 980; 
+            
+            // Points are now initialized in resize() to fit the main area
+            let startPoint = { x: 100, y: 100 };
+            let endPoint = { x: 500, y: 400 };
+            
+            let isDragging = false;
+            let isRacing = false;
+            let lastTime = 0;
+            
+            const paths = {
+                linear: { color: '#f43f5e', points: [], particle: { x: 0, y: 0, v: 0, s: 0, t: 0, finished: false } },
+                circle: { color: '#10b981', points: [], particle: { x: 0, y: 0, v: 0, s: 0, t: 0, finished: false } },
+                cycloid: { color: '#3b82f6', points: [], particle: { x: 0, y: 0, v: 0, s: 0, t: 0, finished: false } }
+            };
+
+            // --- GEMINI INTEGRATION ---
+            
+            async function callGemini(prompt, systemInstruction) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction || "You are a physics expert." }] }
+                };
+
+                let retries = 3;
+                while (retries > 0) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await response.json();
+                        return result.candidates?.[0]?.content?.parts?.[0]?.text || "Connection error.";
+                    } catch (e) {
+                        retries--;
+                        if (retries === 0) return "Error: Could not reach Gemini.";
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                }
+            }
+
+            // Chat Functionality
+            const appendMessage = (text, isUser = false) => {
+                const div = document.createElement('div');
+                div.className = isUser 
+                    ? "bg-slate-700/50 p-2 rounded text-slate-200 border border-slate-600/50 ml-4"
+                    : "bg-slate-800/30 p-2 rounded text-slate-300 border border-slate-700/30 mr-2";
+                div.innerText = text;
+                aiChat.appendChild(div);
+                aiChat.scrollTop = aiChat.scrollHeight;
+            };
+
+            const handleAsk = async () => {
+                const query = aiInput.value.trim();
+                if (!query) return;
+                
+                aiInput.value = '';
+                appendMessage(query, true);
+                
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = "text-slate-500 text-[10px] italic pl-1";
+                loadingDiv.innerText = "Analyzing...";
+                aiChat.appendChild(loadingDiv);
+                
+                const context = `Simulation context: Start(${Math.round(startPoint.x)},${Math.round(startPoint.y)}), End(${Math.round(endPoint.x)},${Math.round(endPoint.y)}). Times -> Linear:${document.getElementById('time-linear').innerText}, Cycloid:${document.getElementById('time-cycloid').innerText}.`;
+                
+                const answer = await callGemini(
+                    `User Question: ${query}\nContext: ${context}`, 
+                    "You are a concise, helpful physics tutor. Explain Brachistochrone concepts simply."
+                );
+                
+                aiChat.removeChild(loadingDiv);
+                appendMessage(answer);
+            };
+
+            askAiBtn.onclick = handleAsk;
+            aiInput.onkeypress = (e) => { if(e.key === 'Enter') handleAsk(); };
+
+            // Scenario Generator
+            generateScenarioBtn.onclick = async () => {
+                const originalText = generateScenarioBtn.innerHTML;
+                generateScenarioBtn.innerHTML = `<span class="animate-spin">⚙️</span> GENERATING...`;
+                generateScenarioBtn.disabled = true;
+
+                try {
+                    const w = canvas.width;
+                    const h = canvas.height;
+                    const prompt = `Generate a JSON object with keys "x", "y", "reason". I need a target coordinate for a physics simulation canvas of size ${w}x${h}. Start point is around (100,150). Generate a target that creates a physically interesting slope (steep or long). Return JSON only.`;
+                    
+                    const response = await callGemini(prompt, "Return strictly valid JSON.");
+                    const jsonStr = response.replace(/```json|```/g, '').trim();
+                    const data = JSON.parse(jsonStr);
+                    
+                    if (data.x && data.y) {
+                        endPoint.x = Math.min(Math.max(data.x, 200), w - 50);
+                        endPoint.y = Math.min(Math.max(data.y, 200), h - 50);
+                        calculatePaths();
+                        appendMessage(`Generated Scenario: ${data.reason}`);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    appendMessage("Failed to generate scenario. Try again.");
+                } finally {
+                    generateScenarioBtn.innerHTML = originalText;
+                    generateScenarioBtn.disabled = false;
+                }
+            };
+
+            // --- SIMULATION LOGIC ---
+
+            function resize() {
+                // Resize based on container dimensions, not window
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
+                
+                // Initialize points if needed, relative to new canvas size
+                startPoint.x = Math.max(50, canvas.width * 0.1);
+                startPoint.y = Math.max(50, canvas.height * 0.15);
+
+                if (!isRacing) {
+                    // Ensure endpoint is reachable and on screen
+                    if (endPoint.x > canvas.width || endPoint.y > canvas.height || endPoint.x === 500) {
+                        endPoint.x = canvas.width * 0.8;
+                        endPoint.y = canvas.height * 0.8;
+                    }
+                    calculatePaths();
+                }
+                draw();
+            }
+
+            function calculatePaths() {
+                const dx = endPoint.x - startPoint.x;
+                const dy = endPoint.y - startPoint.y;
+                const resolution = 400;
+
+                // 1. Linear
+                paths.linear.points = [];
+                for(let i=0; i<=resolution; i++) {
+                    let t = i/resolution;
+                    paths.linear.points.push({ x: startPoint.x + dx * t, y: startPoint.y + dy * t });
+                }
+
+                // 2. Circular Arc (Geometric)
+                paths.circle.points = [];
+                // Constraint: Circle tangent to vertical line at start (center.y == startPoint.y)
+                // This mimics a slide starting with a vertical drop (like cycloid).
+                // Equation: (x2 - (x1+R))^2 + (y2 - y1)^2 = R^2
+                // solving for R: R = (dx^2 + dy^2) / (2*dx)
+                const R_circle = (dx * dx + dy * dy) / (2 * dx);
+                const centerX = startPoint.x + R_circle;
+                const centerY = startPoint.y;
+                
+                const startAngle = Math.PI; 
+                const endAngle = Math.atan2(endPoint.y - centerY, endPoint.x - centerX);
+
+                for(let i=0; i<=resolution; i++) {
+                    let t = i/resolution;
+                    let theta = startAngle + (endAngle - startAngle) * t;
+                    
+                    let px = centerX + R_circle * Math.cos(theta);
+                    let py = centerY + R_circle * Math.sin(theta);
+                    
+                    paths.circle.points.push({ x: px, y: py });
+                }
+                // Force strict snap to start/end to prevent floating point gaps
+                paths.circle.points[0] = { x: startPoint.x, y: startPoint.y };
+                paths.circle.points[paths.circle.points.length-1] = { x: endPoint.x, y: endPoint.y };
+
+                // 3. Cycloid (Binary Search)
+                const targetRatio = dy / dx;
+                let low = 0.001, high = 2 * Math.PI, phi = Math.PI;
+                // Solve R(1-cos(phi)) / R(phi - sin(phi)) = dy/dx
+                // -> (1-cos(phi)) / (phi-sin(phi)) = dy/dx
+                for (let i = 0; i < 30; i++) {
+                    phi = (low + high) / 2;
+                    let val = (1 - Math.cos(phi)) / (phi - Math.sin(phi));
+                    if (val > targetRatio) low = phi; else high = phi;
+                }
+                let r = dy / (1 - Math.cos(phi));
+                
+                paths.cycloid.points = [];
+                for(let i=0; i<=resolution; i++) {
+                    let p = (i/resolution) * phi;
+                    let px = startPoint.x + r * (p - Math.sin(p));
+                    let py = startPoint.y + r * (1 - Math.cos(p));
+                    paths.cycloid.points.push({ x: px, y: py });
+                }
+                // Snap end
+                paths.cycloid.points[paths.cycloid.points.length-1] = { x: endPoint.x, y: endPoint.y };
+
+                resetParticles();
+            }
+
+            function resetParticles() {
+                Object.keys(paths).forEach(key => {
+                    const p = paths[key].particle;
+                    p.x = startPoint.x; p.y = startPoint.y;
+                    p.v = 0; p.s = 0; p.t = 0; p.finished = false;
+                    const el = document.getElementById(`time-${key}`);
+                    if (el) el.innerText = '0.00s';
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Grid Background (Subtle)
+                ctx.strokeStyle = "rgba(255,255,255,0.03)";
+                ctx.lineWidth = 1;
+                const gridSize = 50;
+                ctx.beginPath();
+                for(let x=0; x<canvas.width; x+=gridSize) { ctx.moveTo(x,0); ctx.lineTo(x,canvas.height); }
+                for(let y=0; y<canvas.height; y+=gridSize) { ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); }
+                ctx.stroke();
+
+                // Draw Paths
+                Object.values(paths).forEach(path => {
+                    ctx.beginPath();
+                    ctx.lineWidth = 3;
+                    ctx.strokeStyle = path.color;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    
+                    // Shadow for depth
+                    ctx.shadowBlur = 0;
+                    if (path === paths.cycloid) {
+                        ctx.shadowColor = path.color;
+                        ctx.shadowBlur = 10;
+                    }
+                    
+                    ctx.moveTo(path.points[0].x, path.points[0].y);
+                    path.points.forEach(pt => ctx.lineTo(pt.x, pt.y));
+                    ctx.stroke();
+                    ctx.shadowBlur = 0; // Reset
+                });
+
+                // Start Point
+                ctx.fillStyle = "#94a3b8";
+                ctx.beginPath(); ctx.arc(startPoint.x, startPoint.y, 6, 0, Math.PI*2); ctx.fill();
+                
+                // End Point (Draggable)
+                ctx.fillStyle = "#3b82f6";
+                ctx.shadowColor = "rgba(59, 130, 246, 0.6)";
+                ctx.shadowBlur = 15;
+                ctx.beginPath(); ctx.arc(endPoint.x, endPoint.y, 10, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Particles
+                Object.values(paths).forEach(path => {
+                    const p = path.particle;
+                    ctx.shadowBlur = 15; 
+                    ctx.shadowColor = path.color;
+                    ctx.fillStyle = "#ffffff";
+                    
+                    ctx.beginPath(); 
+                    ctx.arc(p.x, p.y, 6, 0, Math.PI*2); 
+                    ctx.fill();
+                    
+                    // Trail effect could go here, but kept simple for performance
+                    ctx.shadowBlur = 0;
+                });
+            }
+
+            function animate(timestamp) {
+                if (!lastTime) lastTime = timestamp;
+                // Limit delta time to prevent physics explosions on lag
+                const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+                lastTime = timestamp;
+
+                if (isRacing) {
+                    let allFinished = true;
+                    Object.keys(paths).forEach(key => {
+                        const path = paths[key];
+                        const p = path.particle;
+                        
+                        if (!p.finished) {
+                            allFinished = false;
+                            p.t += dt;
+                            
+                            // Physics: v = sqrt(2gh)
+                            // h is vertical distance from start
+                            const h = Math.max(0, p.y - startPoint.y);
+                            // Add small epsilon to prevent stuck-at-start
+                            p.v = Math.sqrt(2 * GRAVITY_ACCEL * h) + 10; 
+                            
+                            p.s += p.v * dt;
+
+                            // Map distance 's' to coordinates
+                            let currentDist = 0;
+                            let found = false;
+                            
+                            for(let i=0; i<path.points.length-1; i++) {
+                                const p1 = path.points[i];
+                                const p2 = path.points[i+1];
+                                const d = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+                                
+                                if (currentDist + d >= p.s) {
+                                    const ratio = (p.s - currentDist) / d;
+                                    p.x = p1.x + (p2.x - p1.x) * ratio;
+                                    p.y = p1.y + (p2.y - p1.y) * ratio;
+                                    found = true;
+                                    break;
+                                }
+                                currentDist += d;
+                            }
+                            
+                            if (!found) { 
+                                p.x = endPoint.x; 
+                                p.y = endPoint.y; 
+                                p.finished = true; 
+                            }
+                            
+                            const el = document.getElementById(`time-${key}`);
+                            if (el) el.innerText = p.t.toFixed(2) + 's';
+                        }
+                    });
+
+                    if (allFinished) {
+                        isRacing = false;
+                        startBtn.innerText = "RESTART";
+                        startBtn.classList.replace("bg-gray-600", "bg-blue-600");
+                    }
+                }
+                
+                draw();
+                requestAnimationFrame(animate);
+            }
+
+            // --- EVENTS ---
+            
+            canvas.addEventListener('mousedown', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const dist = Math.hypot(x - endPoint.x, y - endPoint.y);
+                if (dist < 40) isDragging = true;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    // Constrain to canvas bounds + margin to prevent overlap with start
+                    endPoint.x = Math.max(startPoint.x + 50, Math.min(x, canvas.width - 20));
+                    endPoint.y = Math.max(startPoint.y + 20, Math.min(y, canvas.height - 20));
+                    calculatePaths();
+                }
+            });
+
+            window.addEventListener('mouseup', () => isDragging = false);
+
+            startBtn.addEventListener('click', () => {
+                resetParticles();
+                isRacing = true;
+                startBtn.innerText = "RACING...";
+            });
+
+            resetBtn.addEventListener('click', () => {
+                isRacing = false;
+                resetParticles();
+                startBtn.innerText = "START RACE";
+            });
+
+            window.addEventListener('resize', resize);
+            
+            // Init
+            resize(); // Sets initial size and calculates paths
+            requestAnimationFrame(animate);
+        }
+    </script>
+</body>
+</html>

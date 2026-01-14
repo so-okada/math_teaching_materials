@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Small World Network Simulation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            overflow: hidden; /* Prevent scrolling, canvas takes full space */
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        
+        /* Floating Control Panel */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen relative">
+
+    <!-- Visualization Canvas -->
+    <canvas id="networkCanvas"></canvas>
+
+    <!-- Overlay UI -->
+    <div class="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col md:flex-row p-4 md:p-6 gap-4">
+        
+        <!-- Controls Sidebar -->
+        <div class="glass-panel rounded-xl p-6 w-full md:w-80 pointer-events-auto flex flex-col gap-6 h-fit max-h-full overflow-y-auto z-10">
+            <div>
+                <h1 class="text-xl font-bold text-sky-400 mb-1">Small World Demo</h1>
+                <p class="text-xs text-slate-400">Watts-Strogatz Model Visualization</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid grid-cols-2 gap-3 p-3 bg-slate-800/50 rounded-lg border border-slate-700/50">
+                <div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Avg Path Len</div>
+                    <div class="text-xl font-bold text-emerald-400 mono" id="stat-avg-path">--</div>
+                </div>
+                <div>
+                    <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Separation</div>
+                    <div class="text-xl font-bold text-pink-400 mono" id="stat-separation">--</div>
+                </div>
+            </div>
+
+            <!-- Inputs -->
+            <div class="space-y-5">
+                <!-- Nodes (N) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <label class="text-slate-300">Nodes (N)</label>
+                        <span class="mono text-sky-300" id="val-n">50</span>
+                    </div>
+                    <input type="range" id="input-n" min="10" max="150" value="50" step="1">
+                    <p class="text-[10px] text-slate-500">Total number of entities in the graph.</p>
+                </div>
+
+                <!-- Neighbors (K) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <label class="text-slate-300">Neighbors (K)</label>
+                        <span class="mono text-sky-300" id="val-k">4</span>
+                    </div>
+                    <input type="range" id="input-k" min="2" max="10" value="4" step="2">
+                    <p class="text-[10px] text-slate-500">Initial connections per node (must be even).</p>
+                </div>
+
+                <!-- Rewire Prob (p) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <label class="text-slate-300">Rewire Prob (p)</label>
+                        <span class="mono text-sky-300" id="val-p">0.10</span>
+                    </div>
+                    <input type="range" id="input-p" min="0" max="1" value="0.1" step="0.01">
+                    <div class="flex justify-between text-[10px] text-slate-500">
+                        <span>Regular</span>
+                        <span>Small World</span>
+                        <span>Random</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="pt-2 space-y-3">
+                <button id="btn-generate" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-lg font-semibold shadow-lg shadow-sky-900/50 transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                    Regenerate Network
+                </button>
+                <button id="btn-find-path" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm font-medium border border-slate-600 transition-all active:scale-95">
+                    Find New Path
+                </button>
+            </div>
+            
+            <div class="text-[10px] text-slate-500 leading-relaxed border-t border-slate-700/50 pt-4">
+                <strong>How it works:</strong> The Watts-Strogatz model starts with a regular ring. By rewiring a few edges randomly (increasing <em>p</em>), shortcuts are created. These shortcuts drastically reduce the average path length while maintaining clustering, creating a "Small World."
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Simulation Logic & Visualization
+         */
+        const canvas = document.getElementById('networkCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // State
+        let nodes = [];
+        let edges = []; // Adjacency list: Map<nodeId, Set<nodeId>>
+        let path = []; // Current highlighted path
+        let params = {
+            N: 50, // Nodes
+            K: 4,  // Mean degree (even integer)
+            p: 0.1 // Rewiring probability
+        };
+
+        // UI Elements
+        const ui = {
+            n: document.getElementById('input-n'),
+            k: document.getElementById('input-k'),
+            p: document.getElementById('input-p'),
+            valN: document.getElementById('val-n'),
+            valK: document.getElementById('val-k'),
+            valP: document.getElementById('val-p'),
+            btnGen: document.getElementById('btn-generate'),
+            btnPath: document.getElementById('btn-find-path'),
+            statAvg: document.getElementById('stat-avg-path'),
+            statSep: document.getElementById('stat-separation')
+        };
+
+        // Resize Canvas
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            draw();
+        }
+        window.addEventListener('resize', resize);
+
+        // --- Core Algorithm: Watts-Strogatz ---
+
+        function generateGraph() {
+            nodes = [];
+            edges = new Map();
+            path = [];
+
+            const { N, K, p } = params;
+            const radius = Math.min(canvas.width, canvas.height) * 0.35;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+
+            // 1. Create Nodes in a Circle
+            for (let i = 0; i < N; i++) {
+                const angle = (i / N) * 2 * Math.PI - Math.PI / 2;
+                nodes.push({
+                    id: i,
+                    x: centerX + Math.cos(angle) * radius,
+                    y: centerY + Math.sin(angle) * radius,
+                    angle: angle
+                });
+                edges.set(i, new Set());
+            }
+
+            // 2. Create Regular Ring Lattice
+            // Connect each node to K/2 neighbors on each side
+            let rawEdges = []; // Store as [source, target] for rewiring phase
+
+            for (let i = 0; i < N; i++) {
+                for (let j = 1; j <= K / 2; j++) {
+                    const target = (i + j) % N;
+                    // Store edge. We only store i -> target where i < target conceptually
+                    // to avoid processing same edge twice, but since it's a ring with wrap-around,
+                    // we just iterate all i and j neighbors.
+                    // To strictly follow Watts-Strogatz rewiring:
+                    // We iterate i=0..N-1, and for each i, we connect to i+1...i+K/2.
+                    rawEdges.push({ source: i, target: target, originalTarget: target });
+                    
+                    // Add initial bidirectional connection to map for visualization/BFS
+                    addEdge(i, target); 
+                }
+            }
+
+            // 3. Rewire Edges
+            // For each edge (u, v) created in step 2:
+            // With probability p, replace v with w (random node), s.t. (u,w) doesn't exist and u != w
+            
+            // First, clear the map because we are going to rebuild it based on rawEdges outcome
+            edges = new Map();
+            nodes.forEach(n => edges.set(n.id, new Set()));
+
+            rawEdges.forEach(edge => {
+                let u = edge.source;
+                let v = edge.target;
+
+                if (Math.random() < p) {
+                    // Rewire
+                    // Pick a random node w
+                    // Constraints: w != u, and no duplicate edges
+                    // To simplify: simple rejection sampling
+                    let candidates = [];
+                    for(let k=0; k<N; k++) {
+                        if (k !== u && k !== v) candidates.push(k);
+                    }
+                    
+                    if (candidates.length > 0) {
+                        const w = candidates[Math.floor(Math.random() * candidates.length)];
+                        // In strict WS model, we check if edge exists. 
+                        // For visual simplicity, let's just allow it or simple check.
+                        v = w; 
+                    }
+                }
+                
+                addEdge(u, v);
+            });
+
+            // Calculate Stats
+            calculateStats();
+            
+            // Find a random path to demonstrate
+            findRandomPath();
+            
+            draw();
+        }
+
+        function addEdge(u, v) {
+            if (u === v) return;
+            if (!edges.has(u)) edges.set(u, new Set());
+            if (!edges.has(v)) edges.set(v, new Set());
+            
+            edges.get(u).add(v);
+            edges.get(v).add(u);
+        }
+
+        // --- Pathfinding (BFS) ---
+
+        function getShortestPath(startId, endId) {
+            if (startId === endId) return [startId];
+            
+            let queue = [startId];
+            let visited = new Set([startId]);
+            let parent = new Map();
+
+            while (queue.length > 0) {
+                let current = queue.shift();
+
+                if (current === endId) {
+                    // Reconstruct path
+                    let pathArr = [];
+                    let curr = endId;
+                    while (curr !== undefined) {
+                        pathArr.unshift(curr);
+                        curr = parent.get(curr);
+                    }
+                    return pathArr;
+                }
+
+                const neighbors = edges.get(current);
+                if (neighbors) {
+                    for (let neighbor of neighbors) {
+                        if (!visited.has(neighbor)) {
+                            visited.add(neighbor);
+                            parent.set(neighbor, current);
+                            queue.push(neighbor);
+                        }
+                    }
+                }
+            }
+            return null; // No path found
+        }
+
+        function findRandomPath() {
+            const start = Math.floor(Math.random() * params.N);
+            // Pick an end node that is somewhat distant in index to make it interesting
+            let end = (start + Math.floor(params.N / 2)) % params.N; 
+            
+            path = getShortestPath(start, end);
+            
+            if (path) {
+                ui.statSep.innerText = (path.length - 1).toString();
+            } else {
+                ui.statSep.innerText = "Inf";
+            }
+            draw();
+        }
+
+        // --- Statistics ---
+
+        function calculateStats() {
+            // Calculate Average Path Length
+            // BFS from every node to every other node? 
+            // For N=150, 150*150 is small enough for JS.
+            
+            let totalPathLen = 0;
+            let pairs = 0;
+            const N = params.N;
+
+            // Sampling optimization: If N > 100, only sample 50 random nodes as sources
+            const sources = N > 100 ? 
+                Array.from({length: 50}, () => Math.floor(Math.random() * N)) : 
+                nodes.map(n => n.id);
+
+            for (let src of sources) {
+                // BFS from src
+                let queue = [[src, 0]]; // [id, dist]
+                let visited = new Set([src]);
+                
+                while(queue.length > 0) {
+                    let [curr, dist] = queue.shift();
+                    
+                    if (curr !== src) {
+                        totalPathLen += dist;
+                        pairs++;
+                    }
+
+                    const neighbors = edges.get(curr);
+                    if(neighbors) {
+                        for(let n of neighbors) {
+                            if(!visited.has(n)) {
+                                visited.add(n);
+                                queue.push([n, dist + 1]);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (pairs > 0) {
+                const avg = totalPathLen / pairs;
+                ui.statAvg.innerText = avg.toFixed(2);
+            } else {
+                ui.statAvg.innerText = "0";
+            }
+        }
+
+        // --- Rendering ---
+
+        function draw() {
+            // Clear
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Draw Edges
+            ctx.lineWidth = 1;
+            
+            // We iterate nodes to draw edges. Since graph is undirected, we need to avoid duplicates visually
+            // Use a set of strings "min-max" to track drawn edges
+            let drawnEdges = new Set();
+
+            nodes.forEach(node => {
+                const neighbors = edges.get(node.id);
+                if (!neighbors) return;
+                
+                neighbors.forEach(neighborId => {
+                    const pairId = [Math.min(node.id, neighborId), Math.max(node.id, neighborId)].join('-');
+                    if (drawnEdges.has(pairId)) return;
+                    drawnEdges.add(pairId);
+
+                    const neighbor = nodes[neighborId];
+                    
+                    // Determine if this is a "local" edge or a "shortcut"
+                    // In a ring, local edges connect i to (i +/- 1...K/2)
+                    // We calculate ring distance
+                    const dist = Math.abs(node.id - neighborId);
+                    const ringDist = Math.min(dist, params.N - dist);
+                    const isShortcut = ringDist > params.K / 2;
+
+                    ctx.beginPath();
+                    ctx.moveTo(node.x, node.y);
+                    
+                    if (isShortcut) {
+                        // Draw shortcut as a straight line across or a curve? Straight is clearer for "cutting across"
+                        // Draw as slightly curved quadratic bezier towards center for visual flair
+                        // const cpX = cx;
+                        // const cpY = cy;
+                        // ctx.quadraticCurveTo(cpX, cpY, neighbor.x, neighbor.y);
+                        ctx.lineTo(neighbor.x, neighbor.y);
+                        ctx.strokeStyle = `rgba(56, 189, 248, ${Math.max(0.1, 0.4 - (params.N/500))})`; // Cyan for shortcuts
+                    } else {
+                        ctx.lineTo(neighbor.x, neighbor.y);
+                        ctx.strokeStyle = `rgba(148, 163, 184, ${Math.max(0.05, 0.2 - (params.N/500))})`; // Slate for ring lattice
+                    }
+                    ctx.stroke();
+                });
+            });
+
+            // Draw Path Highlighting
+            if (path && path.length > 1) {
+                ctx.lineWidth = 3;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#f472b6'; // Pink glow
+                ctx.strokeStyle = '#f472b6';
+                ctx.beginPath();
+                
+                const startNode = nodes[path[0]];
+                ctx.moveTo(startNode.x, startNode.y);
+
+                for (let i = 1; i < path.length; i++) {
+                    const nextNode = nodes[path[i]];
+                    ctx.lineTo(nextNode.x, nextNode.y);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                ctx.lineWidth = 1;
+            }
+
+            // Draw Nodes
+            nodes.forEach(node => {
+                // Check if node is in path
+                const inPath = path && path.includes(node.id);
+                const isEndpoints = path && (node.id === path[0] || node.id === path[path.length - 1]);
+
+                ctx.beginPath();
+                // Size depends on N slightly
+                const r = isEndpoints ? 6 : (inPath ? 4 : Math.max(2, 6 - (params.N / 30)));
+                
+                ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+                
+                if (isEndpoints) {
+                    ctx.fillStyle = '#f472b6'; // Pink
+                    ctx.shadowColor = '#f472b6';
+                    ctx.shadowBlur = 15;
+                } else if (inPath) {
+                    ctx.fillStyle = '#f472b6';
+                    ctx.shadowBlur = 0;
+                } else {
+                    ctx.fillStyle = '#38bdf8'; // Sky blue
+                    ctx.shadowBlur = 0;
+                }
+                
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        // --- Interaction Listeners ---
+
+        function updateParams() {
+            params.N = parseInt(ui.n.value);
+            params.K = parseInt(ui.k.value);
+            params.p = parseFloat(ui.p.value);
+
+            // Constraint: K < N
+            if (params.K >= params.N) {
+                params.K = params.N - 1;
+                if (params.K % 2 !== 0) params.K -= 1;
+                ui.k.value = params.K;
+            }
+
+            ui.valN.innerText = params.N;
+            ui.valK.innerText = params.K;
+            ui.valP.innerText = params.p.toFixed(2);
+            
+            generateGraph();
+        }
+
+        ui.n.addEventListener('input', updateParams);
+        ui.k.addEventListener('input', updateParams);
+        ui.p.addEventListener('input', updateParams);
+        
+        ui.btnGen.addEventListener('click', generateGraph);
+        ui.btnPath.addEventListener('click', findRandomPath);
+
+        // Canvas Interaction (Hover/Click)
+        // Just for fun: Hover to see neighbors?
+        // Keeping it simple to avoid clutter, the path demo is the main interaction.
+
+        // Init
+        resize();
+        generateGraph();
+
+    </script>
+</body>
+</html>

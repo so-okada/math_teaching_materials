@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaudí's Hyperboloid Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            color: #888;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+        #canvas-container {
+            background: #0f0f1a;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        .controls {
+            margin-top: 20px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px 30px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+        }
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .slider-value {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #333;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(78,205,196,0.5);
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            cursor: pointer;
+            border: none;
+        }
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #4ecdc4;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        .btn-primary:hover {
+            background: #3dbdb5;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            max-width: 500px;
+        }
+        .info h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        .math {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gaudí's Hyperboloid</h1>
+    <p class="subtitle">Ruled Surface Construction — Drag to rotate view</p>
+    
+    <div id="canvas-container">
+        <canvas id="canvas" width="500" height="450"></canvas>
+    </div>
+    
+    <div class="controls">
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Twist Angle</span>
+                <span class="slider-value" id="twist-value">0°</span>
+            </div>
+            <input type="range" id="twist-slider" min="-180" max="180" value="0" step="1">
+        </div>
+        
+        <div class="slider-container">
+            <div class="slider-label">
+                <span>Number of Lines</span>
+                <span class="slider-value" id="lines-value">24</span>
+            </div>
+            <input type="range" id="lines-slider" min="6" max="48" value="24" step="2">
+        </div>
+        
+        <div class="button-row">
+            <button class="btn-primary" id="animate-btn">▶ Animate</button>
+            <button class="btn-secondary" id="reset-btn">Reset View</button>
+        </div>
+    </div>
+    
+    <div class="info">
+        <h3>Mathematical Principle</h3>
+        <p>
+            A <strong>hyperboloid of one sheet</strong> is a <em>doubly ruled surface</em> — 
+            it can be constructed entirely from straight lines. When parallel lines connecting 
+            two circles are twisted, they form this beautiful curved surface. 
+            Antoni Gaudí used this principle extensively in his architecture, 
+            as curved surfaces could be built using straight structural elements.
+        </p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const twistSlider = document.getElementById('twist-slider');
+        const linesSlider = document.getElementById('lines-slider');
+        const twistValue = document.getElementById('twist-value');
+        const linesValue = document.getElementById('lines-value');
+        const animateBtn = document.getElementById('animate-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // 3D parameters
+        let rotationX = 0.35;
+        let rotationY = 0.5;
+        let twist = 0;
+        let numLines = 24;
+        const radius = 100;
+        const height = 120;
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const scale = 1.2;
+
+        // Animation state
+        let isAnimating = false;
+        let animationId = null;
+        let animationTime = 0;
+
+        // Mouse drag state
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        // Project 3D point to 2D
+        function project(x, y, z) {
+            // Rotate around Y axis
+            const cosY = Math.cos(rotationY);
+            const sinY = Math.sin(rotationY);
+            let x1 = x * cosY - z * sinY;
+            let z1 = x * sinY + z * cosY;
+            
+            // Rotate around X axis
+            const cosX = Math.cos(rotationX);
+            const sinX = Math.sin(rotationX);
+            let y1 = y * cosX - z1 * sinX;
+            let z2 = y * sinX + z1 * cosX;
+            
+            // Simple perspective
+            const perspective = 600;
+            const factor = perspective / (perspective + z2);
+            
+            return {
+                x: centerX + x1 * factor * scale,
+                y: centerY - y1 * factor * scale,
+                z: z2
+            };
+        }
+
+        // Generate circle points
+        function getCirclePoints(zLevel, nPoints = 60) {
+            const points = [];
+            for (let i = 0; i <= nPoints; i++) {
+                const theta = (i / nPoints) * Math.PI * 2;
+                points.push({
+                    x: radius * Math.cos(theta),
+                    y: radius * Math.sin(theta),
+                    z: zLevel
+                });
+            }
+            return points;
+        }
+
+        // Generate ruling lines
+        function getRulingLines(twistAngle, nLines) {
+            const lines = [];
+            for (let i = 0; i < nLines; i++) {
+                const theta = (i / nLines) * Math.PI * 2;
+                
+                // Bottom point (fixed)
+                const bottom = {
+                    x: radius * Math.cos(theta),
+                    y: radius * Math.sin(theta),
+                    z: -height
+                };
+                
+                // Top point (twisted)
+                const top = {
+                    x: radius * Math.cos(theta + twistAngle),
+                    y: radius * Math.sin(theta + twistAngle),
+                    z: height
+                };
+                
+                lines.push({ bottom, top });
+            }
+            return lines;
+        }
+
+        // Draw the scene
+        function draw() {
+            ctx.fillStyle = '#0f0f1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const twistRad = twist * Math.PI / 180;
+            
+            // Get all elements with depth info
+            const elements = [];
+            
+            // Add circles
+            const bottomCircle = getCirclePoints(-height);
+            const topCircle = getCirclePoints(height);
+            
+            // Calculate average Z for circles
+            let bottomZ = 0, topZ = 0;
+            bottomCircle.forEach(p => { bottomZ += project(p.x, p.y, p.z).z; });
+            topCircle.forEach(p => { topZ += project(p.x, p.y, p.z).z; });
+            bottomZ /= bottomCircle.length;
+            topZ /= topCircle.length;
+            
+            elements.push({ type: 'circle', points: bottomCircle, z: bottomZ, color: '#3498db' });
+            elements.push({ type: 'circle', points: topCircle, z: topZ, color: '#e74c3c' });
+            
+            // Add ruling lines
+            const lines = getRulingLines(twistRad, numLines);
+            lines.forEach(line => {
+                const p1 = project(line.bottom.x, line.bottom.y, line.bottom.z);
+                const p2 = project(line.top.x, line.top.y, line.top.z);
+                const avgZ = (p1.z + p2.z) / 2;
+                elements.push({ type: 'line', p1, p2, z: avgZ });
+            });
+            
+            // Sort by depth (far to near)
+            elements.sort((a, b) => b.z - a.z);
+            
+            // Draw elements
+            elements.forEach(elem => {
+                if (elem.type === 'circle') {
+                    ctx.beginPath();
+                    const projected = elem.points.map(p => project(p.x, p.y, p.z));
+                    ctx.moveTo(projected[0].x, projected[0].y);
+                    projected.forEach(p => ctx.lineTo(p.x, p.y));
+                    ctx.strokeStyle = elem.color;
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                } else if (elem.type === 'line') {
+                    ctx.beginPath();
+                    ctx.moveTo(elem.p1.x, elem.p1.y);
+                    ctx.lineTo(elem.p2.x, elem.p2.y);
+                    // Color gradient based on depth
+                    const brightness = Math.max(0.3, Math.min(1, 1 - elem.z / 300));
+                    ctx.strokeStyle = `rgba(78, 205, 196, ${brightness})`;
+                    ctx.lineWidth = 1.2;
+                    ctx.stroke();
+                }
+            });
+            
+            // Draw axis indicator
+            drawAxisIndicator();
+        }
+
+        function drawAxisIndicator() {
+            const size = 30;
+            const ox = 50;
+            const oy = canvas.height - 50;
+            
+            const axes = [
+                { dir: [1, 0, 0], color: '#e74c3c', label: 'X' },
+                { dir: [0, 1, 0], color: '#2ecc71', label: 'Y' },
+                { dir: [0, 0, 1], color: '#3498db', label: 'Z' }
+            ];
+            
+            axes.forEach(axis => {
+                const p = project(axis.dir[0] * size, axis.dir[1] * size, axis.dir[2] * size);
+                const dx = p.x - centerX;
+                const dy = p.y - centerY;
+                
+                ctx.beginPath();
+                ctx.moveTo(ox, oy);
+                ctx.lineTo(ox + dx * 0.5, oy + dy * 0.5);
+                ctx.strokeStyle = axis.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                ctx.fillStyle = axis.color;
+                ctx.font = '12px sans-serif';
+                ctx.fillText(axis.label, ox + dx * 0.6, oy + dy * 0.6);
+            });
+        }
+
+        // Animation loop
+        function animate() {
+            if (!isAnimating) return;
+            
+            animationTime += 0.02;
+            twist = 120 * Math.sin(animationTime);
+            twistSlider.value = twist;
+            twistValue.textContent = `${Math.round(twist)}°`;
+            
+            draw();
+            animationId = requestAnimationFrame(animate);
+        }
+
+        // Event listeners
+        twistSlider.addEventListener('input', () => {
+            twist = parseFloat(twistSlider.value);
+            twistValue.textContent = `${twist}°`;
+            draw();
+        });
+
+        linesSlider.addEventListener('input', () => {
+            numLines = parseInt(linesSlider.value);
+            linesValue.textContent = numLines;
+            draw();
+        });
+
+        animateBtn.addEventListener('click', () => {
+            isAnimating = !isAnimating;
+            if (isAnimating) {
+                animateBtn.textContent = '⏸ Pause';
+                animate();
+            } else {
+                animateBtn.textContent = '▶ Animate';
+                if (animationId) cancelAnimationFrame(animationId);
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            rotationX = 0.35;
+            rotationY = 0.5;
+            twist = 0;
+            twistSlider.value = 0;
+            twistValue.textContent = '0°';
+            draw();
+        });
+
+        // Mouse drag rotation
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            canvas.style.cursor = 'grabbing';
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            
+            rotationY += dx * 0.01;
+            rotationX += dy * 0.01;
+            
+            // Clamp rotation
+            rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, rotationX));
+            
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+            
+            if (!isAnimating) draw();
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+            canvas.style.cursor = 'grab';
+        });
+
+        canvas.style.cursor = 'grab';
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            lastMouseX = e.touches[0].clientX;
+            lastMouseY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isDragging) return;
+            
+            const dx = e.touches[0].clientX - lastMouseX;
+            const dy = e.touches[0].clientY - lastMouseY;
+            
+            rotationY += dx * 0.01;
+            rotationX += dy * 0.01;
+            rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, rotationX));
+            
+            lastMouseX = e.touches[0].clientX;
+            lastMouseY = e.touches[0].clientY;
+            
+            if (!isAnimating) draw();
+        });
+
+        canvas.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // Initial draw
+        draw();
+    </script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Double Integral Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .math-container { min-height: 160px; }
+        canvas { cursor: move; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-indigo-700 text-white p-4 shadow-md shrink-0 z-10">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+                Double Integral Calculator
+            </h1>
+            <span class="text-xs bg-indigo-600 px-2 py-1 rounded border border-indigo-500">Domain D: x≥1, y≥1</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- Controls & Math Panel -->
+        <aside class="w-full md:w-1/3 lg:w-1/3 bg-white border-r border-gray-200 p-6 flex flex-col overflow-y-auto z-10 shadow-lg md:shadow-none">
+            
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 mb-2">Parameter (n)</label>
+                <input type="range" id="n-slider" min="0.1" max="6.0" step="0.1" value="2.0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                <div class="flex justify-between mt-2">
+                    <span class="text-xs text-gray-500">0.1</span>
+                    <span id="n-display" class="font-mono text-lg font-bold text-indigo-700 bg-indigo-50 px-2 rounded">n = 2.0</span>
+                    <span class="text-xs text-gray-500">6.0</span>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-100 pt-4 mb-4">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Mathematical Result</h3>
+                
+                <div id="math-output" class="math-container text-sm space-y-4">
+                    <!-- MathJax content will be injected here -->
+                    $$ I = \int_{1}^{\infty} \int_{1}^{\infty} \frac{1}{x^n y^n} dx dy $$
+                </div>
+            </div>
+
+            <div class="mt-auto bg-yellow-50 border border-yellow-200 p-3 rounded text-xs text-yellow-800">
+                <strong>Note:</strong> The 3D view shows the function on the finite domain $[1, 5] \times [1, 5]$. The calculation computes the improper integral to $\infty$.
+            </div>
+        </aside>
+
+        <!-- Visualization Panel -->
+        <main class="flex-1 relative bg-gray-100 flex justify-center items-center overflow-hidden">
+            <div class="absolute top-4 left-4 bg-white/80 backdrop-blur px-3 py-2 rounded shadow text-xs font-mono text-gray-600 pointer-events-none">
+                z = 1 / (x^n * y^n)
+            </div>
+            <div class="absolute bottom-4 right-4 bg-white/80 backdrop-blur px-3 py-2 rounded shadow text-xs text-gray-500 pointer-events-none">
+                Click & Drag to Rotate
+            </div>
+            <canvas id="plotCanvas" class="w-full h-full"></canvas>
+        </main>
+
+    </div>
+
+    <script>
+    (function() {
+        // --- Configuration ---
+        const canvas = document.getElementById('plotCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('n-slider');
+        const nDisplay = document.getElementById('n-display');
+        const mathOutput = document.getElementById('math-output');
+
+        // State
+        let n = parseFloat(slider.value);
+        let rotation = { x: 0.8, z: 0.6 };
+        let isDragging = false;
+        let lastMouse = { x: 0, y: 0 };
+        
+        // Plot Settings
+        const plotRange = { min: 1, max: 5 }; // Visualize 1 to 5
+        const steps = 25; // Grid resolution
+        const scale = 150; // Visual scale factor
+
+        // --- Math Logic ---
+
+        function updateMath() {
+            let latex = "";
+            let valStr = "";
+            let colorClass = "text-gray-800";
+
+            // Basic Setup
+            latex += `$$ I = \\int_{1}^{\\infty} \\int_{1}^{\\infty} x^{-n} y^{-n} \\,dx\\,dy $$`;
+            latex += `$$ I = \\left( \\int_{1}^{\\infty} x^{-n} dx \\right) \\left( \\int_{1}^{\\infty} y^{-n} dy \\right) $$`;
+
+            if (n <= 1) {
+                // Divergence Case
+                latex += `$$ \\text{Since } n \\le 1, \\int_{1}^{\\infty} x^{-n} dx \\to \\infty $$`;
+                latex += `$$ \\therefore \\text{ The integral } \\mathbf{Diverges}. $$`;
+                colorClass = "text-red-600";
+            } else {
+                // Convergence Case
+                const singleIntegral = (1 / (n - 1)).toFixed(4);
+                const finalResult = (1 / Math.pow(n - 1, 2));
+                const niceResult = Number.isInteger(finalResult) ? finalResult : finalResult.toFixed(4);
+
+                latex += `$$ \\int_{1}^{\\infty} x^{-${n}} dx = \\left[ \\frac{x^{1-${n}}}{1-${n}} \\right]_1^{\\infty} = \\frac{1}{${(n-1).toFixed(1)}} $$`;
+                latex += `$$ I = \\left(\\frac{1}{${(n-1).toFixed(1)}}\\right)^2 = \\mathbf{${niceResult}} $$`;
+                colorClass = "text-green-700";
+            }
+
+            mathOutput.innerHTML = `<div class="${colorClass}">${latex}</div>`;
+            
+            // Trigger MathJax re-render
+            if (window.MathJax) {
+                MathJax.typesetPromise([mathOutput]).catch((err) => console.log(err));
+            }
+        }
+
+        // --- 3D Engine (Simple Isometric-ish projection) ---
+
+        function project(x, y, z, width, height) {
+            // Center the model roughly
+            const cx = width / 2;
+            const cy = height / 2 + 100; // Push down a bit
+
+            // Rotate around Z axis (azimuth)
+            const rx = (x - plotRange.min) * Math.cos(rotation.z) - (y - plotRange.min) * Math.sin(rotation.z);
+            const ry = (x - plotRange.min) * Math.sin(rotation.z) + (y - plotRange.min) * Math.cos(rotation.z);
+
+            // Rotate around X axis (elevation) and project
+            // Flatten the 'ry' depth and subtract z (height)
+            const screenX = cx + rx * scale;
+            const screenY = cy + (ry * Math.sin(rotation.x) - z * scale * 2) * Math.cos(rotation.x);
+
+            return { x: screenX, y: screenY };
+        }
+
+        function draw() {
+            // Resize canvas to handle pixel density
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            
+            const w = rect.width;
+            const h = rect.height;
+
+            ctx.clearRect(0, 0, w, h);
+            
+            const zMaxVis = 2.0; // Visual ceiling for planes
+
+            // --- Draw XY Plane (z=0) ---
+            const pMinMin = project(plotRange.min, plotRange.min, 0, w, h);
+            const pMaxMin = project(plotRange.max, plotRange.min, 0, w, h);
+            const pMaxMax = project(plotRange.max, plotRange.max, 0, w, h);
+            const pMinMax = project(plotRange.min, plotRange.max, 0, w, h);
+
+            // Fill plane
+            ctx.beginPath();
+            ctx.moveTo(pMinMin.x, pMinMin.y);
+            ctx.lineTo(pMaxMin.x, pMaxMin.y);
+            ctx.lineTo(pMaxMax.x, pMaxMax.y);
+            ctx.lineTo(pMinMax.x, pMinMax.y);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(220, 220, 230, 0.5)';
+            ctx.fill();
+            
+            // Draw grid on plane
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(100, 100, 100, 0.15)';
+            ctx.lineWidth = 1;
+            const planeSteps = 4; 
+            const planeStepSize = (plotRange.max - plotRange.min) / planeSteps;
+            
+            for(let i=0; i<=planeSteps; i++) {
+                const val = plotRange.min + i * planeStepSize;
+                
+                // Lines parallel to Y
+                const p1 = project(val, plotRange.min, 0, w, h);
+                const p2 = project(val, plotRange.max, 0, w, h);
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+
+                // Lines parallel to X
+                const p3 = project(plotRange.min, val, 0, w, h);
+                const p4 = project(plotRange.max, val, 0, w, h);
+                ctx.moveTo(p3.x, p3.y);
+                ctx.lineTo(p4.x, p4.y);
+            }
+            ctx.stroke();
+
+            // --- Draw XZ Plane (y=1) ---
+            const xz1 = project(plotRange.min, plotRange.min, 0, w, h);
+            const xz2 = project(plotRange.max, plotRange.min, 0, w, h);
+            const xz3 = project(plotRange.max, plotRange.min, zMaxVis, w, h);
+            const xz4 = project(plotRange.min, plotRange.min, zMaxVis, w, h);
+
+            ctx.beginPath();
+            ctx.moveTo(xz1.x, xz1.y);
+            ctx.lineTo(xz2.x, xz2.y);
+            ctx.lineTo(xz3.x, xz3.y);
+            ctx.lineTo(xz4.x, xz4.y);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(255, 230, 230, 0.4)'; // Light Red tint
+            ctx.fill();
+
+            // XZ Grid
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(200, 150, 150, 0.3)';
+            for(let i=0; i<=planeSteps; i++) {
+                const val = plotRange.min + i * planeStepSize;
+                const pBot = project(val, plotRange.min, 0, w, h);
+                const pTop = project(val, plotRange.min, zMaxVis, w, h);
+                ctx.moveTo(pBot.x, pBot.y);
+                ctx.lineTo(pTop.x, pTop.y);
+            }
+            const zSteps = 4;
+            for(let i=0; i<=zSteps; i++) {
+                const zVal = (i / zSteps) * zMaxVis;
+                const pLeft = project(plotRange.min, plotRange.min, zVal, w, h);
+                const pRight = project(plotRange.max, plotRange.min, zVal, w, h);
+                ctx.moveTo(pLeft.x, pLeft.y);
+                ctx.lineTo(pRight.x, pRight.y);
+            }
+            ctx.stroke();
+
+            // --- Draw YZ Plane (x=1) ---
+            const yz1 = project(plotRange.min, plotRange.min, 0, w, h);
+            const yz2 = project(plotRange.min, plotRange.max, 0, w, h);
+            const yz3 = project(plotRange.min, plotRange.max, zMaxVis, w, h);
+            const yz4 = project(plotRange.min, plotRange.min, zMaxVis, w, h);
+
+            ctx.beginPath();
+            ctx.moveTo(yz1.x, yz1.y);
+            ctx.lineTo(yz2.x, yz2.y);
+            ctx.lineTo(yz3.x, yz3.y);
+            ctx.lineTo(yz4.x, yz4.y);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(230, 255, 230, 0.4)'; // Light Green tint
+            ctx.fill();
+
+            // YZ Grid
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(150, 200, 150, 0.3)';
+            for(let i=0; i<=planeSteps; i++) {
+                const val = plotRange.min + i * planeStepSize;
+                const pBot = project(plotRange.min, val, 0, w, h);
+                const pTop = project(plotRange.min, val, zMaxVis, w, h);
+                ctx.moveTo(pBot.x, pBot.y);
+                ctx.lineTo(pTop.x, pTop.y);
+            }
+            for(let i=0; i<=zSteps; i++) {
+                const zVal = (i / zSteps) * zMaxVis;
+                const pLeft = project(plotRange.min, plotRange.min, zVal, w, h);
+                const pRight = project(plotRange.min, plotRange.max, zVal, w, h);
+                ctx.moveTo(pLeft.x, pLeft.y);
+                ctx.lineTo(pRight.x, pRight.y);
+            }
+            ctx.stroke();
+
+            // Calculate Grid Points
+            const grid = [];
+            const stepSize = (plotRange.max - plotRange.min) / steps;
+
+            for (let i = 0; i <= steps; i++) {
+                const row = [];
+                for (let j = 0; j <= steps; j++) {
+                    const x = plotRange.min + i * stepSize;
+                    const y = plotRange.min + j * stepSize;
+                    
+                    // The Function z = 1 / (x^n * y^n)
+                    // We cap the visual height at 2.0 so divergence doesn't break the screen
+                    let z = 1 / (Math.pow(x, n) * Math.pow(y, n));
+                    if (z > 2) z = 2; 
+
+                    row.push({ x, y, z, proj: project(x, y, z, w, h) });
+                }
+                grid.push(row);
+            }
+
+            // Draw Surface (Wireframe)
+            ctx.lineWidth = 1;
+            
+            for (let i = 0; i < grid.length; i++) {
+                for (let j = 0; j < grid[i].length; j++) {
+                    const p1 = grid[i][j];
+
+                    // Draw Horizontal lines
+                    if (j < grid[i].length - 1) {
+                        const p2 = grid[i][j+1];
+                        ctx.beginPath();
+                        ctx.moveTo(p1.proj.x, p1.proj.y);
+                        ctx.lineTo(p2.proj.x, p2.proj.y);
+                        // Color based on height (Red high, Blue low)
+                        ctx.strokeStyle = `hsl(${240 - p1.z * 120}, 70%, 50%)`; 
+                        ctx.stroke();
+                    }
+
+                    // Draw Vertical lines
+                    if (i < grid.length - 1) {
+                        const p3 = grid[i+1][j];
+                        ctx.beginPath();
+                        ctx.moveTo(p1.proj.x, p1.proj.y);
+                        ctx.lineTo(p3.proj.x, p3.proj.y);
+                        ctx.strokeStyle = `hsl(${240 - p1.z * 120}, 70%, 50%)`;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw Axes Labels (Simple implementation)
+            ctx.fillStyle = "#333";
+            ctx.font = "12px sans-serif";
+            const origin = project(plotRange.min, plotRange.min, 0, w, h);
+            const xEnd = project(plotRange.max, plotRange.min, 0, w, h);
+            const yEnd = project(plotRange.min, plotRange.max, 0, w, h);
+            const zEnd = project(plotRange.min, plotRange.min, zMaxVis, w, h);
+            
+            ctx.fillText("1", origin.x - 10, origin.y + 15);
+            ctx.fillText("x", xEnd.x + 5, xEnd.y);
+            ctx.fillText("y", yEnd.x - 10, yEnd.y + 10);
+            ctx.fillText("z", zEnd.x - 15, zEnd.y);
+        }
+
+        // --- Event Listeners ---
+
+        function onInput() {
+            n = parseFloat(slider.value);
+            nDisplay.textContent = `n = ${n.toFixed(1)}`;
+            updateMath();
+            requestAnimationFrame(draw);
+        }
+
+        // Mouse Rotation Logic
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            lastMouse = { x: e.clientX, y: e.clientY };
+        });
+
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.clientX - lastMouse.x;
+            const deltaY = e.clientY - lastMouse.y;
+            
+            rotation.z += deltaX * 0.01;
+            rotation.x += deltaY * 0.01;
+            
+            // Clamp elevation
+            rotation.x = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, rotation.x));
+
+            lastMouse = { x: e.clientX, y: e.clientY };
+            requestAnimationFrame(draw);
+        });
+        
+        // Touch support for mobile
+        canvas.addEventListener('touchstart', (e) => {
+            isDragging = true;
+            lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            e.preventDefault(); 
+        }, {passive: false});
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            const deltaX = e.touches[0].clientX - lastMouse.x;
+            const deltaY = e.touches[0].clientY - lastMouse.y;
+            rotation.z += deltaX * 0.01;
+            rotation.x += deltaY * 0.01;
+            rotation.x = Math.max(0.1, Math.min(Math.PI / 2 - 0.1, rotation.x));
+            lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+            requestAnimationFrame(draw);
+            e.preventDefault(); 
+        }, {passive: false});
+
+        window.addEventListener('resize', draw);
+
+        // --- Init ---
+        slider.addEventListener('input', onInput);
+        onInput(); // Initial draw
+    })();
+    </script>
+</body>
+</html>

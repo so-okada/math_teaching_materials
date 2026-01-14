@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rule of 72: Canvas Visualization</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 { margin-top: 0; color: var(--text); text-align: center; }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .input-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            max-width: 100%; /* Changed from 300px to 100% to widen */
+            height: 6px;
+            background: #cbd5e1;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #1d4ed8;
+        }
+
+        input[type="number"] {
+            padding: 8px;
+            border: 2px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 1rem;
+            width: 70px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: #fff;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .stat-box {
+            padding: 15px;
+            border-radius: 8px;
+            background: #f1f5f9;
+        }
+
+        .stat-value { font-size: 1.5rem; font-weight: bold; margin-top: 5px; }
+        .stat-label { font-size: 0.9rem; color: #64748b; }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 12px; height: 12px; border-radius: 50%; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Rule of 72 Visualizer</h1>
+    
+    <div class="controls">
+        <label>Interest Rate (%)</label>
+        <div class="input-row">
+            <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">0.1%</span>
+            <input type="range" id="rateSlider" min="0.1" max="100" step="0.1" value="8">
+            <span style="font-size: 0.85rem; color: #64748b; font-weight: 500;">100%</span>
+            <input type="number" id="rateInput" value="8" min="0.1" step="0.1" max="100">
+        </div>
+        <div style="font-size: 0.85rem; color: #64748b;">
+            Drag slider to see how the curve changes in real-time
+        </div>
+    </div>
+
+    <div class="canvas-wrapper">
+        <canvas id="growthChart"></canvas>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="dot" style="background: #2563eb"></div>Growth Curve</div>
+        <div class="legend-item"><div class="dot" style="background: #ef4444"></div>Doubling Line ($2x)</div>
+        <div class="legend-item"><div class="dot" style="background: #9333ea"></div>Rule of 72 Estimate</div>
+        <div class="legend-item"><div class="dot" style="background: #16a34a"></div>Actual Math</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-box" style="border-left: 4px solid #9333ea;">
+            <div class="stat-label">Rule of 72 Estimate</div>
+            <div class="stat-value" id="ruleStat">-- years</div>
+        </div>
+        <div class="stat-box" style="border-left: 4px solid #16a34a;">
+            <div class="stat-label">Actual Exact Math</div>
+            <div class="stat-value" id="actualStat">-- years</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('growthChart');
+    const ctx = canvas.getContext('2d');
+    
+    // Set internal resolution for sharp rendering on high-DPI screens
+    function resizeCanvas() {
+        const wrapper = canvas.parentElement;
+        canvas.width = wrapper.clientWidth * 2;
+        canvas.height = 800; // Fixed internal height
+        
+        // CSS display size
+        canvas.style.width = `${wrapper.clientWidth}px`;
+        canvas.style.height = '400px'; // CSS height
+        
+        // Normalize coordinate system
+        ctx.scale(2, 2); 
+    }
+
+    function calculateRuleOf72(rate) {
+        return 72 / rate;
+    }
+
+    function calculateActualDoubling(rate) {
+        // Formula: ln(2) / ln(1 + r/100)
+        return Math.log(2) / Math.log(1 + (rate / 100));
+    }
+
+    function drawChart(rate) {
+        // 1. Data Prep
+        const ruleYears = calculateRuleOf72(rate);
+        const actualYears = calculateActualDoubling(rate);
+        const maxY = 2.5; // We want to show slightly above the doubling point (2.0)
+        
+        // Determine X-axis range (Time). 
+        // We want to see a bit past the doubling point.
+        const maxX = Math.max(ruleYears, actualYears) * 1.5;
+
+        // 2. Clear Canvas
+        const width = canvas.width / 2;
+        const height = canvas.height / 2;
+        const padding = { top: 40, right: 40, bottom: 40, left: 60 };
+        const chartWidth = width - padding.left - padding.right;
+        const chartHeight = height - padding.top - padding.bottom;
+
+        ctx.clearRect(0, 0, width, height);
+        
+        // Helper: Coordinate Mapping
+        // Map time (x) to pixel x
+        const mapX = (year) => padding.left + (year / maxX) * chartWidth;
+        // Map money multiplier (y) to pixel y (inverted because canvas 0 is top)
+        // Y starts at 1.0 (base investment)
+        const mapY = (val) => padding.top + chartHeight - ((val - 1) / (maxY - 1)) * chartHeight;
+
+        // 3. Draw Grid & Axes
+        ctx.beginPath();
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+
+        // Horizontal Grid lines (Money Multiplier)
+        for(let m = 1; m <= maxY; m += 0.5) {
+            const y = mapY(m);
+            ctx.moveTo(padding.left, y);
+            ctx.lineTo(width - padding.right, y);
+            
+            // Text Label
+            ctx.fillStyle = '#64748b';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(m.toFixed(1) + 'x', padding.left - 10, y + 4);
+        }
+        ctx.stroke();
+
+        // 4. Draw Growth Curve (Exponential)
+        ctx.beginPath();
+        ctx.strokeStyle = '#2563eb'; // Blue
+        ctx.lineWidth = 3;
+        
+        // Draw points
+        for(let t = 0; t <= maxX; t += 0.1) {
+            const money = Math.pow(1 + rate/100, t);
+            if(money > maxY) break;
+            
+            const px = mapX(t);
+            const py = mapY(money);
+            
+            if(t === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // 5. Draw Target Line (2.0x Double)
+        const doubleY = mapY(2.0);
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = '#ef4444'; // Red
+        ctx.lineWidth = 2;
+        ctx.moveTo(padding.left, doubleY);
+        ctx.lineTo(width - padding.right, doubleY);
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset dash
+
+        // 6. Draw Vertical Markers
+        
+        // Function to draw marker
+        function drawMarker(year, color, label, isTopLabel) {
+            const x = mapX(year);
+            const yStart = mapY(1);
+            const yEnd = mapY(2.5); // Go all the way up
+
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.moveTo(x, yStart);
+            ctx.lineTo(x, yEnd);
+            ctx.stroke();
+
+            // Label
+            ctx.fillStyle = color;
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            // Stagger labels if they are close
+            const labelY = isTopLabel ? padding.top - 15 : padding.top - 25;
+            ctx.fillText(label, x, labelY);
+            ctx.fillText(year.toFixed(2) + " yrs", x, labelY + 12);
+        }
+
+        // Check if labels are too close to stagger them
+        const pixelDiff = Math.abs(mapX(ruleYears) - mapX(actualYears));
+        const stagger = pixelDiff < 60; // if less than 60px apart, stagger
+
+        drawMarker(ruleYears, '#9333ea', 'Rule of 72', stagger); // Purple
+        drawMarker(actualYears, '#16a34a', 'Actual', false); // Green
+
+        // 7. Update Stats DOM
+        document.getElementById('ruleStat').innerText = ruleYears.toFixed(2) + " Years";
+        document.getElementById('actualStat').innerText = actualYears.toFixed(2) + " Years";
+    }
+
+    // Sync Slider and Number Input
+    const slider = document.getElementById('rateSlider');
+    const numberInput = document.getElementById('rateInput');
+
+    function updateFromSlider() {
+        numberInput.value = slider.value;
+        drawChart(parseFloat(slider.value));
+    }
+
+    function updateFromNumber() {
+        let val = parseFloat(numberInput.value);
+        if (!val || val <= 0) val = 0.1;
+        slider.value = val; // Slider will cap at max automatically, but input can go higher
+        drawChart(val);
+    }
+
+    slider.addEventListener('input', updateFromSlider);
+    numberInput.addEventListener('input', updateFromNumber);
+
+    // Initialize
+    window.addEventListener('load', () => {
+        resizeCanvas();
+        updateFromSlider(); // Draw initial state based on slider default
+    });
+
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        updateFromSlider();
+    });
+</script>
+
+</body>
+</html>

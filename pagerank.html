@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google PageRank Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        canvas { display: block; }
+        .panel {
+            backdrop-filter: blur(12px);
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- UI Overlay -->
+    <div class="panel absolute top-4 left-4 p-6 rounded-xl shadow-lg border border-slate-200 max-w-sm z-10 transition-all">
+        <h1 class="text-2xl font-bold mb-2 text-indigo-600">PageRank Sim</h1>
+        <p class="text-sm text-slate-600 mb-4">
+            Visualize how Google's original algorithm calculates page authority. 
+            <br><span class="text-xs text-slate-400">Drag nodes to rearrange.</span>
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 mb-4">
+            <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                <div class="text-xs text-slate-400 uppercase font-bold">Iterations</div>
+                <div class="text-xl font-mono" id="iterVal">0</div>
+            </div>
+            <div class="bg-slate-50 p-2 rounded border border-slate-100">
+                <div class="text-xs text-slate-400 uppercase font-bold">Total Nodes</div>
+                <div class="text-xl font-mono" id="nodeCountVal">0</div>
+            </div>
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <button onclick="step()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded transition flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                Step (+1)
+            </button>
+            
+            <button onclick="toggleAuto()" id="btnAuto" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded transition flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Auto Run
+            </button>
+
+            <button onclick="resetGraph()" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium py-2 px-4 rounded transition flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/></svg>
+                Reset / New Graph
+            </button>
+        </div>
+
+        <div class="mt-4 pt-4 border-t border-slate-200 text-xs text-slate-500">
+            <strong>Damping Factor:</strong> 0.85<br>
+            Larger Node = Higher Rank
+        </div>
+    </div>
+
+    <canvas id="simCanvas"></canvas>
+
+<script>
+    /**
+     * PageRank Visualization
+     * Uses HTML5 Canvas for rendering and simple physics for node layout.
+     */
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const elIter = document.getElementById('iterVal');
+    const elNodeCount = document.getElementById('nodeCountVal');
+    const btnAuto = document.getElementById('btnAuto');
+
+    // Config
+    const NODE_COUNT = 10;
+    const LINK_PROBABILITY = 0.3;
+    const DAMPING = 0.85;
+    const MIN_RADIUS = 20;
+    const MAX_RADIUS = 60;
+
+    // State
+    let nodes = [];
+    let links = [];
+    let iteration = 0;
+    let autoInterval = null;
+    
+    // Interaction State
+    let draggedNode = null;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    class Node {
+        constructor(id, x, y) {
+            this.id = id;
+            this.x = x;
+            this.y = y;
+            this.vx = 0;
+            this.vy = 0;
+            this.rank = 1 / NODE_COUNT; // Initial rank
+            this.nextRank = 0;
+            this.color = '';
+            this.updateColor();
+        }
+
+        updateColor() {
+            // Calculate color based on rank heatmap (Blue -> Purple -> Pink)
+            // Normalize rank visualization (approximate max expected rank ~ 0.2 to 0.4 usually)
+            const intensity = Math.min(this.rank * 4, 1); 
+            
+            // Interpolate between Slate-300 (low) and Indigo-600 (high)
+            // Using HSL for easier interpolation
+            // Low: 220, 13%, 90% (slate)
+            // High: 250, 80%, 60% (indigo)
+            
+            if (intensity < 0.05) {
+                this.color = '#cbd5e1'; // slate-300
+            } else {
+                const r = Math.floor(203 - (203 - 79) * intensity);
+                const g = Math.floor(213 - (213 - 70) * intensity);
+                const b = Math.floor(225 - (225 - 229) * intensity);
+                // Simple gradient logic override for brighter pop
+                this.color = `rgba(${79 + (100 * (1-intensity))}, ${70}, ${229}, 1)`;
+            }
+        }
+
+        get radius() {
+            // Radius is proportional to rank
+            return MIN_RADIUS + (this.rank * (MAX_RADIUS - MIN_RADIUS) * 3); 
+        }
+    }
+
+    function init() {
+        resize();
+        window.addEventListener('resize', resize);
+        
+        // Mouse Events
+        canvas.addEventListener('mousedown', onMouseDown);
+        canvas.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
+        
+        // Touch Events
+        canvas.addEventListener('touchstart', onTouchStart, {passive: false});
+        canvas.addEventListener('touchmove', onTouchMove, {passive: false});
+        window.addEventListener('touchend', onMouseUp);
+
+        resetGraph();
+        animate();
+    }
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+
+    function resetGraph() {
+        stopAuto();
+        nodes = [];
+        links = [];
+        iteration = 0;
+        updateUI();
+
+        // 1. Create Nodes (Circular layout initially)
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const layoutRadius = Math.min(canvas.width, canvas.height) / 3;
+
+        for(let i=0; i<NODE_COUNT; i++) {
+            const angle = (i / NODE_COUNT) * Math.PI * 2;
+            nodes.push(new Node(
+                i, 
+                centerX + Math.cos(angle) * layoutRadius,
+                centerY + Math.sin(angle) * layoutRadius
+            ));
+        }
+
+        // 2. Create Random Links
+        for(let i=0; i<NODE_COUNT; i++) {
+            let hasOutput = false;
+            for(let j=0; j<NODE_COUNT; j++) {
+                if(i !== j && Math.random() < LINK_PROBABILITY) {
+                    links.push({ source: nodes[i], target: nodes[j] });
+                    hasOutput = true;
+                }
+            }
+            // Ensure every node has at least one output to make graph interesting
+            // (Unless we specifically want to demonstrate sinks, but connected is better for demo)
+            if(!hasOutput) {
+                const target = Math.floor(Math.random() * NODE_COUNT);
+                if(target !== i) {
+                    links.push({ source: nodes[i], target: nodes[target] });
+                }
+            }
+        }
+    }
+
+    function step() {
+        // PageRank Algorithm Implementation
+        
+        // 1. Initialize next ranks with the random jump probability
+        // The probability that a user randomly types in the URL instead of clicking a link
+        const baseRank = (1 - DAMPING) / NODE_COUNT;
+        nodes.forEach(n => n.nextRank = baseRank);
+
+        // 2. Distribute Ranks via Links
+        nodes.forEach(source => {
+            // Find all links originating from this source
+            const outgoing = links.filter(l => l.source === source);
+            const outCount = outgoing.length;
+
+            if (outCount > 0) {
+                // Distribute share of rank to targets
+                const share = (source.rank * DAMPING) / outCount;
+                outgoing.forEach(link => {
+                    link.target.nextRank += share;
+                });
+            } else {
+                // Sink Node (Dangling Node) logic:
+                // If a user hits a page with no links, they jump to a random page.
+                // Distribute rank equally to ALL nodes.
+                const sinkShare = (source.rank * DAMPING) / NODE_COUNT;
+                nodes.forEach(n => n.nextRank += sinkShare);
+            }
+        });
+
+        // 3. Commit new ranks
+        nodes.forEach(n => {
+            n.rank = n.nextRank;
+            n.updateColor();
+        });
+
+        iteration++;
+        updateUI();
+    }
+
+    function updateUI() {
+        elIter.innerText = iteration;
+        elNodeCount.innerText = nodes.length;
+    }
+
+    function toggleAuto() {
+        if(autoInterval) {
+            stopAuto();
+        } else {
+            autoInterval = setInterval(step, 200); // 5 steps per second
+            btnAuto.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                Pause
+            `;
+            btnAuto.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
+            btnAuto.classList.add('bg-amber-500', 'hover:bg-amber-600');
+        }
+    }
+
+    function stopAuto() {
+        clearInterval(autoInterval);
+        autoInterval = null;
+        btnAuto.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Auto Run
+        `;
+        btnAuto.classList.remove('bg-amber-500', 'hover:bg-amber-600');
+        btnAuto.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+    }
+
+    // --- Physics & Drawing Loop ---
+
+    function updatePhysics() {
+        // Simple force-directed layout forces
+        
+        // Repulsion (Coulomb's Law-ish)
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const a = nodes[i];
+                const b = nodes[j];
+                const dx = b.x - a.x;
+                const dy = b.y - a.y;
+                const distSq = dx*dx + dy*dy;
+                const dist = Math.sqrt(distSq) || 1;
+                
+                // Repulsion strength
+                const force = 20000 / (distSq + 1); 
+                const fx = (dx / dist) * force;
+                const fy = (dy / dist) * force;
+
+                if (a !== draggedNode) { a.vx -= fx; a.vy -= fy; }
+                if (b !== draggedNode) { b.vx += fx; b.vy += fy; }
+            }
+        }
+
+        // Attraction (Springs) along links
+        links.forEach(link => {
+            const a = link.source;
+            const b = link.target;
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+            
+            // Target distance
+            const targetDist = 250; 
+            const force = (dist - targetDist) * 0.05; // Spring constant
+
+            const fx = (dx / dist) * force;
+            const fy = (dy / dist) * force;
+
+            if (a !== draggedNode) { a.vx += fx; a.vy += fy; }
+            if (b !== draggedNode) { b.vx -= fx; b.vy -= fy; }
+        });
+
+        // Center Gravity (Keep them on screen)
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        nodes.forEach(n => {
+            if (n === draggedNode) return;
+            n.vx += (centerX - n.x) * 0.005;
+            n.vy += (centerY - n.y) * 0.005;
+
+            // Velocity damping
+            n.vx *= 0.9;
+            n.vy *= 0.9;
+
+            // Update pos
+            n.x += n.vx;
+            n.y += n.vy;
+        });
+    }
+
+    function drawArrow(fromX, fromY, toX, toY, fromRad, toRad) {
+        const angle = Math.atan2(toY - fromY, toX - fromX);
+        const dist = Math.sqrt(Math.pow(toX-fromX, 2) + Math.pow(toY-fromY, 2));
+
+        // Start and end points on the edge of the circles
+        const startX = fromX + Math.cos(angle) * fromRad;
+        const startY = fromY + Math.sin(angle) * fromRad;
+        const endX = toX - Math.cos(angle) * (toRad + 5); // +5 for padding
+        const endY = toY - Math.sin(angle) * (toRad + 5);
+
+        if (dist < fromRad + toRad) return; // Don't draw if overlapping heavily
+
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(endX, endY);
+        ctx.strokeStyle = '#94a3b8'; // slate-400
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Arrowhead
+        const headLen = 8;
+        ctx.beginPath();
+        ctx.moveTo(endX, endY);
+        ctx.lineTo(endX - headLen * Math.cos(angle - Math.PI / 6), endY - headLen * Math.sin(angle - Math.PI / 6));
+        ctx.lineTo(endX - headLen * Math.cos(angle + Math.PI / 6), endY - headLen * Math.sin(angle + Math.PI / 6));
+        ctx.fillStyle = '#64748b'; // slate-500
+        ctx.fill();
+    }
+
+    function animate() {
+        updatePhysics();
+
+        // Clear
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw Links
+        links.forEach(l => {
+            drawArrow(l.source.x, l.source.y, l.target.x, l.target.y, l.source.radius, l.target.radius);
+        });
+
+        // Draw Nodes
+        nodes.forEach(n => {
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
+            ctx.fillStyle = n.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "rgba(0,0,0,0.1)";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            
+            // Border
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Text
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(n.id, n.x, n.y - 4);
+            
+            ctx.font = '10px monospace';
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            ctx.fillText(n.rank.toFixed(3), n.x, n.y + 8);
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    // --- Input Handling ---
+
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+        const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
+        };
+    }
+
+    function onMouseDown(e) {
+        const pos = getMousePos(e);
+        mouseX = pos.x;
+        mouseY = pos.y;
+
+        // Check collision
+        draggedNode = null;
+        // Check in reverse order (top rendered first)
+        for(let i = nodes.length - 1; i >= 0; i--) {
+            const n = nodes[i];
+            const dx = mouseX - n.x;
+            const dy = mouseY - n.y;
+            if (dx*dx + dy*dy < n.radius*n.radius) {
+                draggedNode = n;
+                break;
+            }
+        }
+    }
+
+    function onMouseMove(e) {
+        if (!draggedNode) return;
+        const pos = getMousePos(e);
+        draggedNode.x = pos.x;
+        draggedNode.y = pos.y;
+        draggedNode.vx = 0;
+        draggedNode.vy = 0;
+    }
+
+    function onMouseUp() {
+        draggedNode = null;
+    }
+    
+    // Touch wrappers
+    function onTouchStart(e) {
+        if(e.touches.length === 1) {
+            // e.preventDefault(); // Stop scrolling while using canvas
+            onMouseDown(e);
+        }
+    }
+    function onTouchMove(e) {
+        if(draggedNode) {
+             e.preventDefault(); 
+             onMouseMove(e);
+        }
+    }
+
+    // Start
+    init();
+
+</script>
+</body>
+</html>
