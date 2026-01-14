@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maxwell's 2D FDTD Simulator</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-color: #1e293b;
+            --text-color: #e2e8f0;
+            --accent-color: #38bdf8;
+            --danger-color: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .container {
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        canvas {
+            display: block;
+            background-color: #000;
+            cursor: crosshair;
+            touch-action: none; /* Prevent scrolling on mobile while drawing */
+        }
+
+        .controls {
+            background-color: var(--panel-color);
+            padding: 1rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            border-top: 1px solid #334155;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: #0f172a;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background-color: #475569;
+            color: white;
+        }
+
+        button.danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            accent-color: var(--accent-color);
+            width: 120px;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 600px) {
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .slider-group {
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Maxwell's Equations Solver (FDTD)</h1>
+
+    <div class="container">
+        <canvas id="simCanvas"></canvas>
+        <div class="overlay">Ez Field | Mouse to Draw Walls</div>
+        
+        <div class="controls">
+            <button id="btnPause">Pause</button>
+            <button id="btnClear" class="danger">Clear Walls</button>
+            
+            <div class="slider-group">
+                <label for="freq">Frequency</label>
+                <input type="range" id="freq" min="1" max="20" value="7">
+            </div>
+
+            <div class="slider-group">
+                <label for="speed">Speed</label>
+                <input type="range" id="speed" min="1" max="5" value="1">
+            </div>
+        </div>
+    </div>
+
+<script>
+    /**
+     * MAXWELL'S EQUATIONS FDTD SIMULATION
+     * * This simulation solves the 2D Transverse Magnetic (TMz) mode equations.
+     * We simulate 3 field components:
+     * 1. Ez (Electric field in Z direction - perpendicular to screen)
+     * 2. Hx (Magnetic field in X direction)
+     * 3. Hy (Magnetic field in Y direction)
+     */
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d', { alpha: false }); // Optimize for speed
+    
+    // Simulation grid dimensions (Internal resolution)
+    // We keep this lower than screen resolution for performance and nicer wave aesthetics
+    const width = 200;
+    const height = 150;
+    const scale = 3; // Upscale factor for display
+
+    // Set canvas display size
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+
+    // Simulation Arrays (Float32 for performance)
+    const size = width * height;
+    const Ez = new Float32Array(size);
+    const Hx = new Float32Array(size);
+    const Hy = new Float32Array(size);
+    
+    // Material Grid: 0 = Vacuum, 1 = Metal (Conductor)
+    const Material = new Uint8Array(size);
+
+    // Canvas Image Data buffer for direct pixel manipulation
+    const imgData = ctx.createImageData(canvas.width, canvas.height);
+    const pixels = new Uint32Array(imgData.data.buffer); // 32-bit view for faster writes
+
+    // Physics Constants
+    const COURANT_NUMBER = 0.5; // Renamed from C to avoid conflicts. (c * dt / dx), must be < 1/√2 for stability in 2D
+    
+    // State
+    let running = true;
+    let tick = 0;
+    let frequency = 0.1;
+    let simSpeed = 1;
+    let drawing = false;
+    let drawMode = 1; // 1 = Wall, 0 = Eraser (future use)
+
+    // --- Core Physics Solver ---
+    function updateMaxwell() {
+        // 1. Update Magnetic Fields (H) from Electric Field (E)
+        // Faraday's Law: Curl(E) = -dB/dt
+        for (let y = 0; y < height - 1; y++) {
+            for (let x = 0; x < width - 1; x++) {
+                const idx = y * width + x;
+                const idx_right = idx + 1;
+                const idx_down = idx + width;
+
+                // Hx depends on dEz/dy
+                Hx[idx] -= COURANT_NUMBER * (Ez[idx_down] - Ez[idx]);
+                
+                // Hy depends on dEz/dx
+                Hy[idx] += COURANT_NUMBER * (Ez[idx_right] - Ez[idx]);
+            }
+        }
+
+        // 2. Update Electric Field (E) from Magnetic Fields (H)
+        // Ampere's Law: Curl(H) = dD/dt
+        for (let y = 1; y < height - 1; y++) {
+            for (let x = 1; x < width - 1; x++) {
+                const idx = y * width + x;
+                
+                // If this cell is a conductor (wall), E stays at 0
+                if (Material[idx] === 1) {
+                    Ez[idx] = 0;
+                    continue;
+                }
+
+                const idx_left = idx - 1;
+                const idx_up = idx - width;
+
+                // Standard FDTD update
+                Ez[idx] += COURANT_NUMBER * ((Hy[idx] - Hy[idx_left]) - (Hx[idx] - Hx[idx_up]));
+            }
+        }
+
+        // 3. Source Injection (Soft Source)
+        // Inject a sine wave in the middle left
+        const sourceX = Math.floor(width / 4);
+        const sourceY = Math.floor(height / 2);
+        const sourceIdx = sourceY * width + sourceX;
+        
+        tick++;
+        // Using a Gaussian-modulated sine for a nice pulse, or pure sine for continuous
+        Ez[sourceIdx] += Math.sin(tick * frequency); 
+    }
+
+    // --- Rendering System ---
+    function render() {
+        // We render to the ImageData buffer.
+        // Since the canvas is scaled, we need to map simulation pixels to canvas pixels.
+        
+        // Pre-calculate colors to avoid heavy math in the loop
+        // We assume Little Endian (ABGR) for 32-bit writes
+        const WALL_COLOR = 0xFF808080; // Grey
+
+        for (let y = 0; y < height; y++) {
+            const yOffset = y * width;
+            
+            for (let x = 0; x < width; x++) {
+                const idx = yOffset + x;
+                
+                let color;
+
+                if (Material[idx] === 1) {
+                    color = WALL_COLOR;
+                } else {
+                    const field = Ez[idx];
+                    
+                    // Color Mapping (Heatmap style)
+                    // Positive = Cyan/Blue, Negative = Red/Orange
+                    let r = 0, g = 0, b = 0;
+                    
+                    // Simple intensity scaling
+                    const val = Math.min(Math.abs(field) * 200, 255);
+                    
+                    if (field > 0) {
+                        // Cyan/Blue
+                        g = val; 
+                        b = val;
+                        r = val * 0.1; // slight tint
+                    } else {
+                        // Red/Orange
+                        r = val;
+                        g = val * 0.2;
+                    }
+                    
+                    // Pack into 32-bit integer (A B G R)
+                    color = (255 << 24) | (b << 16) | (g << 8) | r;
+                }
+
+                // Block Fill: Write this simulation pixel to the N x N block on screen
+                // Direct pixel writing is much faster than ctx.fillRect
+                const screenY = y * scale;
+                const screenX = x * scale;
+                const canvasW = canvas.width;
+
+                for (let sy = 0; sy < scale; sy++) {
+                    const rowStart = (screenY + sy) * canvasW + screenX;
+                    for (let sx = 0; sx < scale; sx++) {
+                        pixels[rowStart + sx] = color;
+                    }
+                }
+            }
+        }
+
+        ctx.putImageData(imgData, 0, 0);
+    }
+
+    // --- Main Loop ---
+    function loop() {
+        if (running) {
+            // Allow speeding up simulation by running multiple physics steps per frame
+            for(let i=0; i<simSpeed; i++) {
+                updateMaxwell();
+            }
+            render();
+        }
+        requestAnimationFrame(loop);
+    }
+
+    // --- Input Handling ---
+
+    function getGridPos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        
+        // Handle both touch and mouse events
+        const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+        const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+
+        const x = Math.floor((clientX - rect.left) / (rect.width / width));
+        const y = Math.floor((clientY - rect.top) / (rect.height / height));
+        
+        return { x, y };
+    }
+
+    function paint(evt) {
+        const p = getGridPos(evt);
+        if (p.x >= 0 && p.x < width && p.y >= 0 && p.y < height) {
+            const idx = p.y * width + p.x;
+            Material[idx] = 1; // 1 = Wall
+            
+            // Draw a slightly thicker line for usability
+            if (p.x+1 < width) Material[idx+1] = 1;
+            if (p.y+1 < height) Material[idx+width] = 1;
+            
+            if(!running) render(); // Update visual if paused
+        }
+    }
+
+    // Mouse Listeners
+    canvas.addEventListener('mousedown', (e) => {
+        drawing = true;
+        paint(e);
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (drawing) paint(e);
+    });
+    window.addEventListener('mouseup', () => drawing = false);
+
+    // Touch Listeners (Mobile support)
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Stop scroll
+        drawing = true;
+        paint(e);
+    }, { passive: false });
+    canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (drawing) paint(e);
+    }, { passive: false });
+    window.addEventListener('touchend', () => drawing = false);
+
+    // UI Controls
+    const btnPause = document.getElementById('btnPause');
+    btnPause.addEventListener('click', () => {
+        running = !running;
+        btnPause.innerText = running ? "Pause" : "Resume";
+        if (running) loop();
+    });
+
+    document.getElementById('btnClear').addEventListener('click', () => {
+        Material.fill(0);
+        // We leave the fields active so waves pass through the cleared space
+        if(!running) render();
+    });
+
+    document.getElementById('freq').addEventListener('input', (e) => {
+        // Map 1-20 slider to 0.02 - 0.4 frequency
+        frequency = e.target.value * 0.02;
+    });
+
+    document.getElementById('speed').addEventListener('input', (e) => {
+        simSpeed = parseInt(e.target.value);
+    });
+
+    // Start
+    loop();
+
+</script>
+</body>
+</html>
