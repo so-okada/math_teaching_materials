@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nCr to Gaussian Convergence Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a; /* Slate 900 */
+            color: #e2e8f0;
+        }
+
+        .canvas-container {
+            background-image: radial-gradient(#1e293b 1px, transparent 1px);
+            background-size: 20px 20px;
+            cursor: crosshair; /* Hint that area is interactive */
+        }
+
+        input[type=range] {
+            -webkit-appearance: none; 
+            background: transparent; 
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -8px; 
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+
+        .math-font {
+            font-family: 'Times New Roman', Times, serif;
+            font-style: italic;
+        }
+
+        /* Tooltip Styles */
+        #tooltip {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid #334155;
+            padding: 12px;
+            border-radius: 8px;
+            pointer-events: none; /* Let clicks pass through */
+            display: none;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            min-width: 150px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-slate-800 border-b border-slate-700 p-4 shadow-lg z-10">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-blue-500">
+                <i class="fas fa-chart-area mr-2"></i>Binomial <span class="text-slate-400 text-sm mx-1">to</span> Gaussian
+            </h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4 md:p-8">
+        
+        <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Controls Panel -->
+            <div class="bg-slate-800/50 backdrop-blur border border-slate-700 rounded-2xl p-6 flex flex-col gap-6 shadow-xl order-2 lg:order-1">
+                <div>
+                    <h2 class="text-lg font-semibold text-white mb-1">Parameters</h2>
+                    <p class="text-slate-400 text-sm mb-4">Adjust the number of trials to see convergence.</p>
+                    
+                    <!-- N Slider -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-cyan-300">Number of Trials (n)</label>
+                            <span id="nValueDisplay" class="bg-slate-700 text-white px-2 py-1 rounded text-xs font-mono">10</span>
+                        </div>
+                        <input type="range" id="nSlider" min="1" max="150" value="10" class="w-full">
+                    </div>
+
+                     <!-- P Slider -->
+                     <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-sm font-medium text-purple-300">Probability (p)</label>
+                            <span id="pValueDisplay" class="bg-slate-700 text-white px-2 py-1 rounded text-xs font-mono">0.5</span>
+                        </div>
+                        <input type="range" id="pSlider" min="0.05" max="0.95" step="0.01" value="0.5" class="w-full">
+                    </div>
+
+                    <!-- Toggle Buttons -->
+                    <div class="flex flex-col gap-3">
+                        <button id="toggleCurve" class="flex items-center justify-between p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 transition border border-slate-600">
+                            <span class="text-sm">Show Gaussian Curve</span>
+                            <div id="curveIndicator" class="w-4 h-4 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
+                        </button>
+                        
+                        <button id="playBtn" class="mt-2 w-full py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-lg shadow-lg transition-all transform active:scale-95 flex justify-center items-center gap-2">
+                            <i class="fas fa-play" id="playIcon"></i>
+                            <span id="playText">Animate Convergence</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Gaussian Equation Display -->
+                <div class="font-mono text-xs text-slate-300 bg-slate-900/80 p-3 rounded-lg border border-slate-700/50 shadow-inner">
+                    <div class="text-center mb-2 text-green-400 font-bold border-b border-slate-800 pb-1">Current Gaussian Model</div>
+                    
+                    <div class="flex justify-around items-center mb-3 text-[11px]">
+                        <div class="flex flex-col items-center">
+                            <span class="text-slate-500">Mean (μ)</span>
+                            <span id="eqMean" class="text-cyan-300 font-bold text-sm">--</span>
+                        </div>
+                        <div class="h-8 w-px bg-slate-700"></div>
+                        <div class="flex flex-col items-center">
+                            <span class="text-slate-500">Std Dev (σ)</span>
+                            <span id="eqSigmaDisplay" class="text-purple-300 font-bold text-sm">--</span>
+                        </div>
+                    </div>
+
+                    <div class="text-[10px] md:text-[11px] text-center opacity-90 pt-1 flex justify-center items-center gap-1">
+                        <span class="italic text-green-500">f(x)</span> = 
+                        <div class="inline-flex flex-col items-center justify-center align-middle mx-1">
+                            <span class="border-b border-slate-500 w-full text-center">1</span>
+                            <span><span id="eqSigmaDenom">σ</span>√2π</span>
+                        </div>
+                        <div class="flex items-start">
+                            <span class="text-base italic">e</span>
+                            <sup class="text-[9px] -mt-1 ml-0.5">
+                                -0.5 (
+                                <div class="inline-flex flex-col items-center justify-center align-middle text-[8px] mx-0.5">
+                                    <span class="border-b border-slate-600 w-full text-center">x - <span id="eqMeanExp" class="text-cyan-300">μ</span></span>
+                                    <span id="eqSigmaExp" class="text-purple-300">σ</span>
+                                </div>
+                                )²
+                            </sup>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto pt-4 border-t border-slate-700">
+                    <h3 class="text-sm font-semibold text-slate-300 mb-2">Statistics</h3>
+                    <div class="grid grid-cols-2 gap-4 text-xs font-mono text-slate-400">
+                        <div>
+                            <span class="block text-slate-500">Mean (&mu;)</span>
+                            <span id="statMean" class="text-white text-sm">0.00</span>
+                        </div>
+                        <div>
+                            <span class="block text-slate-500">Std Dev (&sigma;)</span>
+                            <span id="statSigma" class="text-white text-sm">0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Canvas Display -->
+            <div class="lg:col-span-2 bg-slate-900 border border-slate-700 rounded-2xl p-1 relative overflow-hidden shadow-2xl order-1 lg:order-2 h-[400px] lg:h-[600px] flex flex-col">
+                <div class="absolute top-4 left-4 z-10 pointer-events-none">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 bg-cyan-500 rounded-sm inline-block"></span>
+                        <span class="text-xs text-slate-300 shadow-black drop-shadow-md">Binomial (Discrete)</span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="w-8 h-0.5 bg-green-400 inline-block"></span>
+                        <span class="text-xs text-slate-300 shadow-black drop-shadow-md">Gaussian (Continuous)</span>
+                    </div>
+                </div>
+                
+                <div class="canvas-container w-full h-full relative rounded-xl overflow-hidden" id="canvasWrapper">
+                    <canvas id="mainCanvas"></canvas>
+                    <!-- Tooltip -->
+                    <div id="tooltip">
+                        <div class="text-xs text-slate-400 mb-1 border-b border-slate-600 pb-1">k = <span id="tt-k" class="text-white font-bold">15</span></div>
+                        <div class="text-xs text-cyan-300 font-mono mb-1">P(k) = <span id="tt-p">0.123</span></div>
+                        <div class="text-xs text-purple-300 font-mono">nCr = <span id="tt-ncr">1540</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Explainer -->
+        <div class="max-w-6xl w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-8 text-slate-300">
+            <div class="space-y-4">
+                <h3 class="text-xl font-bold text-white">The Central Limit Theorem</h3>
+                <p class="leading-relaxed">
+                    This visualization demonstrates the De Moivre–Laplace theorem, a special case of the Central Limit Theorem. It states that as the number of trials <span class="math-font text-cyan-300">n</span> increases, the probability mass function of the Binomial distribution converges to the probability density function of the Normal (Gaussian) distribution.
+                </p>
+            </div>
+            <div class="space-y-4 bg-slate-800/50 p-4 rounded-xl border border-slate-700">
+                <h3 class="text-xl font-bold text-white">Mathematical Relationship</h3>
+                <div class="font-mono text-sm space-y-2">
+                    <p class="flex justify-between">
+                        <span>Binomial:</span>
+                        <span class="text-cyan-400">P(k) = ⁿCₖ pᵏ(1-p)ⁿ⁻ᵏ</span>
+                    </p>
+                    <p class="flex justify-between">
+                        <span>Gaussian:</span>
+                        <span class="text-green-400">f(x) ≈ e<sup>-x²</sup></span>
+                    </p>
+                </div>
+
+                <!-- Added Notation Legend -->
+                <div class="flex items-center justify-end gap-2 text-sm text-slate-400 border-t border-slate-700 pt-2 mt-2">
+                    <span class="text-xs text-slate-500">Notation:</span>
+                    <span class="font-mono text-cyan-300">ⁿCᵣ</span>
+                    <span>=</span>
+                    <span class="inline-flex items-center text-cyan-300 font-serif">
+                        <span class="text-base leading-none text-slate-500 transform scale-y-125">(</span>
+                        <span class="flex flex-col text-[10px] leading-[0.7] mx-0.5 text-center">
+                            <span>n</span>
+                            <span>r</span>
+                        </span>
+                        <span class="text-base leading-none text-slate-500 transform scale-y-125">)</span>
+                    </span>
+                </div>
+                
+                <p class="text-sm text-slate-400 italic mt-0">
+                    Click any bar to see the exact <span class="math-font font-bold text-white">nCr</span> (Combinations) and probability values.
+                </p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Configuration & State ---
+        const canvas = document.getElementById('mainCanvas');
+        const wrapper = document.getElementById('canvasWrapper');
+        const ctx = canvas.getContext('2d');
+        const nSlider = document.getElementById('nSlider');
+        const pSlider = document.getElementById('pSlider');
+        const nDisplay = document.getElementById('nValueDisplay');
+        const pDisplay = document.getElementById('pValueDisplay');
+        const statMean = document.getElementById('statMean');
+        const statSigma = document.getElementById('statSigma');
+        const toggleCurveBtn = document.getElementById('toggleCurve');
+        const curveIndicator = document.getElementById('curveIndicator');
+        const playBtn = document.getElementById('playBtn');
+        const playIcon = document.getElementById('playIcon');
+        const playText = document.getElementById('playText');
+        
+        // Tooltip Elements
+        const tooltip = document.getElementById('tooltip');
+        const ttK = document.getElementById('tt-k');
+        const ttP = document.getElementById('tt-p');
+        const ttNcr = document.getElementById('tt-ncr');
+        
+        // Equation Elements
+        const eqMean = document.getElementById('eqMean');
+        const eqSigmaDisplay = document.getElementById('eqSigmaDisplay');
+        const eqSigmaDenom = document.getElementById('eqSigmaDenom');
+        const eqMeanExp = document.getElementById('eqMeanExp');
+        const eqSigmaExp = document.getElementById('eqSigmaExp');
+
+        let state = {
+            n: 10,
+            p: 0.5,
+            showCurve: true,
+            isPlaying: false,
+            animationId: null,
+            // Cache layout details for hit-testing
+            layout: { xMin: 0, xMax: 10, graphW: 0, paddingLeft: 0, slotWidth: 0, graphH: 0, paddingBottom: 0 }
+        };
+
+        // --- Math Functions ---
+
+        /**
+         * Calculates Binomial Probability P(k) iteratively to avoid factorial overflow.
+         * Returns an array of objects { k, p }.
+         */
+        function getBinomialDistribution(n, p) {
+            const data = [];
+            let currentProb = Math.pow(1 - p, n); // P(0)
+            data.push({ k: 0, p: currentProb });
+
+            for (let k = 0; k < n; k++) {
+                // Recursive formula: P(k+1) = P(k) * (n-k)/(k+1) * p/(1-p)
+                const nextProb = currentProb * ((n - k) / (k + 1)) * (p / (1 - p));
+                data.push({ k: k + 1, p: nextProb });
+                currentProb = nextProb;
+            }
+            return data;
+        }
+
+        /**
+         * Calculates nCr using BigInt for precision
+         */
+        function combinations(n, k) {
+            if (k < 0 || k > n) return 0n;
+            if (k === 0 || k === n) return 1n;
+            if (k > n / 2) k = n - k;
+            let res = 1n;
+            n = BigInt(n);
+            for (let i = 1n; i <= BigInt(k); i++) {
+                res = res * (n - i + 1n) / i;
+            }
+            return res;
+        }
+
+        function formatBigInt(n) {
+            const s = n.toString();
+            if (s.length > 15) {
+                // Scientific notation for BigInts
+                return s[0] + '.' + s.slice(1, 4) + 'e+' + (s.length - 1);
+            }
+            return s.replace(/\B(?=(\d{3})+(?!\d))/g, ","); // Add commas
+        }
+
+        /**
+         * Calculates Gaussian PDF value
+         */
+        function gaussian(x, mean, sigma) {
+            const exponent = -0.5 * Math.pow((x - mean) / sigma, 2);
+            return (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(exponent);
+        }
+
+        // --- Drawing Functions ---
+
+        function resizeCanvas() {
+            const parent = canvas.parentElement;
+            canvas.width = parent.clientWidth * window.devicePixelRatio;
+            canvas.height = parent.clientHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            canvas.logicalWidth = parent.clientWidth;
+            canvas.logicalHeight = parent.clientHeight;
+            draw();
+        }
+
+        function draw() {
+            const w = canvas.logicalWidth;
+            const h = canvas.logicalHeight;
+
+            // Clear
+            ctx.clearRect(0, 0, w, h);
+
+            // Calculate Stats
+            const n = state.n;
+            const p = state.p;
+            const mean = n * p;
+            const variance = n * p * (1 - p);
+            const sigma = Math.sqrt(variance);
+            
+            // Update UI Stats
+            statMean.textContent = mean.toFixed(2);
+            statSigma.textContent = sigma.toFixed(2);
+            
+            // Update Equation Display
+            const mStr = mean.toFixed(2);
+            const sStr = sigma.toFixed(2);
+            
+            if (eqMean) eqMean.textContent = mStr;
+            if (eqSigmaDisplay) eqSigmaDisplay.textContent = sStr;
+            if (eqSigmaDenom) eqSigmaDenom.textContent = sStr;
+            if (eqMeanExp) eqMeanExp.textContent = mStr;
+            if (eqSigmaExp) eqSigmaExp.textContent = sStr;
+
+            // Get Data
+            const binomialData = getBinomialDistribution(n, p);
+
+            // Determine Scales (Auto-zoom logic)
+            let xMin = 0;
+            let xMax = n;
+            
+            if (n > 50) {
+                const spread = sigma * 4.5; 
+                xMin = Math.max(0, Math.floor(mean - spread));
+                xMax = Math.min(n, Math.ceil(mean + spread));
+            }
+
+            // Max Probability for Y-scaling
+            let maxProb = 0;
+            for(let i=xMin; i<=xMax; i++) {
+                if(binomialData[i] && binomialData[i].p > maxProb) maxProb = binomialData[i].p;
+            }
+            
+            const paddingBottom = 40;
+            const paddingLeft = 10;
+            const paddingRight = 10;
+            const paddingTop = 40;
+
+            const graphW = w - paddingLeft - paddingRight;
+            const graphH = h - paddingBottom - paddingTop;
+            const slotWidth = graphW / (xMax - xMin + 1);
+
+            // Save layout for click handler
+            state.layout = { xMin, xMax, paddingLeft, paddingBottom, graphW, graphH, slotWidth, maxProb, w, h };
+
+            // Coordinate Transforms
+            const getX = (val) => paddingLeft + ((val - xMin) / (xMax - xMin + 1)) * graphW; 
+            const getY = (prob) => (h - paddingBottom) - (prob / (maxProb * 1.1)) * graphH; 
+
+            const barWidth = slotWidth * 0.9; 
+
+            // 1. Draw Binomial Bars
+            ctx.fillStyle = '#06b6d4'; // Cyan-500
+            
+            for (let k = xMin; k <= xMax; k++) {
+                const val = binomialData[k].p;
+                if (val < 0.0001 && n > 20) continue; 
+
+                const y = getY(val);
+                const floorY = h - paddingBottom;
+                
+                // Center the bar 
+                const x = getX(k);
+                const drawX = x + (slotWidth - barWidth)/2; 
+                
+                ctx.beginPath();
+                ctx.rect(drawX, y, barWidth, floorY - y);
+                ctx.fill();
+            }
+
+            // 2. Draw Gaussian Curve
+            if (state.showCurve) {
+                ctx.strokeStyle = '#4ade80'; // Green-400
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowColor = 'rgba(74, 222, 128, 0.5)';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+
+                const steps = Math.min(200, (xMax - xMin) * 5); 
+                let hasStarted = false;
+
+                for (let i = 0; i <= steps; i++) {
+                    const xVal = xMin + (i / steps) * (xMax - xMin + 1); 
+                    const gVal = gaussian(xVal, mean, sigma);
+                    const drawY = getY(gVal);
+                    const drawX = getX(xVal) + slotWidth / 2; // Center curve
+
+                    if (drawY < h - paddingBottom) { 
+                        if (!hasStarted) {
+                            ctx.moveTo(drawX, drawY);
+                            hasStarted = true;
+                        } else {
+                            ctx.lineTo(drawX, drawY);
+                        }
+                    }
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0; 
+            }
+
+            // 3. Draw Axis Labels
+            ctx.fillStyle = '#94a3b8'; // Slate-400
+            ctx.font = '12px Inter';
+            ctx.textAlign = 'center';
+            
+            const stepSize = Math.max(1, Math.floor((xMax - xMin) / 10));
+
+            for(let k = Math.ceil(xMin); k <= xMax; k+= stepSize) {
+                const x = getX(k) + slotWidth/2;
+                ctx.fillText(k, x, h - paddingBottom + 20);
+            }
+            
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(paddingLeft, h - paddingBottom);
+            ctx.lineTo(w - paddingRight, h - paddingBottom);
+            ctx.stroke();
+        }
+
+        // --- Interaction Logic ---
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            // Scale coords to logical canvas size
+            const x = (e.clientX - rect.left);
+            const y = (e.clientY - rect.top);
+            
+            const { xMin, xMax, paddingLeft, slotWidth, paddingBottom, h, maxProb, graphH } = state.layout;
+
+            // Hit test for K
+            // MouseX = paddingLeft + (k - xMin)*slotWidth (+ offset)
+            // (MouseX - paddingLeft) / slotWidth = k_index_fraction
+            
+            if (x < paddingLeft || x > (state.layout.w - state.layout.paddingRight) || y > (h - paddingBottom)) {
+                tooltip.style.display = 'none';
+                return;
+            }
+
+            const kRaw = Math.floor((x - paddingLeft) / slotWidth) + xMin;
+            
+            if (kRaw >= xMin && kRaw <= xMax) {
+                const k = Math.round(kRaw);
+                
+                // Calculate Data
+                const n = state.n;
+                const p = state.p;
+                const dist = getBinomialDistribution(n, p);
+                const prob = dist[k] ? dist[k].p : 0;
+
+                // Only show if probability is somewhat visible or if clicked accurately
+                if (k >= 0 && k <= n) {
+                    const nCrVal = combinations(n, k);
+                    
+                    // Update Tooltip Content
+                    ttK.textContent = k;
+                    ttP.textContent = prob < 0.0001 && prob > 0 ? "< 0.0001" : prob.toFixed(4);
+                    ttNcr.textContent = formatBigInt(nCrVal);
+
+                    // Position Tooltip
+                    // We need screen coordinates relative to wrapper
+                    // e.clientX is viewport. wrapper is relative.
+                    // Actually, wrapper is relative, so absolute positioning inside it works with offsets.
+                    
+                    // Simple logic: Position near click, keep inside bounds
+                    let ttX = x + 15;
+                    let ttY = y - 15;
+
+                    // Bounds check (rough)
+                    if (ttX + 150 > state.layout.w) ttX = x - 165;
+                    
+                    tooltip.style.left = ttX + 'px';
+                    tooltip.style.top = ttY + 'px';
+                    tooltip.style.display = 'block';
+                }
+            } else {
+                tooltip.style.display = 'none';
+            }
+        });
+
+        // Hide tooltip on interaction change
+        function clearTooltip() {
+            tooltip.style.display = 'none';
+        }
+
+        function updateState() {
+            state.n = parseInt(nSlider.value);
+            state.p = parseFloat(pSlider.value);
+            nDisplay.textContent = state.n;
+            pDisplay.textContent = state.p;
+            clearTooltip();
+            requestAnimationFrame(draw);
+        }
+
+        nSlider.addEventListener('input', updateState);
+        pSlider.addEventListener('input', updateState);
+
+        toggleCurveBtn.addEventListener('click', () => {
+            state.showCurve = !state.showCurve;
+            curveIndicator.className = state.showCurve 
+                ? "w-4 h-4 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] transition-all"
+                : "w-4 h-4 rounded-full bg-slate-600 transition-all";
+            requestAnimationFrame(draw);
+        });
+
+        // --- Animation Loop ---
+        
+        playBtn.addEventListener('click', () => {
+            if (state.isPlaying) {
+                stopAnimation();
+            } else {
+                startAnimation();
+            }
+        });
+
+        function startAnimation() {
+            state.isPlaying = true;
+            playBtn.classList.remove('from-blue-600', 'to-cyan-600');
+            playBtn.classList.add('from-red-500', 'to-pink-600');
+            playIcon.classList.remove('fa-play');
+            playIcon.classList.add('fa-pause');
+            playText.textContent = "Pause Animation";
+            clearTooltip();
+
+            if (state.n >= 150) {
+                state.n = 1;
+                nSlider.value = 1;
+            }
+            animateLoop();
+        }
+
+        function stopAnimation() {
+            state.isPlaying = false;
+            playBtn.classList.add('from-blue-600', 'to-cyan-600');
+            playBtn.classList.remove('from-red-500', 'to-pink-600');
+            playIcon.classList.add('fa-play');
+            playIcon.classList.remove('fa-pause');
+            playText.textContent = "Animate Convergence";
+            cancelAnimationFrame(state.animationId);
+        }
+
+        let lastFrameTime = 0;
+        const fps = 15; 
+
+        function animateLoop(timestamp) {
+            if (!state.isPlaying) return;
+
+            if (timestamp - lastFrameTime > 1000 / fps) {
+                if (state.n < 150) {
+                    state.n++;
+                    nSlider.value = state.n;
+                    updateState();
+                } else {
+                    stopAnimation();
+                    return;
+                }
+                lastFrameTime = timestamp;
+            }
+            state.animationId = requestAnimationFrame(animateLoop);
+        }
+
+        // --- Init ---
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+    </script>
+</body>
+</html>
