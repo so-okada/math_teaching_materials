@@ -71,7 +71,7 @@
     <div class="absolute top-0 left-0 w-full h-full pointer-events-none flex flex-col md:flex-row p-4 md:p-6 gap-4">
         
         <!-- Controls Sidebar -->
-        <div class="glass-panel rounded-xl p-6 w-full md:w-80 pointer-events-auto flex flex-col gap-6 h-fit max-h-full overflow-y-auto z-10">
+        <div class="glass-panel rounded-xl p-6 w-full md:w-80 pointer-events-auto flex flex-col gap-6 h-fit max-h-full overflow-y-auto z-10 shrink-0">
             <div>
                 <h1 class="text-xl font-bold text-sky-400 mb-1">Small World Demo</h1>
                 <p class="text-xs text-slate-400">Watts-Strogatz Model Visualization</p>
@@ -97,7 +97,8 @@
                         <label class="text-slate-300">Nodes (N)</label>
                         <span class="mono text-sky-300" id="val-n">200</span>
                     </div>
-                    <input type="range" id="input-n" min="20" max="1000" value="200" step="10">
+                    <!-- Increased max to 5000. 10^6 is too heavy for standard Canvas 2D without WebGL/Workers -->
+                    <input type="range" id="input-n" min="20" max="5000" value="200" step="10">
                     <p class="text-[10px] text-slate-500">Total number of entities in the graph.</p>
                 </div>
 
@@ -107,7 +108,7 @@
                         <label class="text-slate-300">Neighbors (K)</label>
                         <span class="mono text-sky-300" id="val-k">4</span>
                     </div>
-                    <input type="range" id="input-k" min="2" max="10" value="4" step="2">
+                    <input type="range" id="input-k" min="2" max="20" value="4" step="2">
                     <p class="text-[10px] text-slate-500">Initial connections per node (must be even).</p>
                 </div>
 
@@ -178,7 +179,8 @@
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            draw();
+            // Regenerate graph to fix positions relative to sidebar
+            generateGraph();
         }
         window.addEventListener('resize', resize);
 
@@ -190,9 +192,20 @@
             path = [];
 
             const { N, K, p } = params;
-            const radius = Math.min(canvas.width, canvas.height) * 0.35;
-            const centerX = canvas.width / 2;
+
+            // Layout Logic: Avoid sidebar overlap
+            // Sidebar is approx 320px + 48px padding (approx 370px) on Desktop
+            const isDesktop = window.innerWidth >= 768;
+            const sidebarOffset = isDesktop ? 370 : 0;
+            const availableWidth = canvas.width - sidebarOffset;
+            
+            // Center in the *available* space
+            const centerX = sidebarOffset + (availableWidth / 2);
+            // On mobile, just center vertically, maybe push down slightly if needed
             const centerY = canvas.height / 2;
+            
+            // Adjust radius to fit
+            const radius = Math.min(availableWidth, canvas.height) * 0.40;
 
             // 1. Create Nodes in a Circle
             for (let i = 0; i < N; i++) {
@@ -213,23 +226,13 @@
             for (let i = 0; i < N; i++) {
                 for (let j = 1; j <= K / 2; j++) {
                     const target = (i + j) % N;
-                    // Store edge. We only store i -> target where i < target conceptually
-                    // to avoid processing same edge twice, but since it's a ring with wrap-around,
-                    // we just iterate all i and j neighbors.
-                    // To strictly follow Watts-Strogatz rewiring:
-                    // We iterate i=0..N-1, and for each i, we connect to i+1...i+K/2.
                     rawEdges.push({ source: i, target: target, originalTarget: target });
-                    
-                    // Add initial bidirectional connection to map for visualization/BFS
                     addEdge(i, target); 
                 }
             }
 
             // 3. Rewire Edges
-            // For each edge (u, v) created in step 2:
-            // With probability p, replace v with w (random node), s.t. (u,w) doesn't exist and u != w
-            
-            // First, clear the map because we are going to rebuild it based on rawEdges outcome
+            // Clear map to rebuild based on wiring
             edges = new Map();
             nodes.forEach(n => edges.set(n.id, new Set()));
 
@@ -238,28 +241,26 @@
                 let v = edge.target;
 
                 if (Math.random() < p) {
-                    // Rewire
-                    // Pick a random node w
-                    // Constraints: w != u, and no duplicate edges
-                    // To simplify: simple rejection sampling
+                    // Rewire logic
                     let candidates = [];
-                    for(let k=0; k<N; k++) {
-                        if (k !== u && k !== v) candidates.push(k);
-                    }
                     
-                    if (candidates.length > 0) {
-                        const w = candidates[Math.floor(Math.random() * candidates.length)];
-                        // In strict WS model, we check if edge exists. 
-                        // For visual simplicity, let's just allow it or simple check.
-                        v = w; 
+                    // Optimization: For very large N, picking a random valid node is expensive if we check duplicates strictly.
+                    // Simplified random pick:
+                    const rand = Math.floor(Math.random() * N);
+                    if (rand !== u && rand !== v) {
+                        v = rand;
                     }
                 }
-                
                 addEdge(u, v);
             });
 
-            // Calculate Stats
-            calculateStats();
+            // Calculate Stats (Skip if N is too huge to prevent UI freeze)
+            if (params.N <= 3000) {
+                calculateStats();
+            } else {
+                ui.statAvg.innerText = "> 3k";
+                ui.statSep.innerText = "--";
+            }
             
             // Find a random path to demonstrate
             findRandomPath();
@@ -285,7 +286,14 @@
             let visited = new Set([startId]);
             let parent = new Map();
 
+            // Safety break for huge graphs
+            let iterations = 0;
+            const maxIter = 50000;
+
             while (queue.length > 0) {
+                iterations++;
+                if (iterations > maxIter) return null;
+
                 let current = queue.shift();
 
                 if (current === endId) {
@@ -318,6 +326,8 @@
             // Pick an end node that is somewhat distant in index to make it interesting
             let end = (start + Math.floor(params.N / 2)) % params.N; 
             
+            // Run BFS
+            // If N is massive, this might take a moment, but usually BFS is fast enough even for 10k
             path = getShortestPath(start, end);
             
             if (path) {
@@ -331,25 +341,28 @@
         // --- Statistics ---
 
         function calculateStats() {
-            // Calculate Average Path Length
-            // BFS from every node to every other node? 
-            // For N=150, 150*150 is small enough for JS.
-            
             let totalPathLen = 0;
             let pairs = 0;
             const N = params.N;
 
-            // Sampling optimization: If N > 100, only sample 50 random nodes as sources
-            const sources = N > 100 ? 
-                Array.from({length: 50}, () => Math.floor(Math.random() * N)) : 
-                nodes.map(n => n.id);
+            // Adaptive Sampling
+            let sampleSize = 50; // Default
+            if (N > 500) sampleSize = 20;
+            if (N > 1000) sampleSize = 5; // Very sparse sampling for large graphs
+            
+            const sources = Array.from({length: sampleSize}, () => Math.floor(Math.random() * N));
 
             for (let src of sources) {
-                // BFS from src
-                let queue = [[src, 0]]; // [id, dist]
+                let queue = [[src, 0]]; 
                 let visited = new Set([src]);
                 
+                // Safety limiter
+                let ops = 0;
+
                 while(queue.length > 0) {
+                    ops++;
+                    if(ops > 50000) break; // Don't freeze
+
                     let [curr, dist] = queue.shift();
                     
                     if (curr !== src) {
@@ -373,7 +386,7 @@
                 const avg = totalPathLen / pairs;
                 ui.statAvg.innerText = avg.toFixed(2);
             } else {
-                ui.statAvg.innerText = "0";
+                ui.statAvg.innerText = "~";
             }
         }
 
@@ -384,14 +397,13 @@
             ctx.fillStyle = '#0f172a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const cx = canvas.width / 2;
-            const cy = canvas.height / 2;
+            // Optimization for high N
+            const highPerformanceMode = params.N > 1500;
 
             // Draw Edges
-            ctx.lineWidth = 1;
+            // If high performance, make lines thinner and more transparent
+            ctx.lineWidth = highPerformanceMode ? 0.5 : 1;
             
-            // We iterate nodes to draw edges. Since graph is undirected, we need to avoid duplicates visually
-            // Use a set of strings "min-max" to track drawn edges
             let drawnEdges = new Set();
 
             nodes.forEach(node => {
@@ -399,33 +411,29 @@
                 if (!neighbors) return;
                 
                 neighbors.forEach(neighborId => {
+                    // Optimization: In very dense graphs, only draw a subset of edges? 
+                    // Or just let canvas handle it (Canvas handles 20k lines ok on desktop)
+                    
                     const pairId = [Math.min(node.id, neighborId), Math.max(node.id, neighborId)].join('-');
                     if (drawnEdges.has(pairId)) return;
                     drawnEdges.add(pairId);
 
                     const neighbor = nodes[neighborId];
                     
-                    // Determine if this is a "local" edge or a "shortcut"
-                    // In a ring, local edges connect i to (i +/- 1...K/2)
-                    // We calculate ring distance
                     const dist = Math.abs(node.id - neighborId);
                     const ringDist = Math.min(dist, params.N - dist);
                     const isShortcut = ringDist > params.K / 2;
 
                     ctx.beginPath();
                     ctx.moveTo(node.x, node.y);
+                    ctx.lineTo(neighbor.x, neighbor.y);
                     
                     if (isShortcut) {
-                        // Draw shortcut as a straight line across or a curve? Straight is clearer for "cutting across"
-                        // Draw as slightly curved quadratic bezier towards center for visual flair
-                        // const cpX = cx;
-                        // const cpY = cy;
-                        // ctx.quadraticCurveTo(cpX, cpY, neighbor.x, neighbor.y);
-                        ctx.lineTo(neighbor.x, neighbor.y);
-                        ctx.strokeStyle = `rgba(56, 189, 248, ${Math.max(0.1, 0.4 - (params.N/500))})`; // Cyan for shortcuts
+                        // Cyan for shortcuts
+                        ctx.strokeStyle = `rgba(56, 189, 248, ${highPerformanceMode ? 0.3 : Math.max(0.1, 0.4 - (params.N/500))})`; 
                     } else {
-                        ctx.lineTo(neighbor.x, neighbor.y);
-                        ctx.strokeStyle = `rgba(148, 163, 184, ${Math.max(0.05, 0.2 - (params.N/500))})`; // Slate for ring lattice
+                        // Slate for ring lattice
+                        ctx.strokeStyle = `rgba(148, 163, 184, ${highPerformanceMode ? 0.1 : Math.max(0.05, 0.2 - (params.N/500))})`; 
                     }
                     ctx.stroke();
                 });
@@ -433,9 +441,9 @@
 
             // Draw Path Highlighting
             if (path && path.length > 1) {
-                ctx.lineWidth = 3;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#f472b6'; // Pink glow
+                ctx.lineWidth = highPerformanceMode ? 2 : 3;
+                ctx.shadowBlur = highPerformanceMode ? 0 : 10;
+                ctx.shadowColor = '#f472b6'; 
                 ctx.strokeStyle = '#f472b6';
                 ctx.beginPath();
                 
@@ -452,32 +460,48 @@
             }
 
             // Draw Nodes
-            nodes.forEach(node => {
-                // Check if node is in path
-                const inPath = path && path.includes(node.id);
-                const isEndpoints = path && (node.id === path[0] || node.id === path[path.length - 1]);
+            // Optimization: If N is huge, don't draw nodes, or draw 1px rectangles
+            if (params.N <= 3000) {
+                nodes.forEach(node => {
+                    const inPath = path && path.includes(node.id);
+                    const isEndpoints = path && (node.id === path[0] || node.id === path[path.length - 1]);
 
-                ctx.beginPath();
-                // Size depends on N slightly
-                const r = isEndpoints ? 6 : (inPath ? 4 : Math.max(1, 5 - (params.N / 150)));
-                
-                ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
-                
-                if (isEndpoints) {
-                    ctx.fillStyle = '#f472b6'; // Pink
-                    ctx.shadowColor = '#f472b6';
-                    ctx.shadowBlur = 15;
-                } else if (inPath) {
-                    ctx.fillStyle = '#f472b6';
+                    // Skip drawing regular nodes if high performance mode to save FPS
+                    if (highPerformanceMode && !inPath) return;
+
+                    ctx.beginPath();
+                    const r = isEndpoints ? 6 : (inPath ? 4 : Math.max(1, 5 - (params.N / 150)));
+                    
+                    ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
+                    
+                    if (isEndpoints) {
+                        ctx.fillStyle = '#f472b6'; 
+                        ctx.shadowBlur = 15;
+                    } else if (inPath) {
+                        ctx.fillStyle = '#f472b6';
+                        ctx.shadowBlur = 0;
+                    } else {
+                        ctx.fillStyle = '#38bdf8'; 
+                        ctx.shadowBlur = 0;
+                    }
+                    
+                    ctx.fill();
                     ctx.shadowBlur = 0;
-                } else {
-                    ctx.fillStyle = '#38bdf8'; // Sky blue
-                    ctx.shadowBlur = 0;
+                });
+            } else {
+                 // Ultra high mode: Just draw endpoints
+                if (path && path.length > 0) {
+                     // Draw Start
+                     const start = nodes[path[0]];
+                     ctx.beginPath(); ctx.arc(start.x, start.y, 6, 0, Math.PI*2); 
+                     ctx.fillStyle = '#f472b6'; ctx.fill();
+                     
+                     // Draw End
+                     const end = nodes[path[path.length-1]];
+                     ctx.beginPath(); ctx.arc(end.x, end.y, 6, 0, Math.PI*2); 
+                     ctx.fillStyle = '#f472b6'; ctx.fill();
                 }
-                
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            });
+            }
         }
 
         // --- Interaction Listeners ---
@@ -508,13 +532,12 @@
         ui.btnGen.addEventListener('click', generateGraph);
         ui.btnPath.addEventListener('click', findRandomPath);
 
-        // Canvas Interaction (Hover/Click)
-        // Just for fun: Hover to see neighbors?
-        // Keeping it simple to avoid clutter, the path demo is the main interaction.
-
         // Init
-        resize();
-        generateGraph();
+        // Use timeout to ensure window size is stable
+        setTimeout(() => {
+            resize();
+            generateGraph();
+        }, 100);
 
     </script>
 </body>
