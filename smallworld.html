@@ -95,9 +95,9 @@
                 <div class="space-y-2">
                     <div class="flex justify-between items-center text-sm">
                         <label class="text-slate-300">Nodes (N)</label>
-                        <span class="mono text-sky-300" id="val-n">50</span>
+                        <span class="mono text-sky-300" id="val-n">200</span>
                     </div>
-                    <input type="range" id="input-n" min="10" max="150" value="50" step="1">
+                    <input type="range" id="input-n" min="20" max="1000" value="200" step="10">
                     <p class="text-[10px] text-slate-500">Total number of entities in the graph.</p>
                 </div>
 
@@ -155,7 +155,7 @@
         let edges = []; // Adjacency list: Map<nodeId, Set<nodeId>>
         let path = []; // Current highlighted path
         let params = {
-            N: 50, // Nodes
+            N: 200, // Nodes
             K: 4,  // Mean degree (even integer)
             p: 0.1 // Rewiring probability
         };
@@ -459,7 +459,7 @@
 
                 ctx.beginPath();
                 // Size depends on N slightly
-                const r = isEndpoints ? 6 : (inPath ? 4 : Math.max(2, 6 - (params.N / 30)));
+                const r = isEndpoints ? 6 : (inPath ? 4 : Math.max(1, 5 - (params.N / 150)));
                 
                 ctx.arc(node.x, node.y, r, 0, Math.PI * 2);
                 
