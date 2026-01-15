@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fundamental Theorem of Calculus - Value Comparison</title>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+            color: #64b5f6;
+        }
+        
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .slider-box {
+            flex: 1;
+            min-width: 150px;
+            background: #252540;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+        }
+        
+        .slider-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: #ffab40;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #1a1a2e;
+            appearance: none;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #64b5f6;
+            cursor: pointer;
+        }
+        
+        .btn-box {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        button {
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 5px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+        
+        .btn-animate { background: #ff7043; color: #fff; }
+        .btn-reset { background: #455a64; color: #fff; }
+        
+        /* Canvas */
+        .canvas-wrap {
+            background: #0d0d1a;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 320px;
+            display: block;
+        }
+        
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 0.75rem;
+            font-size: 0.85rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        /* Comparison Section */
+        .section-title {
+            font-size: 1rem;
+            color: #64b5f6;
+            margin-bottom: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .compare-section {
+            background: #252540;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .compare-table th {
+            text-align: left;
+            padding: 0.6rem 0.75rem;
+            border-bottom: 2px solid rgba(255,255,255,0.2);
+            color: #aaa;
+            font-weight: normal;
+        }
+        
+        .compare-table td {
+            padding: 0.6rem 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .compare-table .val {
+            text-align: right;
+            font-weight: 500;
+        }
+        
+        .val-h { color: #81d4fa; }
+        .val-fxh { color: #ffab40; }
+        .val-int { color: #69f0ae; }
+        .val-fx { color: #64b5f6; }
+        
+        .highlight-row {
+            background: rgba(105, 240, 174, 0.1);
+        }
+        
+        .highlight-row td {
+            border-bottom: 2px solid #69f0ae;
+        }
+        
+        .arrow-row td {
+            text-align: center;
+            font-size: 1.3rem;
+            color: #69f0ae;
+            padding: 0.5rem;
+            border-bottom: none;
+        }
+        
+        .conclusion-row {
+            background: rgba(100, 181, 246, 0.1);
+        }
+        
+        .diff-box {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: #1e3a2f;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .diff-box .label { color: #aaa; }
+        .diff-box .value { color: #69f0ae; font-size: 1.1rem; font-weight: 600; }
+        
+        /* Logic Section */
+        .logic-section {
+            background: #1e2a38;
+            border-radius: 8px;
+            padding: 1.25rem;
+            border-left: 4px solid #64b5f6;
+        }
+        
+        .logic-section .MathJax {
+            font-size: 1.05em !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fundamental Theorem of Calculus, Part 1<br>\( \displaystyle\frac{d}{dx}\int_a^x f(t)\,dt = f(x) \)</h1>
+        
+        <!-- Controls -->
+        <div class="controls">
+            <div class="slider-box">
+                <div class="slider-label">
+                    <span>\( x \)</span>
+                    <span class="slider-value" id="xVal">1.50</span>
+                </div>
+                <input type="range" id="xSlider" min="0.5" max="4" step="0.05" value="1.5">
+            </div>
+            <div class="slider-box">
+                <div class="slider-label">
+                    <span>\( h \)</span>
+                    <span class="slider-value" id="hVal">1.00</span>
+                </div>
+                <input type="range" id="hSlider" min="0.01" max="2" step="0.01" value="1">
+            </div>
+            <div class="btn-box">
+                <button class="btn-animate" id="btnAnimate">▶ h → 0</button>
+                <button class="btn-reset" id="btnReset">Reset</button>
+            </div>
+        </div>
+        
+        <!-- Graph -->
+        <div class="canvas-wrap">
+            <canvas id="canvas"></canvas>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #64b5f6;"></div>
+                    <span>\( f(x) = \sin(x) + 1.5 \)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #69f0ae;"></div>
+                    <span>\( \int_x^{x+h} f(t)\,dt \)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ffab40; opacity: 0.5;"></div>
+                    <span>Rectangle \( h \cdot f(x+h) \)</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- First Comparison -->
+        <div class="compare-section">
+            <div class="section-title">Comparison 1: Rectangle vs Integral (Area)</div>
+            <table class="compare-table">
+                <tr>
+                    <th>Quantity</th>
+                    <th class="val">Value</th>
+                </tr>
+                <tr>
+                    <td>\( h \cdot f(x+h) \)</td>
+                    <td class="val val-fxh" id="resHFxh">—</td>
+                </tr>
+                <tr>
+                    <td>\( \displaystyle\int_x^{x+h} f(t)\,dt \)</td>
+                    <td class="val val-int" id="resInt">—</td>
+                </tr>
+            </table>
+            <div class="diff-box">
+                <span class="label">Difference:</span>
+                <span class="value" id="resDiff1">—</span>
+            </div>
+        </div>
+        
+        <!-- Second Comparison -->
+        <div class="compare-section">
+            <div class="section-title">Comparison 2: Derivative Convergence</div>
+            <table class="compare-table">
+                <tr>
+                    <th>Quantity</th>
+                    <th class="val">Value</th>
+                </tr>
+                <tr class="highlight-row">
+                    <td>\( \displaystyle\frac{1}{h}\int_x^{x+h} f(t)\,dt \)</td>
+                    <td class="val val-int" id="resQuot">—</td>
+                </tr>
+                <tr>
+                    <td>\( f(x+h) \)</td>
+                    <td class="val val-fxh" id="resFxh">—</td>
+                </tr>
+                <tr>
+                    <td style="padding-left: 2rem; color: #aaa;">Difference</td>
+                    <td class="val" style="color: #ce93d8;" id="resDiff3">—</td>
+                </tr>
+                <tr class="arrow-row">
+                    <td colspan="2">↓ h → 0</td>
+                </tr>
+                <tr class="conclusion-row">
+                    <td>\( f(x) \)</td>
+                    <td class="val val-fx" id="resFx">—</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Logic Flow -->
+        <div class="logic-section">
+            <div class="section-title">Logic Flow</div>
+            \[
+            \frac{d}{dx}\int_a^x f(t)\,dt 
+            = \lim_{h \to 0} \frac{1}{h}\int_x^{x+h} f(t)\,dt
+            = \lim_{h \to 0} \frac{h \cdot f(x+h)}{h}
+            = \lim_{h \to 0} f(x+h) = f(x)
+            \]
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function setupCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+        
+        const view = { xMin: -0.5, xMax: 6, yMin: -0.3, yMax: 3.5 };
+        
+        function toX(x) {
+            const w = canvas.getBoundingClientRect().width;
+            return ((x - view.xMin) / (view.xMax - view.xMin)) * w;
+        }
+        
+        function toY(y) {
+            const h = canvas.getBoundingClientRect().height;
+            return h - ((y - view.yMin) / (view.yMax - view.yMin)) * h;
+        }
+        
+        function f(x) {
+            return Math.sin(x) + 1.5;
+        }
+        
+        function integrate(a, b, n = 500) {
+            const dx = (b - a) / n;
+            let sum = 0;
+            for (let i = 0; i < n; i++) {
+                sum += f(a + (i + 0.5) * dx) * dx;
+            }
+            return sum;
+        }
+        
+        let state = { x: 1.5, h: 1, animating: false, animId: null };
+        
+        function draw() {
+            const rect = canvas.getBoundingClientRect();
+            const { x, h } = state;
+            
+            ctx.fillStyle = '#0d0d1a';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            
+            // Grid
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 1;
+            for (let gx = 0; gx <= 6; gx++) {
+                ctx.beginPath();
+                ctx.moveTo(toX(gx), 0);
+                ctx.lineTo(toX(gx), rect.height);
+                ctx.stroke();
+            }
+            for (let gy = 0; gy <= 3; gy++) {
+                ctx.beginPath();
+                ctx.moveTo(0, toY(gy));
+                ctx.lineTo(rect.width, toY(gy));
+                ctx.stroke();
+            }
+            
+            // Axes
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(toX(view.xMin), toY(0));
+            ctx.lineTo(toX(view.xMax), toY(0));
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(toX(0), toY(view.yMin));
+            ctx.lineTo(toX(0), toY(view.yMax));
+            ctx.stroke();
+            
+            // Axis labels
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            ctx.font = '11px JetBrains Mono';
+            for (let gx = 0; gx <= 5; gx++) {
+                ctx.fillText(gx, toX(gx) - 3, toY(0) + 14);
+            }
+            for (let gy = 1; gy <= 3; gy++) {
+                ctx.fillText(gy, toX(0) + 5, toY(gy) + 4);
+            }
+            
+            const fxh = f(x + h);
+            const fx = f(x);
+            
+            // Area under curve (green)
+            ctx.fillStyle = 'rgba(105, 240, 174, 0.25)';
+            ctx.beginPath();
+            ctx.moveTo(toX(x), toY(0));
+            for (let t = x; t <= x + h; t += 0.01) {
+                ctx.lineTo(toX(t), toY(f(t)));
+            }
+            ctx.lineTo(toX(x + h), toY(0));
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#69f0ae';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Rectangle h * f(x+h) (orange, dashed)
+            ctx.fillStyle = 'rgba(255, 171, 64, 0.2)';
+            ctx.fillRect(toX(x), toY(fxh), toX(x + h) - toX(x), toY(0) - toY(fxh));
+            ctx.strokeStyle = '#ffab40';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.strokeRect(toX(x), toY(fxh), toX(x + h) - toX(x), toY(0) - toY(fxh));
+            ctx.setLineDash([]);
+            
+            // Curve f(x)
+            ctx.strokeStyle = '#64b5f6';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            let first = true;
+            for (let px = 0; px < rect.width; px += 2) {
+                const mx = view.xMin + (px / rect.width) * (view.xMax - view.xMin);
+                const my = f(mx);
+                if (first) { ctx.moveTo(px, toY(my)); first = false; }
+                else ctx.lineTo(px, toY(my));
+            }
+            ctx.stroke();
+            
+            // Point x
+            ctx.fillStyle = '#64b5f6';
+            ctx.beginPath();
+            ctx.arc(toX(x), toY(0), 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.font = 'bold 13px JetBrains Mono';
+            ctx.fillText('x', toX(x) - 4, toY(0) + 20);
+            
+            // Point x+h
+            ctx.fillStyle = '#ffab40';
+            ctx.beginPath();
+            ctx.arc(toX(x + h), toY(0), 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillText('x+h', toX(x + h) - 14, toY(0) + 20);
+            
+            // f(x) on curve
+            ctx.fillStyle = '#64b5f6';
+            ctx.beginPath();
+            ctx.arc(toX(x), toY(fx), 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // f(x+h) on curve
+            ctx.fillStyle = '#ffab40';
+            ctx.beginPath();
+            ctx.arc(toX(x + h), toY(fxh), 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Labels
+            ctx.font = '12px JetBrains Mono';
+            ctx.fillStyle = '#64b5f6';
+            ctx.fillText('f(x)', toX(x) - 32, toY(fx) + 4);
+            ctx.fillStyle = '#ffab40';
+            ctx.fillText('f(x+h)', toX(x + h) + 8, toY(fxh) + 4);
+            
+            // h bracket
+            ctx.strokeStyle = '#81d4fa';
+            ctx.lineWidth = 2;
+            const bracketY = toY(0) - 12;
+            ctx.beginPath();
+            ctx.moveTo(toX(x), bracketY);
+            ctx.lineTo(toX(x), bracketY - 6);
+            ctx.moveTo(toX(x), bracketY);
+            ctx.lineTo(toX(x + h), bracketY);
+            ctx.lineTo(toX(x + h), bracketY - 6);
+            ctx.stroke();
+            ctx.fillStyle = '#81d4fa';
+            ctx.font = 'bold 12px JetBrains Mono';
+            ctx.fillText('h', toX(x + h/2) - 4, bracketY - 10);
+            
+            // Update values
+            const intVal = integrate(x, x + h);
+            const hfxh = h * fxh;
+            const quot = intVal / h;
+            
+            document.getElementById('resHFxh').textContent = hfxh.toFixed(4);
+            document.getElementById('resInt').textContent = intVal.toFixed(4);
+            document.getElementById('resDiff1').textContent = Math.abs(hfxh - intVal).toFixed(6);
+            document.getElementById('resQuot').textContent = quot.toFixed(4);
+            document.getElementById('resFxh').textContent = fxh.toFixed(4);
+            document.getElementById('resDiff3').textContent = Math.abs(quot - fxh).toFixed(6);
+            document.getElementById('resFx').textContent = fx.toFixed(4);
+        }
+        
+        const xSlider = document.getElementById('xSlider');
+        const hSlider = document.getElementById('hSlider');
+        
+        xSlider.addEventListener('input', () => {
+            state.x = parseFloat(xSlider.value);
+            document.getElementById('xVal').textContent = state.x.toFixed(2);
+            draw();
+        });
+        
+        hSlider.addEventListener('input', () => {
+            state.h = parseFloat(hSlider.value);
+            document.getElementById('hVal').textContent = state.h.toFixed(2);
+            draw();
+        });
+        
+        document.getElementById('btnAnimate').addEventListener('click', () => {
+            if (state.animating) {
+                cancelAnimationFrame(state.animId);
+                state.animating = false;
+                document.getElementById('btnAnimate').textContent = '▶ h → 0';
+                return;
+            }
+            
+            state.animating = true;
+            document.getElementById('btnAnimate').textContent = '■ Stop';
+            state.h = 2;
+            
+            function animate() {
+                if (!state.animating) return;
+                
+                state.h -= 0.012;
+                if (state.h < 0.01) state.h = 2;
+                
+                hSlider.value = state.h;
+                document.getElementById('hVal').textContent = state.h.toFixed(2);
+                draw();
+                
+                state.animId = requestAnimationFrame(animate);
+            }
+            animate();
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            if (state.animating) {
+                cancelAnimationFrame(state.animId);
+                state.animating = false;
+                document.getElementById('btnAnimate').textContent = '▶ h → 0';
+            }
+            state.x = 1.5;
+            state.h = 1;
+            xSlider.value = 1.5;
+            hSlider.value = 1;
+            document.getElementById('xVal').textContent = '1.50';
+            document.getElementById('hVal').textContent = '1.00';
+            draw();
+        });
+        
+        function init() {
+            setupCanvas();
+            draw();
+        }
+        
+        window.addEventListener('resize', () => { setupCanvas(); draw(); });
+        window.addEventListener('load', () => setTimeout(init, 100));
+        init();
+    </script>
+</body>
+</html>

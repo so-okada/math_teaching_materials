@@ -19,6 +19,8 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Maxwell's Equations FDTD](https://so-okada.github.io/math_teaching_materials/maxwell.html) | Electromagnetism | Wave propagation, finite-difference methods |
 | [Binomial to Gaussian](https://so-okada.github.io/math_teaching_materials/binomialtogaussian.html) | Probability & Statistics | Central limit theorem, de Moivre-Laplace |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
+| [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
+| [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
 
 ---
 
@@ -143,6 +145,51 @@ $$n! \approx \sqrt{2\pi n} \left(\frac{n}{e}\right)^n$$
 
 **Mathematical Note:**
 The ratio $\dfrac{\text{Stirling}}{n!} \to 1$ as $n \to \infty$. Even for small $n$, the approximation is remarkably accurate (e.g., 0.92 at $n=1$, 0.9917 at $n=10$).
+
+---
+
+### [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html)
+**File:** `ftc_vertical.html`
+
+Interactive demonstration of the Fundamental Theorem of Calculus, Part 1, showing how the derivative of an integral recovers the original function.
+
+**Mathematical Background:**
+The FTC Part 1 states that if $f$ is continuous on $[a, b]$, then:
+$$\frac{d}{dx} \int_a^x f(t)\, dt = f(x)$$
+
+This demo visualizes the limit process:
+$$\lim_{h \to 0} \frac{1}{h} \int_x^{x+h} f(t)\, dt = f(x)$$
+
+by comparing the area under the curve with the rectangle approximation $h \cdot f(x+h)$.
+
+**Controls:**
+- **x slider**: Position on the x-axis
+- **h slider**: Width of the interval (watch as h → 0)
+- **Animate h → 0**: Automatic animation showing convergence
+- Numerical comparison table shows how the quotient approaches f(x)
+
+---
+
+### [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html)
+**File:** `quadrature_xn.html`
+
+Visualization of Riemann sums approximating the integral $\int_0^1 x^n \, dx = \frac{1}{n+1}$.
+
+**Mathematical Background:**
+The definite integral is defined as the limit of Riemann sums:
+$$\int_0^1 x^n \, dx = \lim_{N \to \infty} \sum_{i=1}^{N} f(x_i^*) \Delta x$$
+
+where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three sampling methods are available:
+- **Left**: $x_i^* = (i-1)/N$
+- **Right**: $x_i^* = i/N$  
+- **Midpoint**: $x_i^* = (i - 0.5)/N$
+
+**Controls:**
+- **Exponent (n)**: Power in $x^n$ (0.5–5)
+- **Rectangles (N)**: Number of subdivisions (1–100)
+- **Sum type**: Left, Right, or Midpoint rule
+- **Animate**: Watch rectangles increase and error decrease
+- Live display of Riemann sum, exact value, and error
 
 ---
 
@@ -337,6 +384,8 @@ For small $|x|$, the higher-order terms become negligible, yielding $\sin x \app
 - `pagerank.html`: Uses Tailwind CSS (CDN)
 - `binomialtogaussian.html`: Uses Tailwind CSS (CDN)
 - `xsinx.html`: Uses Tailwind CSS and math.js (CDN)
+- `ftc_vertical.html`: Uses MathJax (CDN)
+- `quadrature_xn.html`: Uses MathJax (CDN)
 
 **Mobile Support:** All demos include touch event handlers for drag-to-rotate functionality on mobile devices.
 
