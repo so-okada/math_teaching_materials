@@ -90,7 +90,7 @@ When $\varphi = 0$, all rods are horizontal. As $\varphi$ increases, the rods ti
 
 ---
 
-## Calculus & Analysis
+## Calculus of Variations
 
 ### [Brachistochrone](https://so-okada.github.io/math_teaching_materials/brachistochrone.html)
 **File:** `brachistochrone.html`
@@ -112,6 +112,8 @@ This was solved independently by Johann Bernoulli, Newton, Leibniz, L'Hôpital, 
 
 ---
 
+## Multivariable Calculus
+
 ### [Double Integral Visualizer](https://so-okada.github.io/math_teaching_materials/indefinite_integral.html)
 **File:** `indefinite_integral.html`
 
@@ -132,68 +134,7 @@ $$I = \left(\int_{1}^{\infty} x^{-n} dx\right)^2$$
 
 ---
 
-### [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html)
-**File:** `stirling_formula.html`
-
-Compare the exact factorial $n!$ with Stirling's approximation:
-$$n! \approx \sqrt{2\pi n} \left(\frac{n}{e}\right)^n$$
-
-**Features:**
-- Slider for $n$ from 1 to 140
-- Display exact value, approximation, difference, and ratio
-- Logarithmic scale chart showing both curves
-
-**Mathematical Note:**
-The ratio $\dfrac{\text{Stirling}}{n!} \to 1$ as $n \to \infty$. Even for small $n$, the approximation is remarkably accurate (e.g., 0.92 at $n=1$, 0.9917 at $n=10$).
-
----
-
-### [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html)
-**File:** `ftc_vertical.html`
-
-Interactive demonstration of the Fundamental Theorem of Calculus, Part 1, showing how the derivative of an integral recovers the original function.
-
-**Mathematical Background:**
-The FTC Part 1 states that if $f$ is continuous on $[a, b]$, then:
-$$\frac{d}{dx} \int_a^x f(t)\, dt = f(x)$$
-
-This demo visualizes the limit process:
-$$\lim_{h \to 0} \frac{1}{h} \int_x^{x+h} f(t)\, dt = f(x)$$
-
-by comparing the area under the curve with the rectangle approximation $h \cdot f(x+h)$.
-
-**Controls:**
-- **x slider**: Position on the x-axis
-- **h slider**: Width of the interval (watch as h → 0)
-- **Animate h → 0**: Automatic animation showing convergence
-- Numerical comparison table shows how the quotient approaches f(x)
-
----
-
-### [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html)
-**File:** `quadrature_xn.html`
-
-Visualization of Riemann sums approximating the integral $\int_0^1 x^n \, dx = \frac{1}{n+1}$.
-
-**Mathematical Background:**
-The definite integral is defined as the limit of Riemann sums:
-$$\int_0^1 x^n \, dx = \lim_{N \to \infty} \sum_{i=1}^{N} f(x_i^*) \Delta x$$
-
-where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three sampling methods are available:
-- **Left**: $x_i^* = (i-1)/N$
-- **Right**: $x_i^* = i/N$  
-- **Midpoint**: $x_i^* = (i - 0.5)/N$
-
-**Controls:**
-- **Exponent (n)**: Power in $x^n$ (0.5–5)
-- **Rectangles (N)**: Number of subdivisions (1–100)
-- **Sum type**: Left, Right, or Midpoint rule
-- **Animate**: Watch rectangles increase and error decrease
-- Live display of Riemann sum, exact value, and error
-
----
-
-## Geometry
+## Conic Sections
 
 ### [Ellipse Billiard](https://so-okada.github.io/math_teaching_materials/ellipse_billiard.html)
 **File:** `ellipse_billiard.html`
@@ -232,6 +173,24 @@ This approximation works well for rates between 2% and 20%.
 - **Interest Rate** (0.1%–100%): Annual rate slider
 - Live comparison of Rule of 72 estimate vs. exact calculation
 - Growth curve visualization
+
+---
+
+## Approximation Theory
+
+### [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html)
+**File:** `stirling_formula.html`
+
+Compare the exact factorial $n!$ with Stirling's approximation:
+$$n! \approx \sqrt{2\pi n} \left(\frac{n}{e}\right)^n$$
+
+**Features:**
+- Slider for $n$ from 1 to 140
+- Display exact value, approximation, difference, and ratio
+- Logarithmic scale chart showing both curves
+
+**Mathematical Note:**
+The ratio $\dfrac{\text{Stirling}}{n!} \to 1$ as $n \to \infty$. Even for small $n$, the approximation is remarkably accurate (e.g., 0.92 at $n=1$, 0.9917 at $n=10$).
 
 ---
 
@@ -367,6 +326,53 @@ For small $|x|$, the higher-order terms become negligible, yielding $\sin x \app
 - **Preset buttons**: Quick access to small, medium, and large angles
 - **Unit circle view**: Shows arc length (x) vs. vertical height (sin x)
 - **Graph view**: Compares $y = x$ and $y = \sin x$ curves
+
+---
+
+## Calculus
+
+### [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html)
+**File:** `ftc_vertical.html`
+
+Interactive demonstration of the Fundamental Theorem of Calculus, Part 1, showing how the derivative of an integral recovers the original function.
+
+**Mathematical Background:**
+The FTC Part 1 states that if $f$ is continuous on $[a, b]$, then:
+$$\frac{d}{dx} \int_a^x f(t) dt = f(x)$$
+
+This demo visualizes the limit process:
+$$\lim_{h \to 0} \frac{1}{h} \int_x^{x+h} f(t) dt = f(x)$$
+
+by comparing the area under the curve with the rectangle approximation $h \cdot f(x+h)$.
+
+**Controls:**
+- **x slider**: Position on the x-axis
+- **h slider**: Width of the interval (watch as h → 0)
+- **Animate h → 0**: Automatic animation showing convergence
+- Numerical comparison table shows how the quotient approaches f(x)
+
+---
+
+### [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html)
+**File:** `quadrature_xn.html`
+
+Visualization of Riemann sums approximating the integral $\int_0^1 x^n \, dx = \frac{1}{n+1}$.
+
+**Mathematical Background:**
+The definite integral is defined as the limit of Riemann sums:
+$$\int_0^1 x^n \, dx = \lim_{N \to \infty} \sum_{i=1}^{N} f(x_i^*) \Delta x$$
+
+where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three sampling methods are available:
+- **Left**: $x_i^* = (i-1)/N$
+- **Right**: $x_i^* = i/N$  
+- **Midpoint**: $x_i^* = (i - 0.5)/N$
+
+**Controls:**
+- **Exponent (n)**: Power in $x^n$ (0.5–5)
+- **Rectangles (N)**: Number of subdivisions (1–100)
+- **Sum type**: Left, Right, or Midpoint rule
+- **Animate**: Watch rectangles increase and error decrease
+- Live display of Riemann sum, exact value, and error
 
 ---
 
