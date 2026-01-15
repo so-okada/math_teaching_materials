@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clothoid Curves in Highway Design - Mathematical Demonstration</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0a0f14;
+            --bg-secondary: #111920;
+            --bg-tertiary: #1a242e;
+            --text-primary: #e8ede4;
+            --text-secondary: #9ca8b4;
+            --text-muted: #5a6a78;
+            --accent-road: #3d4f5f;
+            --accent-clothoid: #f59e0b;
+            --accent-circle: #10b981;
+            --accent-straight: #6366f1;
+            --accent-curvature: #ef4444;
+            --grid-color: rgba(100, 130, 160, 0.08);
+            --border-color: rgba(100, 130, 160, 0.2);
+        }
+        
+        body {
+            font-family: 'Source Serif 4', Georgia, serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.7;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            padding: 3rem 0 2rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--accent-clothoid));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 2rem;
+        }
+        
+        @media (max-width: 1100px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .visualization-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .canvas-container {
+            position: relative;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+            cursor: crosshair;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .legend-color {
+            width: 24px;
+            height: 4px;
+            border-radius: 2px;
+        }
+        
+        .control-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            height: fit-content;
+        }
+        
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .panel-title::before {
+            content: '';
+            width: 4px;
+            height: 1.2em;
+            background: var(--accent-clothoid);
+            border-radius: 2px;
+        }
+        
+        .control-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .control-label span:first-child {
+            color: var(--text-secondary);
+        }
+        
+        .control-value {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-clothoid);
+            font-size: 0.85rem;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--bg-tertiary);
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--accent-clothoid);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: transform 0.15s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .checkbox-item input {
+            display: none;
+        }
+        
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .checkbox-item input:checked + .checkbox-custom {
+            background: var(--accent-clothoid);
+            border-color: var(--accent-clothoid);
+        }
+        
+        .checkbox-custom::after {
+            content: '✓';
+            color: var(--bg-primary);
+            font-size: 0.75rem;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .checkbox-item input:checked + .checkbox-custom::after {
+            opacity: 1;
+        }
+        
+        .math-section {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .math-section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .math-section h3 {
+            font-size: 1.2rem;
+            margin: 1.5rem 0 0.75rem;
+            color: var(--accent-clothoid);
+        }
+        
+        .math-content {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .math-content p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .equation-box {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            border-left: 3px solid var(--accent-clothoid);
+            overflow-x: auto;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .info-card {
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .info-card-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .info-card-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-clothoid);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .curvature-graph {
+            height: 150px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        button {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        button:hover {
+            background: var(--accent-clothoid);
+            color: var(--bg-primary);
+            border-color: var(--accent-clothoid);
+        }
+        
+        button.active {
+            background: var(--accent-clothoid);
+            color: var(--bg-primary);
+            border-color: var(--accent-clothoid);
+        }
+        
+        footer {
+            margin-top: 3rem;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        footer a {
+            color: var(--accent-clothoid);
+            text-decoration: none;
+        }
+        
+        .highway-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            background: rgba(10, 15, 20, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .mode-indicator {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--accent-clothoid);
+            color: var(--bg-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Clothoid Curves</h1>
+            <p class="subtitle">Transition Curves in Highway Engineering — An Interactive Mathematical Demonstration</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="visualization-panel">
+                <div class="canvas-container">
+                    <canvas id="mainCanvas" width="800" height="500"></canvas>
+                    <div class="highway-indicator">
+                        <span id="cursorInfo">Hover to see coordinates</span>
+                    </div>
+                    <div class="mode-indicator" id="modeIndicator">HIGHWAY VIEW</div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--accent-straight);"></div>
+                        <span>Straight (κ = 0)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--accent-clothoid);"></div>
+                        <span>Clothoid (κ = s/A²)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--accent-circle);"></div>
+                        <span>Circular (κ = 1/R)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: var(--accent-curvature); height: 2px;"></div>
+                        <span>Curvature κ(s)</span>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button id="btnHighway" class="active">Highway View</button>
+                    <button id="btnSpiral">Spiral Only</button>
+                    <button id="btnCurvature">Curvature Graph</button>
+                    <button id="btnAnimate">▶ Animate</button>
+                </div>
+                
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-card-title">Clothoid Parameter A</div>
+                        <div class="info-card-value" id="infoA">100 m</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-title">Circular Radius R</div>
+                        <div class="info-card-value" id="infoR">200 m</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-title">Transition Length L</div>
+                        <div class="info-card-value" id="infoL">50.0 m</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-card-title">Deflection Angle τ</div>
+                        <div class="info-card-value" id="infoTau">7.16°</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-panel">
+                <div class="panel-title">Parameters</div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Clothoid Parameter A</span>
+                        <span class="control-value" id="valA">100</span>
+                    </div>
+                    <input type="range" id="sliderA" min="30" max="200" value="100" step="5">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Circular Radius R</span>
+                        <span class="control-value" id="valR">200</span>
+                    </div>
+                    <input type="range" id="sliderR" min="50" max="400" value="200" step="10">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Design Speed (km/h)</span>
+                        <span class="control-value" id="valSpeed">80</span>
+                    </div>
+                    <input type="range" id="sliderSpeed" min="40" max="120" value="80" step="10">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Animation Speed</span>
+                        <span class="control-value" id="valAnimSpeed">1.0×</span>
+                    </div>
+                    <input type="range" id="sliderAnimSpeed" min="0.2" max="3" value="1" step="0.1">
+                </div>
+                
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Display Options</span>
+                    </div>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chkGrid" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Show Grid</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chkRoadWidth" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Show Road Width</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chkLabels" checked>
+                            <span class="checkbox-custom"></span>
+                            <span>Show Labels</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chkCurvatureLine">
+                            <span class="checkbox-custom"></span>
+                            <span>Overlay Curvature</span>
+                        </label>
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="chkVehicle">
+                            <span class="checkbox-custom"></span>
+                            <span>Show Vehicle</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <button id="btnReset" style="width: 100%;">Reset to Defaults</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="math-section">
+            <h2>Mathematical Background</h2>
+            <div class="math-content">
+                <h3>Definition of Clothoid (Euler Spiral / Cornu Spiral)</h3>
+                <p>
+                    The clothoid is a plane curve whose curvature κ varies linearly with arc length s. 
+                    This property makes it ideal for highway and railway transition curves, providing smooth 
+                    changes in lateral acceleration for vehicles.
+                </p>
+                
+                <div class="equation-box">
+                    <p><strong>Curvature-Arc Length Relationship:</strong></p>
+                    $$\kappa(s) = \frac{s}{A^2}$$
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                        where A is the clothoid parameter (scaling factor) and s is the arc length from origin.
+                    </p>
+                </div>
+                
+                <h3>Parametric Equations (Fresnel Integrals)</h3>
+                <p>
+                    The coordinates of the clothoid are expressed using Fresnel integrals C(t) and S(t):
+                </p>
+                
+                <div class="equation-box">
+                    $$x(s) = A\sqrt{\pi} \cdot C\left(\frac{s}{A\sqrt{\pi}}\right) = \int_0^s \cos\left(\frac{u^2}{2A^2}\right) du$$
+                    $$y(s) = A\sqrt{\pi} \cdot S\left(\frac{s}{A\sqrt{\pi}}\right) = \int_0^s \sin\left(\frac{u^2}{2A^2}\right) du$$
+                </div>
+                
+                <h3>Taylor Series Approximation</h3>
+                <p>For practical computation, especially for small s/A ratios:</p>
+                
+                <div class="equation-box">
+                    $$x(s) \approx s - \frac{s^5}{40A^4} + \frac{s^9}{3456A^8} - \cdots$$
+                    $$y(s) \approx \frac{s^3}{6A^2} - \frac{s^7}{336A^6} + \frac{s^{11}}{42240A^{10}} - \cdots$$
+                </div>
+                
+                <h3>Highway Design Application</h3>
+                <p>
+                    In highway design, the clothoid connects a straight section (κ = 0) to a circular arc 
+                    (κ = 1/R). The fundamental relationship is:
+                </p>
+                
+                <div class="equation-box">
+                    $$A^2 = R \cdot L$$
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                        where L is the transition length and R is the radius of the circular arc.
+                    </p>
+                </div>
+                
+                <h3>Key Geometric Parameters</h3>
+                <div class="equation-box">
+                    <p><strong>Deflection angle at transition end:</strong></p>
+                    $$\tau_L = \frac{L}{2R} = \frac{L^2}{2A^2} \text{ (radians)}$$
+                    
+                    <p style="margin-top: 1rem;"><strong>Shift (offset from tangent):</strong></p>
+                    $$\Delta R = \frac{L^2}{24R} - \frac{L^4}{2688R^3} + \cdots \approx \frac{L^2}{24R}$$
+                    
+                    <p style="margin-top: 1rem;"><strong>Tangent distance:</strong></p>
+                    $$X_L = L - \frac{L^3}{40R^2} + \cdots \approx L$$
+                    $$Y_L = \frac{L^2}{6R} - \frac{L^4}{336R^3} + \cdots$$
+                </div>
+                
+                <h3>Physical Motivation: Lateral Acceleration</h3>
+                <p>
+                    For a vehicle traveling at constant speed v, the lateral (centripetal) acceleration is:
+                </p>
+                
+                <div class="equation-box">
+                    $$a_{\text{lateral}} = v^2 \cdot \kappa = \frac{v^2 \cdot s}{A^2}$$
+                    <p style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--text-muted);">
+                        The linear increase in curvature ensures smooth, gradual change in lateral force, 
+                        preventing sudden jerks that would occur with direct straight-to-circle transitions.
+                    </p>
+                </div>
+                
+
+            </div>
+        </div>
+        
+        <footer>
+            <p>
+                Mathematical Teaching Demonstration — Clothoid Curves in Highway Design<br>
+                <a href="https://creativecommons.org/licenses/by-nc/4.0/">CC BY-NC 4.0</a>
+            </p>
+        </footer>
+    </div>
+    
+    <script>
+        // ============================================================
+        // Clothoid Highway Demonstration
+        // Mathematical visualization of Euler spirals in road design
+        // ============================================================
+        
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // High DPI support
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        const W = rect.width;
+        const H = rect.height;
+        
+        // State
+        let state = {
+            A: 100,           // Clothoid parameter
+            R: 200,           // Circular arc radius
+            speed: 80,        // Design speed km/h
+            animSpeed: 1.0,
+            showGrid: true,
+            showRoadWidth: true,
+            showLabels: true,
+            showCurvatureLine: false,
+            showVehicle: false,
+            mode: 'highway',  // 'highway', 'spiral', 'curvature'
+            animating: false,
+            animT: 0,
+            vehiclePos: 0
+        };
+        
+        // Derived values
+        function computeDerived() {
+            state.L = state.A * state.A / state.R;  // Transition length
+            state.tau = state.L / (2 * state.R);   // Deflection angle in radians
+        }
+        
+        // Colors
+        const colors = {
+            bg: '#0a0f14',
+            grid: 'rgba(100, 130, 160, 0.08)',
+            gridMajor: 'rgba(100, 130, 160, 0.15)',
+            straight: '#6366f1',
+            clothoid: '#f59e0b',
+            circle: '#10b981',
+            curvature: '#ef4444',
+            road: '#3d4f5f',
+            roadEdge: '#5a6a78',
+            text: '#9ca8b4',
+            vehicle: '#ffffff'
+        };
+        
+        // ============================================================
+        // Fresnel Integral Computation (Taylor series)
+        // ============================================================
+        
+        function fresnelC(t) {
+            // Compute Fresnel cosine integral C(t) = ∫₀ᵗ cos(πu²/2) du
+            // Using Taylor series for small t, asymptotic for large t
+            let sum = 0;
+            let term = t;
+            const t2 = t * t;
+            const t4 = t2 * t2;
+            
+            for (let n = 0; n < 20; n++) {
+                const sign = (n % 2 === 0) ? 1 : -1;
+                const k = 4 * n + 1;
+                const factorial = factorial2(2 * n);
+                sum += sign * Math.pow(Math.PI / 2, 2 * n) * Math.pow(t, k) / (factorial * k);
+            }
+            return sum;
+        }
+        
+        function fresnelS(t) {
+            // Compute Fresnel sine integral S(t) = ∫₀ᵗ sin(πu²/2) du
+            let sum = 0;
+            
+            for (let n = 0; n < 20; n++) {
+                const sign = (n % 2 === 0) ? 1 : -1;
+                const k = 4 * n + 3;
+                const factorial = factorial2(2 * n + 1);
+                sum += sign * Math.pow(Math.PI / 2, 2 * n + 1) * Math.pow(t, k) / (factorial * k);
+            }
+            return sum;
+        }
+        
+        function factorial2(n) {
+            let result = 1;
+            for (let i = 2; i <= n; i++) result *= i;
+            return result;
+        }
+        
+        // ============================================================
+        // Clothoid Computation using direct integration
+        // ============================================================
+        
+        function clothoidPoint(s, A) {
+            // Direct numerical integration for clothoid
+            // x(s) = ∫₀ˢ cos(u²/(2A²)) du
+            // y(s) = ∫₀ˢ sin(u²/(2A²)) du
+            
+            const n = Math.max(50, Math.ceil(Math.abs(s) * 2));
+            const dt = s / n;
+            let x = 0, y = 0;
+            
+            for (let i = 0; i < n; i++) {
+                const u = (i + 0.5) * dt;
+                const theta = (u * u) / (2 * A * A);
+                x += Math.cos(theta) * dt;
+                y += Math.sin(theta) * dt;
+            }
+            
+            return { x, y };
+        }
+        
+        function clothoidTangent(s, A) {
+            // Tangent angle at arc length s
+            return (s * s) / (2 * A * A);
+        }
+        
+        // ============================================================
+        // Generate highway path
+        // ============================================================
+        
+        function generateHighwayPath() {
+            const A = state.A;
+            const R = state.R;
+            const L = state.L;
+            
+            const path = {
+                straight: [],
+                clothoid1: [],
+                circle: [],
+                clothoid2: [],
+                straight2: []
+            };
+            
+            // Starting straight section
+            const straightLen = 80;
+            for (let i = 0; i <= 20; i++) {
+                const t = i / 20;
+                path.straight.push({
+                    x: -straightLen + t * straightLen,
+                    y: 0,
+                    kappa: 0,
+                    s: -straightLen + t * straightLen
+                });
+            }
+            
+            // First clothoid (transition in)
+            const numClothoidPts = 40;
+            for (let i = 0; i <= numClothoidPts; i++) {
+                const s = (i / numClothoidPts) * L;
+                const pt = clothoidPoint(s, A);
+                const kappa = s / (A * A);
+                path.clothoid1.push({
+                    x: pt.x,
+                    y: pt.y,
+                    kappa: kappa,
+                    s: s
+                });
+            }
+            
+            // Circular arc
+            // At end of clothoid: position (XL, YL), tangent angle τ
+            const endClothoid = clothoidPoint(L, A);
+            const tau = clothoidTangent(L, A);
+            
+            // Circle center is at distance R from end point, perpendicular to tangent
+            const centerX = endClothoid.x - R * Math.sin(tau);
+            const centerY = endClothoid.y + R * Math.cos(tau);
+            
+            // Circular arc spans some angle
+            const arcAngle = Math.PI / 4; // 45 degrees of circular arc
+            const startAngle = tau - Math.PI / 2;
+            
+            const numCirclePts = 30;
+            for (let i = 0; i <= numCirclePts; i++) {
+                const t = i / numCirclePts;
+                const angle = startAngle + t * arcAngle;
+                path.circle.push({
+                    x: centerX + R * Math.cos(angle),
+                    y: centerY + R * Math.sin(angle),
+                    kappa: 1 / R,
+                    s: L + t * arcAngle * R
+                });
+            }
+            
+            return path;
+        }
+        
+        // ============================================================
+        // Coordinate transformation (world to screen)
+        // ============================================================
+        
+        function worldToScreen(wx, wy, scale, offsetX, offsetY) {
+            return {
+                x: W / 2 + wx * scale + offsetX,
+                y: H / 2 - wy * scale + offsetY
+            };
+        }
+        
+        // ============================================================
+        // Drawing functions
+        // ============================================================
+        
+        function drawGrid(scale, offsetX, offsetY) {
+            if (!state.showGrid) return;
+            
+            const gridSize = 50; // meters
+            const numLines = 20;
+            
+            ctx.strokeStyle = colors.grid;
+            ctx.lineWidth = 1;
+            
+            for (let i = -numLines; i <= numLines; i++) {
+                const worldX = i * gridSize;
+                const p1 = worldToScreen(worldX, -numLines * gridSize, scale, offsetX, offsetY);
+                const p2 = worldToScreen(worldX, numLines * gridSize, scale, offsetX, offsetY);
+                
+                ctx.strokeStyle = (i === 0) ? colors.gridMajor : colors.grid;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+                
+                const p3 = worldToScreen(-numLines * gridSize, worldX, scale, offsetX, offsetY);
+                const p4 = worldToScreen(numLines * gridSize, worldX, scale, offsetX, offsetY);
+                
+                ctx.beginPath();
+                ctx.moveTo(p3.x, p3.y);
+                ctx.lineTo(p4.x, p4.y);
+                ctx.stroke();
+            }
+        }
+        
+        function drawPath(points, color, width, scale, offsetX, offsetY) {
+            if (points.length < 2) return;
+            
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            ctx.beginPath();
+            const p0 = worldToScreen(points[0].x, points[0].y, scale, offsetX, offsetY);
+            ctx.moveTo(p0.x, p0.y);
+            
+            for (let i = 1; i < points.length; i++) {
+                const p = worldToScreen(points[i].x, points[i].y, scale, offsetX, offsetY);
+                ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+        }
+        
+        function drawRoadWidth(points, halfWidth, scale, offsetX, offsetY) {
+            if (points.length < 2 || !state.showRoadWidth) return;
+            
+            ctx.fillStyle = colors.road;
+            ctx.strokeStyle = colors.roadEdge;
+            ctx.lineWidth = 1;
+            
+            // Compute offset curves
+            const leftEdge = [];
+            const rightEdge = [];
+            
+            for (let i = 0; i < points.length; i++) {
+                let dx, dy;
+                if (i === 0) {
+                    dx = points[1].x - points[0].x;
+                    dy = points[1].y - points[0].y;
+                } else if (i === points.length - 1) {
+                    dx = points[i].x - points[i-1].x;
+                    dy = points[i].y - points[i-1].y;
+                } else {
+                    dx = points[i+1].x - points[i-1].x;
+                    dy = points[i+1].y - points[i-1].y;
+                }
+                
+                const len = Math.sqrt(dx*dx + dy*dy);
+                if (len > 0) {
+                    const nx = -dy / len;
+                    const ny = dx / len;
+                    
+                    leftEdge.push({
+                        x: points[i].x + nx * halfWidth,
+                        y: points[i].y + ny * halfWidth
+                    });
+                    rightEdge.push({
+                        x: points[i].x - nx * halfWidth,
+                        y: points[i].y - ny * halfWidth
+                    });
+                }
+            }
+            
+            // Draw filled road
+            ctx.beginPath();
+            const p0 = worldToScreen(leftEdge[0].x, leftEdge[0].y, scale, offsetX, offsetY);
+            ctx.moveTo(p0.x, p0.y);
+            
+            for (let i = 1; i < leftEdge.length; i++) {
+                const p = worldToScreen(leftEdge[i].x, leftEdge[i].y, scale, offsetX, offsetY);
+                ctx.lineTo(p.x, p.y);
+            }
+            
+            for (let i = rightEdge.length - 1; i >= 0; i--) {
+                const p = worldToScreen(rightEdge[i].x, rightEdge[i].y, scale, offsetX, offsetY);
+                ctx.lineTo(p.x, p.y);
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        function drawLabels(path, scale, offsetX, offsetY) {
+            if (!state.showLabels) return;
+            
+            ctx.font = '11px JetBrains Mono';
+            ctx.fillStyle = colors.text;
+            ctx.textAlign = 'center';
+            
+            // Label at straight section
+            if (path.straight.length > 0) {
+                const p = worldToScreen(path.straight[5].x, path.straight[5].y - 30, scale, offsetX, offsetY);
+                ctx.fillText('Straight (κ=0)', p.x, p.y);
+            }
+            
+            // Label at clothoid
+            if (path.clothoid1.length > 0) {
+                const idx = Math.floor(path.clothoid1.length / 2);
+                const p = worldToScreen(path.clothoid1[idx].x, path.clothoid1[idx].y + 40, scale, offsetX, offsetY);
+                ctx.fillText('Clothoid', p.x, p.y);
+                ctx.fillText('κ=s/A²', p.x, p.y + 14);
+            }
+            
+            // Label at circular arc
+            if (path.circle.length > 0) {
+                const idx = Math.floor(path.circle.length / 2);
+                const p = worldToScreen(path.circle[idx].x + 40, path.circle[idx].y, scale, offsetX, offsetY);
+                ctx.fillText('Circular', p.x, p.y);
+                ctx.fillText('κ=1/R', p.x, p.y + 14);
+            }
+        }
+        
+        function drawCurvaturePlot(path, scale, offsetX, offsetY) {
+            if (!state.showCurvatureLine) return;
+            
+            // Draw curvature as a height above the path
+            const curvatureScale = 5000; // Scale for visibility
+            
+            const allPoints = [
+                ...path.straight,
+                ...path.clothoid1,
+                ...path.circle
+            ];
+            
+            ctx.strokeStyle = colors.curvature;
+            ctx.lineWidth = 2;
+            ctx.setLineDash([5, 5]);
+            
+            ctx.beginPath();
+            let started = false;
+            
+            for (const pt of allPoints) {
+                const kappaHeight = pt.kappa * curvatureScale;
+                const p = worldToScreen(pt.x, pt.y + kappaHeight, scale, offsetX, offsetY);
+                
+                if (!started) {
+                    ctx.moveTo(p.x, p.y);
+                    started = true;
+                } else {
+                    ctx.lineTo(p.x, p.y);
+                }
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        function drawVehicle(path, t, scale, offsetX, offsetY) {
+            if (!state.showVehicle) return;
+            
+            const allPoints = [
+                ...path.straight,
+                ...path.clothoid1,
+                ...path.circle
+            ];
+            
+            const idx = Math.floor(t * (allPoints.length - 1));
+            const pt = allPoints[Math.min(idx, allPoints.length - 1)];
+            
+            // Get tangent direction
+            let dx, dy;
+            if (idx < allPoints.length - 1) {
+                dx = allPoints[idx + 1].x - pt.x;
+                dy = allPoints[idx + 1].y - pt.y;
+            } else {
+                dx = pt.x - allPoints[idx - 1].x;
+                dy = pt.y - allPoints[idx - 1].y;
+            }
+            
+            const angle = Math.atan2(dy, dx);
+            const p = worldToScreen(pt.x, pt.y, scale, offsetX, offsetY);
+            
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(-angle);
+            
+            // Draw simple car shape
+            ctx.fillStyle = colors.vehicle;
+            ctx.beginPath();
+            ctx.moveTo(12, 0);
+            ctx.lineTo(-8, 6);
+            ctx.lineTo(-8, -6);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.restore();
+        }
+        
+        function drawSpiralOnly() {
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, W, H);
+            
+            const scale = 1.5;
+            const offsetX = -100;
+            const offsetY = 100;
+            
+            drawGrid(scale, offsetX, offsetY);
+            
+            // Draw full spiral for visualization
+            const A = state.A;
+            const points = [];
+            const maxS = 3 * state.L;
+            
+            for (let i = 0; i <= 100; i++) {
+                const s = (i / 100) * maxS;
+                const pt = clothoidPoint(s, A);
+                const kappa = s / (A * A);
+                points.push({ x: pt.x, y: pt.y, kappa: kappa, s: s });
+            }
+            
+            // Draw with gradient effect
+            for (let i = 1; i < points.length; i++) {
+                const t = i / points.length;
+                const p1 = worldToScreen(points[i-1].x, points[i-1].y, scale, offsetX, offsetY);
+                const p2 = worldToScreen(points[i].x, points[i].y, scale, offsetX, offsetY);
+                
+                ctx.strokeStyle = `hsl(${30 + t * 30}, 90%, ${50 + t * 20}%)`;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+            
+            // Mark transition point
+            const transitionPt = clothoidPoint(state.L, A);
+            const pT = worldToScreen(transitionPt.x, transitionPt.y, scale, offsetX, offsetY);
+            
+            ctx.fillStyle = colors.circle;
+            ctx.beginPath();
+            ctx.arc(pT.x, pT.y, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            if (state.showLabels) {
+                ctx.font = '12px JetBrains Mono';
+                ctx.fillStyle = colors.text;
+                ctx.textAlign = 'left';
+                ctx.fillText(`L = ${state.L.toFixed(1)}m`, pT.x + 15, pT.y);
+                ctx.fillText(`κ = 1/R = ${(1/state.R).toFixed(5)}`, pT.x + 15, pT.y + 16);
+            }
+            
+            // Origin marker
+            const origin = worldToScreen(0, 0, scale, offsetX, offsetY);
+            ctx.fillStyle = colors.straight;
+            ctx.beginPath();
+            ctx.arc(origin.x, origin.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            if (state.showLabels) {
+                ctx.fillStyle = colors.text;
+                ctx.fillText('Origin (κ=0)', origin.x + 12, origin.y + 4);
+            }
+        }
+        
+        function drawCurvatureGraph() {
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, W, H);
+            
+            const margin = { left: 80, right: 40, top: 60, bottom: 60 };
+            const gW = W - margin.left - margin.right;
+            const gH = H - margin.top - margin.bottom;
+            
+            // Axes
+            ctx.strokeStyle = colors.gridMajor;
+            ctx.lineWidth = 1;
+            
+            // X axis
+            ctx.beginPath();
+            ctx.moveTo(margin.left, H - margin.bottom);
+            ctx.lineTo(W - margin.right, H - margin.bottom);
+            ctx.stroke();
+            
+            // Y axis
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, H - margin.bottom);
+            ctx.stroke();
+            
+            // Labels
+            ctx.font = '12px JetBrains Mono';
+            ctx.fillStyle = colors.text;
+            ctx.textAlign = 'center';
+            ctx.fillText('Arc Length s (m)', W/2, H - 15);
+            
+            ctx.save();
+            ctx.translate(20, H/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.fillText('Curvature κ (1/m)', 0, 0);
+            ctx.restore();
+            
+            // Title
+            ctx.font = '14px Source Serif 4';
+            ctx.fillText('Curvature vs Arc Length: κ(s) = s/A²', W/2, 30);
+            
+            // Data
+            const L = state.L;
+            const R = state.R;
+            const A = state.A;
+            const maxS = L + 100; // Beyond transition
+            const maxKappa = 1.5 / R;
+            
+            // Grid
+            ctx.strokeStyle = colors.grid;
+            ctx.setLineDash([2, 4]);
+            
+            for (let i = 1; i <= 5; i++) {
+                const y = H - margin.bottom - (i / 5) * gH;
+                ctx.beginPath();
+                ctx.moveTo(margin.left, y);
+                ctx.lineTo(W - margin.right, y);
+                ctx.stroke();
+            }
+            
+            ctx.setLineDash([]);
+            
+            // Plot: Straight section (κ = 0)
+            ctx.strokeStyle = colors.straight;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, H - margin.bottom);
+            ctx.lineTo(margin.left + (80 / maxS) * gW, H - margin.bottom);
+            ctx.stroke();
+            
+            // Plot: Clothoid (κ = s/A²)
+            ctx.strokeStyle = colors.clothoid;
+            ctx.beginPath();
+            
+            for (let i = 0; i <= 50; i++) {
+                const s = (i / 50) * L;
+                const kappa = s / (A * A);
+                const x = margin.left + ((80 + s) / maxS) * gW;
+                const y = H - margin.bottom - (kappa / maxKappa) * gH;
+                
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            
+            // Plot: Circular arc (κ = 1/R, constant)
+            ctx.strokeStyle = colors.circle;
+            ctx.beginPath();
+            const circleStartX = margin.left + ((80 + L) / maxS) * gW;
+            const circleY = H - margin.bottom - ((1/R) / maxKappa) * gH;
+            ctx.moveTo(circleStartX, circleY);
+            ctx.lineTo(W - margin.right, circleY);
+            ctx.stroke();
+            
+            // Mark transition point
+            ctx.fillStyle = colors.clothoid;
+            ctx.beginPath();
+            ctx.arc(circleStartX, circleY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Annotations
+            ctx.font = '11px JetBrains Mono';
+            ctx.fillStyle = colors.text;
+            ctx.textAlign = 'left';
+            
+            ctx.fillText(`L = ${L.toFixed(1)}m`, circleStartX + 10, circleY - 10);
+            ctx.fillText(`κ = 1/R = ${(1/R).toFixed(5)}`, W - margin.right - 120, circleY - 10);
+            
+            // Legend
+            const legendY = margin.top + 20;
+            
+            ctx.strokeStyle = colors.straight;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(W - 180, legendY);
+            ctx.lineTo(W - 150, legendY);
+            ctx.stroke();
+            ctx.fillText('Straight', W - 145, legendY + 4);
+            
+            ctx.strokeStyle = colors.clothoid;
+            ctx.beginPath();
+            ctx.moveTo(W - 180, legendY + 20);
+            ctx.lineTo(W - 150, legendY + 20);
+            ctx.stroke();
+            ctx.fillText('Clothoid', W - 145, legendY + 24);
+            
+            ctx.strokeStyle = colors.circle;
+            ctx.beginPath();
+            ctx.moveTo(W - 180, legendY + 40);
+            ctx.lineTo(W - 150, legendY + 40);
+            ctx.stroke();
+            ctx.fillText('Circular', W - 145, legendY + 44);
+        }
+        
+        function drawHighway() {
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, W, H);
+            
+            const scale = 1.8;
+            const offsetX = -80;
+            const offsetY = 50;
+            
+            drawGrid(scale, offsetX, offsetY);
+            
+            const path = generateHighwayPath();
+            const roadWidth = 8; // meters half-width
+            
+            // Draw road surface
+            const allPoints = [
+                ...path.straight,
+                ...path.clothoid1,
+                ...path.circle
+            ];
+            drawRoadWidth(allPoints, roadWidth, scale, offsetX, offsetY);
+            
+            // Draw center lines
+            drawPath(path.straight, colors.straight, 3, scale, offsetX, offsetY);
+            drawPath(path.clothoid1, colors.clothoid, 3, scale, offsetX, offsetY);
+            drawPath(path.circle, colors.circle, 3, scale, offsetX, offsetY);
+            
+            // Curvature overlay
+            drawCurvaturePlot(path, scale, offsetX, offsetY);
+            
+            // Labels
+            drawLabels(path, scale, offsetX, offsetY);
+            
+            // Vehicle
+            if (state.animating || state.showVehicle) {
+                drawVehicle(path, state.vehiclePos, scale, offsetX, offsetY);
+            }
+            
+            // Mark transition point
+            if (path.clothoid1.length > 0) {
+                const endPt = path.clothoid1[path.clothoid1.length - 1];
+                const p = worldToScreen(endPt.x, endPt.y, scale, offsetX, offsetY);
+                
+                ctx.fillStyle = colors.circle;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        
+        // ============================================================
+        // Main render loop
+        // ============================================================
+        
+        function render() {
+            switch (state.mode) {
+                case 'highway':
+                    drawHighway();
+                    break;
+                case 'spiral':
+                    drawSpiralOnly();
+                    break;
+                case 'curvature':
+                    drawCurvatureGraph();
+                    break;
+            }
+        }
+        
+        function animate() {
+            if (state.animating) {
+                state.vehiclePos += 0.003 * state.animSpeed;
+                if (state.vehiclePos > 1) state.vehiclePos = 0;
+                render();
+                requestAnimationFrame(animate);
+            }
+        }
+        
+        // ============================================================
+        // UI Updates
+        // ============================================================
+        
+        function updateUI() {
+            computeDerived();
+            
+            document.getElementById('valA').textContent = state.A;
+            document.getElementById('valR').textContent = state.R;
+            document.getElementById('valSpeed').textContent = state.speed;
+            document.getElementById('valAnimSpeed').textContent = state.animSpeed.toFixed(1) + '×';
+            
+            document.getElementById('infoA').textContent = state.A + ' m';
+            document.getElementById('infoR').textContent = state.R + ' m';
+            document.getElementById('infoL').textContent = state.L.toFixed(1) + ' m';
+            document.getElementById('infoTau').textContent = (state.tau * 180 / Math.PI).toFixed(2) + '°';
+            
+            render();
+        }
+        
+        function updateModeButtons() {
+            document.getElementById('btnHighway').classList.toggle('active', state.mode === 'highway');
+            document.getElementById('btnSpiral').classList.toggle('active', state.mode === 'spiral');
+            document.getElementById('btnCurvature').classList.toggle('active', state.mode === 'curvature');
+            
+            const modeNames = {
+                'highway': 'HIGHWAY VIEW',
+                'spiral': 'SPIRAL VIEW',
+                'curvature': 'CURVATURE GRAPH'
+            };
+            document.getElementById('modeIndicator').textContent = modeNames[state.mode];
+        }
+        
+        // ============================================================
+        // Event Listeners
+        // ============================================================
+        
+        document.getElementById('sliderA').addEventListener('input', (e) => {
+            state.A = parseInt(e.target.value);
+            updateUI();
+        });
+        
+        document.getElementById('sliderR').addEventListener('input', (e) => {
+            state.R = parseInt(e.target.value);
+            updateUI();
+        });
+        
+        document.getElementById('sliderSpeed').addEventListener('input', (e) => {
+            state.speed = parseInt(e.target.value);
+            updateUI();
+        });
+        
+        document.getElementById('sliderAnimSpeed').addEventListener('input', (e) => {
+            state.animSpeed = parseFloat(e.target.value);
+            updateUI();
+        });
+        
+        document.getElementById('chkGrid').addEventListener('change', (e) => {
+            state.showGrid = e.target.checked;
+            render();
+        });
+        
+        document.getElementById('chkRoadWidth').addEventListener('change', (e) => {
+            state.showRoadWidth = e.target.checked;
+            render();
+        });
+        
+        document.getElementById('chkLabels').addEventListener('change', (e) => {
+            state.showLabels = e.target.checked;
+            render();
+        });
+        
+        document.getElementById('chkCurvatureLine').addEventListener('change', (e) => {
+            state.showCurvatureLine = e.target.checked;
+            render();
+        });
+        
+        document.getElementById('chkVehicle').addEventListener('change', (e) => {
+            state.showVehicle = e.target.checked;
+            render();
+        });
+        
+        document.getElementById('btnHighway').addEventListener('click', () => {
+            state.mode = 'highway';
+            updateModeButtons();
+            render();
+        });
+        
+        document.getElementById('btnSpiral').addEventListener('click', () => {
+            state.mode = 'spiral';
+            updateModeButtons();
+            render();
+        });
+        
+        document.getElementById('btnCurvature').addEventListener('click', () => {
+            state.mode = 'curvature';
+            updateModeButtons();
+            render();
+        });
+        
+        document.getElementById('btnAnimate').addEventListener('click', (e) => {
+            state.animating = !state.animating;
+            e.target.textContent = state.animating ? '⏸ Pause' : '▶ Animate';
+            e.target.classList.toggle('active', state.animating);
+            if (state.animating) animate();
+        });
+        
+        document.getElementById('btnReset').addEventListener('click', () => {
+            state.A = 100;
+            state.R = 200;
+            state.speed = 80;
+            state.animSpeed = 1.0;
+            state.animating = false;
+            state.vehiclePos = 0;
+            
+            document.getElementById('sliderA').value = 100;
+            document.getElementById('sliderR').value = 200;
+            document.getElementById('sliderSpeed').value = 80;
+            document.getElementById('sliderAnimSpeed').value = 1;
+            document.getElementById('btnAnimate').textContent = '▶ Animate';
+            document.getElementById('btnAnimate').classList.remove('active');
+            
+            updateUI();
+        });
+        
+        // Mouse position display
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // Approximate world coordinates
+            const scale = 1.8;
+            const wx = ((x - W/2 + 80) / scale).toFixed(1);
+            const wy = ((H/2 - y + 50) / scale).toFixed(1);
+            
+            document.getElementById('cursorInfo').textContent = `x: ${wx}m, y: ${wy}m`;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            document.getElementById('cursorInfo').textContent = 'Hover to see coordinates';
+        });
+        
+        // ============================================================
+        // Initialize
+        // ============================================================
+        
+        computeDerived();
+        updateUI();
+        updateModeButtons();
+    </script>
+</body>
+</html>
