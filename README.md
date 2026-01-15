@@ -378,7 +378,7 @@ where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three 
 
 ## Technical Notes
 
-**Browser Compatibility:** All demos use vanilla JavaScript and HTML5 Canvas. Tested on Chrome, Firefox, Safari, and Edge.
+**Browser Compatibility:** All demos use vanilla JavaScript and HTML5 Canvas.
 
 **Dependencies:**
 - Most demos are completely standalone (no external libraries)
@@ -392,8 +392,6 @@ where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three 
 - `xsinx.html`: Uses Tailwind CSS and math.js (CDN)
 - `ftc_vertical.html`: Uses MathJax (CDN)
 - `quadrature_xn.html`: Uses MathJax (CDN)
-
-**Mobile Support:** All demos include touch event handlers for drag-to-rotate functionality on mobile devices.
 
 **Offline Use:** Download the HTML files. Demos using CDN libraries require internet on first load (libraries are typically cached thereafter).
 
