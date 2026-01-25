@@ -273,7 +273,7 @@
         
         .data-panel {
             display: grid;
-            grid-template-columns: repeat(6, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 1px;
             background: var(--border-color);
             border-top: 1px solid var(--border-color);
@@ -478,10 +478,6 @@
                     <div class="data-item">
                         <div class="data-label">\(\theta_f\) from upright</div>
                         <div class="data-value" id="dispThetaF">0.00 rad</div>
-                    </div>
-                    <div class="data-item">
-                        <div class="data-label">\(\omega_f\)</div>
-                        <div class="data-value" id="dispOmegaF">0.00 rad/s</div>
                     </div>
                 </div>
             </div>
@@ -1033,9 +1029,6 @@
                     deviation = normalizedAngle + Math.PI;
                 }
                 document.getElementById('dispThetaF').textContent = deviation.toFixed(2) + ' rad';
-                
-                // omega_f (current angular velocity)
-                document.getElementById('dispOmegaF').textContent = bottle.angularVel.toFixed(2) + ' rad/s';
             }
         }
         
