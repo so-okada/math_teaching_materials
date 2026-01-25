@@ -21,6 +21,8 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
+| [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
+| [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
 
 ---
 
@@ -376,6 +378,55 @@ where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three 
 
 ---
 
+## Differential Geometry
+
+### [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html)
+**File:** `clothoid_highway_demo.html`
+
+Interactive demonstration of clothoid (Euler spiral) curves used in highway and railway design for smooth transitions between straight sections and circular arcs.
+
+**Mathematical Background:**
+The clothoid (Cornu spiral) is defined by the property that curvature increases linearly with arc length:
+$$\kappa(s) = \frac{s}{A^2}$$
+
+where $A$ is the clothoid parameter. The curve is given by Fresnel integrals:
+$$x(s) = \int_0^s \cos\left(\frac{t^2}{2A^2}\right) dt, \quad y(s) = \int_0^s \sin\left(\frac{t^2}{2A^2}\right) dt$$
+
+The fundamental relation $A^2 = R \cdot L$ connects the parameter $A$, the final radius $R$, and the spiral length $L$.
+
+**Controls:**
+- **Clothoid Parameter (A)**: Controls the spiral's "tightness"
+- **Target Radius (R)**: Final circular arc radius
+- **Design Speed**: Vehicle speed for comfort analysis
+- **View modes**: Highway view, spiral view, curvature graph
+- **Animate**: Watch a vehicle traverse the transition
+
+---
+
+## Mechanics
+
+### [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html)
+**File:** `bottle_flip_edu.html`
+
+Physics simulation of the "bottle flip challenge," demonstrating projectile motion with rotation and the role of water redistribution in successful landings.
+
+**Mathematical Background:**
+The bottle undergoes projectile motion with rotation. Key equations:
+$$x(t) = x_0 + v_0 \cos\theta \cdot t, \quad y(t) = y_0 + v_0 \sin\theta \cdot t - \frac{1}{2}gt^2$$
+$$\theta(t) = \theta_0 + \omega_0 t$$
+
+The shifting center of mass due to water sloshing creates a damping effect on rotation, which is crucial for landing upright. Angular momentum conservation and energy dissipation determine landing success.
+
+**Controls:**
+- **Initial Velocity (v₀)**: Launch speed in m/s
+- **Launch Angle (θ)**: Angle from horizontal in degrees
+- **Angular Velocity (ω₀)**: Initial spin rate in rad/s
+- **Fill Level**: Water amount (affects center of mass dynamics)
+- **Gravity**: Adjustable for experimentation
+- Real-time display of flight time, rotation, and landing angle
+
+---
+
 ## Technical Notes
 
 **Browser Compatibility:** All demos use vanilla JavaScript and HTML5 Canvas.
@@ -392,6 +443,8 @@ where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three 
 - `xsinx.html`: Uses Tailwind CSS and math.js (CDN)
 - `ftc_vertical.html`: Uses MathJax (CDN)
 - `quadrature_xn.html`: Uses MathJax (CDN)
+- `clothoid_highway_demo.html`: Uses MathJax (CDN)
+- `bottle_flip_edu.html`: Uses MathJax (CDN)
 
 **Offline Use:** Download the HTML files. Demos using CDN libraries require internet on first load (libraries are typically cached thereafter).
 
