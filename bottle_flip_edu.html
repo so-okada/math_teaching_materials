@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bottle Flipping Physics - Educational Demonstration</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+        
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a25;
+            --accent-blue: #4a9eff;
+            --accent-cyan: #00d4aa;
+            --accent-orange: #ff6b35;
+            --accent-purple: #a855f7;
+            --text-primary: #e8e8f0;
+            --text-secondary: #a0a0b0;
+            --text-muted: #606070;
+            --border-color: #2a2a3a;
+            --success: #22c55e;
+            --fail: #ef4444;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Source Serif 4', Georgia, serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            font-style: italic;
+        }
+        
+        .main-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .controls-panel {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+        }
+        
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .controls-header .panel-title {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: flex-end;
+        }
+        
+        .controls-row .input-group {
+            flex: 1;
+            min-width: 140px;
+            max-width: 180px;
+            margin-bottom: 0;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        .button-group .btn {
+            margin-bottom: 0;
+            width: auto;
+            padding: 0.6rem 1.25rem;
+        }
+        
+        @media (max-width: 900px) {
+            .controls-row {
+                gap: 1rem;
+            }
+            .controls-row .input-group {
+                min-width: 120px;
+            }
+        }
+        
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .input-group {
+            margin-bottom: 1rem;
+        }
+        
+        .input-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        .input-unit {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .input-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+        
+        input[type="number"] {
+            flex: 1;
+            padding: 0.6rem 0.8rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        input[type="number"]:focus {
+            border-color: var(--accent-blue);
+        }
+        
+        input[type="number"]::-webkit-inner-spin-button {
+            opacity: 1;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 0.8rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 0.6rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: var(--bg-primary);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(74, 158, 255, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+        
+        .simulation-area {
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .canvas-container {
+            position: relative;
+            background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+        }
+        
+        canvas {
+            display: block;
+            width: 100%;
+        }
+        
+        .result-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.8rem;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .result-overlay.success {
+            background: rgba(34, 197, 94, 0.9);
+            color: white;
+        }
+        
+        .result-overlay.fail {
+            background: rgba(239, 68, 68, 0.9);
+            color: white;
+        }
+        
+        .result-overlay.show {
+            opacity: 1;
+        }
+        
+        .data-panel {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 1px;
+            background: var(--border-color);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .data-item {
+            background: var(--bg-tertiary);
+            padding: 0.75rem;
+            text-align: center;
+        }
+        
+        .data-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+        
+        .data-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            color: var(--accent-cyan);
+            font-weight: 600;
+        }
+        
+        .math-section {
+            margin-top: 2rem;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 2rem;
+        }
+        
+        .math-section h2 {
+            font-size: 1.4rem;
+            color: var(--accent-blue);
+            margin-bottom: 1.5rem;
+        }
+        
+        .math-section h3 {
+            font-size: 1.15rem;
+            color: var(--accent-cyan);
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .math-section p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+        
+        .equation-box {
+            background: var(--bg-tertiary);
+            border-left: 3px solid var(--accent-blue);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            border-radius: 0 8px 8px 0;
+            overflow-x: auto;
+        }
+        
+        .key-insight {
+            background: linear-gradient(135deg, rgba(74, 158, 255, 0.1), rgba(0, 212, 170, 0.1));
+            border: 1px solid var(--accent-cyan);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1.5rem 0;
+        }
+        
+        .key-insight-title {
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+        
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+        }
+        
+        .status-dot.flying {
+            background: var(--accent-orange);
+            animation: pulse 0.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🍾 Bottle Flipping Physics</h1>
+            <p class="subtitle">Educational demonstration with precise numerical control</p>
+        </header>
+        
+        <div class="main-layout">
+            <div class="controls-panel">
+                <div class="controls-header">
+                    <h2 class="panel-title">🎯 Initial Conditions</h2>
+                    <div class="status-indicator">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">Ready to launch</span>
+                    </div>
+                </div>
+                
+                <div class="controls-row">
+                    <div class="input-group">
+                        <div class="input-label">
+                            <span>Initial Velocity \(v_0\)</span>
+                            <span class="input-unit">m/s</span>
+                        </div>
+                        <input type="number" id="initialVelocity" value="3.5" min="0.5" max="10" step="0.01">
+                    </div>
+                    
+                    <div class="input-group">
+                        <div class="input-label">
+                            <span>Launch Angle \(\theta\)</span>
+                            <span class="input-unit">degrees</span>
+                        </div>
+                        <input type="number" id="launchAngle" value="80" min="45" max="90" step="0.1">
+                    </div>
+                    
+                    <div class="input-group">
+                        <div class="input-label">
+                            <span>Angular Velocity \(\omega_0\)</span>
+                            <span class="input-unit">rad/s</span>
+                        </div>
+                        <input type="number" id="angularVelocity" value="10" min="0" max="30" step="0.01">
+                    </div>
+                    
+                    <div class="input-group">
+                        <div class="input-label">
+                            <span>Water Fill Level</span>
+                            <span class="input-unit">%</span>
+                        </div>
+                        <input type="number" id="fillLevel" value="30" min="10" max="90" step="1">
+                    </div>
+                    
+                    <div class="input-group">
+                        <div class="input-label">
+                            <span>Gravity \(g\)</span>
+                            <span class="input-unit">m/s²</span>
+                        </div>
+                        <input type="number" id="gravity" value="9.8" min="1" max="25" step="0.01">
+                    </div>
+                    
+                    <div class="button-group">
+                        <button class="btn btn-primary" id="launchBtn">▶ Launch</button>
+                        <button class="btn btn-secondary" id="resetBtn">↺ Reset</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="simulation-area">
+                <div class="canvas-container">
+                    <canvas id="canvas"></canvas>
+                    <div id="resultOverlay" class="result-overlay"></div>
+                </div>
+                <div class="data-panel">
+                    <div class="data-item">
+                        <div class="data-label">Time</div>
+                        <div class="data-value" id="dispTime">0.00 s</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Height</div>
+                        <div class="data-value" id="dispHeight">0.00 m</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Velocity</div>
+                        <div class="data-value" id="dispVelocity">0.00 m/s</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">Rotations</div>
+                        <div class="data-value" id="dispRotations">0.00</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">\(\theta_f\) from upright</div>
+                        <div class="data-value" id="dispThetaF">0.00 rad</div>
+                    </div>
+                    <div class="data-item">
+                        <div class="data-label">\(\omega_f\)</div>
+                        <div class="data-value" id="dispOmegaF">0.00 rad/s</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="math-section">
+            <h2>Mathematical Analysis</h2>
+            
+            <h3>1. Bottle Specifications</h3>
+            <p>This simulation models a standard 500ml PET bottle with the following parameters:</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 1rem 0; color: var(--text-secondary);">
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.5rem;">Height \(L\)</td>
+                    <td style="padding: 0.5rem; font-family: 'JetBrains Mono', monospace;">22 cm</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.5rem;">Diameter \(2R\)</td>
+                    <td style="padding: 0.5rem; font-family: 'JetBrains Mono', monospace;">7 cm</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.5rem;">Empty bottle mass \(m_b\)</td>
+                    <td style="padding: 0.5rem; font-family: 'JetBrains Mono', monospace;">25 g</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.5rem;">Maximum water mass \(m_{w,\max}\)</td>
+                    <td style="padding: 0.5rem; font-family: 'JetBrains Mono', monospace;">500 g</td>
+                </tr>
+                <tr>
+                    <td style="padding: 0.5rem;">Neck height</td>
+                    <td style="padding: 0.5rem; font-family: 'JetBrains Mono', monospace;">4.5 cm</td>
+                </tr>
+            </table>
+            
+            <h3>2. Initial Velocity Components</h3>
+            <p>Given initial speed \(v_0\) and launch angle \(\theta\) (measured from horizontal), the velocity components are:</p>
+            
+            <div class="equation-box">
+                \[
+                v_{x0} = v_0 \cos\theta, \quad v_{y0} = v_0 \sin\theta
+                \]
+            </div>
+            
+            <h3>3. Projectile Motion</h3>
+            <p>The center of mass follows a parabolic trajectory:</p>
+            
+            <div class="equation-box">
+                \[
+                \begin{aligned}
+                x(t) &= x_0 + v_{x0} t \\
+                y(t) &= y_0 + v_{y0} t - \frac{1}{2}gt^2
+                \end{aligned}
+                \]
+            </div>
+            
+            <p>The <strong>flight time</strong> (time to return to initial height) is:</p>
+            
+            <div class="equation-box">
+                \[
+                T = \frac{2 v_{y0}}{g} = \frac{2 v_0 \sin\theta}{g}
+                \]
+            </div>
+            
+            <p>The <strong>maximum height</strong> reached is:</p>
+            
+            <div class="equation-box">
+                \[
+                h_{\max} = \frac{v_{y0}^2}{2g} = \frac{(v_0 \sin\theta)^2}{2g}
+                \]
+            </div>
+            
+            <h3>4. Rotational Motion (Solid Body Model)</h3>
+            <p>In the solid body approximation, angular velocity remains constant during flight:</p>
+            
+            <div class="equation-box">
+                \[
+                \omega(t) = \omega_0 = \text{constant}
+                \]
+            </div>
+            
+            <p>The <strong>total rotation</strong> after flight time \(T\):</p>
+            
+            <div class="equation-box">
+                \[
+                \theta(t) = \theta_0 + \omega_0 t
+                \]
+            </div>
+            
+            <p>The <strong>final angle</strong> determines if the bottle lands upright. Starting from \(\theta_0 = \pi\) (cap down):</p>
+            
+            <div class="equation-box">
+                \[
+                \theta_f = \pi + \omega_0 T
+                \]
+            </div>
+            
+            <p>For upright landing, we need \(\theta_f \approx \pm\pi\) (mod \(2\pi\)), i.e., \(\omega_0 T \approx 2\pi n\) for integer \(n\).</p>
+            
+            <div class="key-insight">
+                <div class="key-insight-title">Key Relationship</div>
+                For a single flip (\(n=1\)) with flight time \(T = \frac{2v_0\sin\theta}{g}\):
+                \[
+                \omega_0 = \frac{2\pi}{T} = \frac{\pi g}{v_0 \sin\theta}
+                \]
+            </div>
+            
+            <h3>5. Moment of Inertia</h3>
+            <p>The moment of inertia about the center of mass depends on fill level. For a solid cylinder of mass \(m\), radius \(r\), and height \(h\), rotating about a perpendicular axis through its center (<a href="https://en.wikipedia.org/wiki/List_of_moments_of_inertia" target="_blank">Wikipedia</a>):</p>
+            
+            <div class="equation-box">
+                \[
+                I = \frac{1}{12}m(3r^2 + h^2)
+                \]
+            </div>
+            
+            <p>Using the <a href="https://en.wikipedia.org/wiki/Parallel_axis_theorem" target="_blank">parallel axis theorem</a>, the total moment of inertia is:</p>
+            
+            <div class="equation-box">
+                \[
+                I_{\text{total}} = I_{\text{bottle}} + m_b d_b^2 + I_{\text{water}} + m_w d_w^2
+                \]
+            </div>
+            
+            <p>where \(d_b\) and \(d_w\) are distances from each component's center to the system COM.</p>
+            
+            <h3>6. Center of Mass Calculation</h3>
+            <p>For a bottle with water fill ratio \(f\) (0 to 1), the center of mass height from the bottom is:</p>
+            
+            <div class="equation-box">
+                \[
+                h_{\text{COM}} = \frac{m_w \cdot \frac{h_w}{2} + m_b \cdot \frac{L}{2}}{m_w + m_b}
+                \]
+            </div>
+            
+            <p>where \(m_w = f \cdot m_{\text{water,max}}\) is the water mass, \(h_w = f \cdot L_{\text{body}}\) is water height, and \(m_b\) is the empty bottle mass.</p>
+            
+            <h3>7. Landing Stability Criterion</h3>
+            <p>A successful landing requires:</p>
+            
+            <p><strong>1. Angle condition:</strong> \(\theta_f \approx \pm\pi\) (bottle upright, base down)</p>
+            
+            <p><strong>2. Stability condition:</strong> The bottle tips if rotational kinetic energy exceeds the potential energy to raise COM over the base edge:</p>
+            
+            <div class="equation-box">
+                \[
+                \frac{1}{2}I\omega^2 < Mg\left(\sqrt{R^2 + h_{\text{COM}}^2} - h_{\text{COM}}\right)
+                \]
+            </div>
+            
+            <p>Solving for the maximum stable angular velocity:</p>
+            
+            <div class="equation-box">
+                \[
+                \omega_{\text{max}} = \sqrt{\frac{2Mg\left(\sqrt{R^2 + h_{\text{COM}}^2} - h_{\text{COM}}\right)}{I}}
+                \]
+            </div>
+            
+            <p>Computed values for this bottle:</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin: 1rem 0; color: var(--text-secondary);">
+                <tr style="border-bottom: 1px solid var(--border-color); background: var(--bg-tertiary);">
+                    <th style="padding: 0.5rem; text-align: left;">Fill %</th>
+                    <th style="padding: 0.5rem; text-align: right;">\(\omega_{\max}\) (rad/s)</th>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.4rem;">10%</td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;">7.90</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.4rem;">20%</td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;">10.42</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.4rem;">30%</td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;">11.73</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); background: rgba(0, 255, 136, 0.1);">
+                    <td style="padding: 0.4rem;"><strong>40%</strong></td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;"><strong>12.04</strong> (peak)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.4rem;">50%</td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;">11.59</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.4rem;">60%</td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;">10.69</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.4rem;">70%</td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;">9.60</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 0.4rem;">80%</td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;">8.51</td>
+                </tr>
+                <tr>
+                    <td style="padding: 0.4rem;">90%</td>
+                    <td style="padding: 0.4rem; text-align: right; font-family: 'JetBrains Mono', monospace;">7.52</td>
+                </tr>
+            </table>
+            
+            <div class="key-insight">
+                <div class="key-insight-title">Model Limitations</div>
+                <ul style="color: var(--text-secondary); margin-left: 1.5rem; margin-top: 0.5rem;">
+                    <li>This is a <strong>solid body model</strong> — water is treated as a rigid mass, not a fluid.</li>
+                    <li>A more realistic model would require solving the <strong>Navier-Stokes equations</strong> such as for water sloshing inside the bottle.</li>
+                    <li>Some reports on the Internet and theoretical results predict optimal fill around <strong>20-40%</strong> [<a href="https://pubs.aip.org/aapt/ajp/article/86/10/733/1057911/Water-bottle-flipping-physics" target="_blank">Dekker et al., Am. J. Phys. 86, 733 (2018)</a>].</li>
+                </ul>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Interactive Physics Demonstration | Created with HTML5 Canvas and JavaScript</p>
+            <p>© 2025 | CC BY-NC 4.0</p>
+        </footer>
+    </div>
+    
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = Math.max(400, Math.min(500, window.innerHeight * 0.5));
+        }
+        resizeCanvas();
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            if (!isFlying) initBottle();
+        });
+        
+        // Physics constants
+        const SCALE = 180; // pixels per meter
+        const BOTTLE_HEIGHT = 0.22;  // 22 cm
+        const BOTTLE_WIDTH = 0.07;   // 7 cm diameter
+        const BOTTLE_NECK_HEIGHT = 0.045;
+        const BOTTLE_NECK_WIDTH = 0.028;
+        const BOTTLE_EMPTY_MASS = 0.025;  // 25 g empty PET bottle
+        const WATER_MAX_MASS = 0.5;  // 500 g water when full
+        
+        // Simulation state
+        let bottle = null;
+        let isFlying = false;
+        let simulationTime = 0;
+        let trajectory = [];
+        
+        // Get input values
+        function getInputs() {
+            return {
+                v0: parseFloat(document.getElementById('initialVelocity').value),
+                angle: parseFloat(document.getElementById('launchAngle').value) * Math.PI / 180,
+                omega0: parseFloat(document.getElementById('angularVelocity').value),
+                fill: parseFloat(document.getElementById('fillLevel').value) / 100,
+                g: parseFloat(document.getElementById('gravity').value)
+            };
+        }
+        
+        // Calculate center of mass
+        function calculateCOM(fill) {
+            const waterHeight = fill * (BOTTLE_HEIGHT - BOTTLE_NECK_HEIGHT);
+            const waterMass = fill * WATER_MAX_MASS;
+            const bottleMass = BOTTLE_EMPTY_MASS;
+            
+            const waterCOM = waterHeight / 2;
+            const bottleCOM = BOTTLE_HEIGHT / 2;
+            
+            const totalMass = waterMass + bottleMass;
+            return (waterMass * waterCOM + bottleMass * bottleCOM) / totalMass;
+        }
+        
+        // Calculate moment of inertia about COM
+        function calculateMomentOfInertia(fill) {
+            const R = BOTTLE_WIDTH / 2;  // bottle radius
+            const L = BOTTLE_HEIGHT;
+            const waterHeight = fill * (BOTTLE_HEIGHT - BOTTLE_NECK_HEIGHT);
+            const waterMass = fill * WATER_MAX_MASS;
+            const bottleMass = BOTTLE_EMPTY_MASS;
+            const com = calculateCOM(fill);
+            
+            // Solid cylinder about perpendicular axis through center:
+            // I = (1/12) m (3r² + h²)
+            // Reference: https://en.wikipedia.org/wiki/List_of_moments_of_inertia
+            
+            // Bottle (approximated as solid cylinder)
+            const I_bottle_center = (1/12) * bottleMass * (3 * R * R + L * L);
+            // Parallel axis theorem to shift to system COM
+            const d_bottle = Math.abs(L/2 - com);
+            const I_bottle = I_bottle_center + bottleMass * d_bottle * d_bottle;
+            
+            // Water (solid cylinder)
+            const I_water_center = (1/12) * waterMass * (3 * R * R + waterHeight * waterHeight);
+            // Parallel axis theorem to shift to system COM
+            const waterCOM = waterHeight / 2;
+            const d_water = Math.abs(waterCOM - com);
+            const I_water = I_water_center + waterMass * d_water * d_water;
+            
+            return I_bottle + I_water;
+        }
+        
+        // Calculate total mass
+        function calculateTotalMass(fill) {
+            const waterMass = fill * WATER_MAX_MASS;
+            return waterMass + BOTTLE_EMPTY_MASS;
+        }
+        
+        // Ground level
+        const getGroundY = () => canvas.height - 50;
+        
+        // Bottle class
+        class Bottle {
+            constructor(x, y, fill) {
+                this.x = x;
+                this.y = y;
+                this.vx = 0;
+                this.vy = 0;
+                this.angle = 0;
+                this.angularVel = 0;
+                this.fill = fill;
+                this.com = calculateCOM(fill);
+                this.landed = false;
+                this.landedSuccessfully = false;
+                this.waterOffset = 0;
+                this.initialY = y;
+            }
+            
+            launch(vx, vy, angularVel) {
+                this.vx = vx;
+                this.vy = vy;
+                this.angularVel = angularVel;
+            }
+            
+            update(dt, g) {
+                if (this.landed) return;
+                
+                // Apply gravity
+                this.vy += g * dt;
+                
+                // Solid body model: angular velocity is constant (no damping)
+                // this.angularVel remains unchanged
+                
+                // Update position
+                this.x += this.vx * dt * SCALE;
+                this.y += this.vy * dt * SCALE;
+                this.angle += this.angularVel * dt;
+                
+                // Water sloshing (visual only)
+                this.waterOffset = Math.sin(this.angle * 2) * 0.06 * (1 - this.fill * 0.5);
+                
+                // Check ground collision - check both cap and base
+                const groundY = getGroundY();
+                const comOffset = this.com * SCALE;
+                const baseOffset = BOTTLE_HEIGHT * SCALE - comOffset;
+                
+                // Base position (when angle=0, base is down; when angle=π, cap is down)
+                const baseY = this.y + Math.cos(this.angle) * baseOffset;
+                // Cap position
+                const capY = this.y - Math.cos(this.angle) * baseOffset;
+                
+                if (baseY >= groundY || capY >= groundY) {
+                    this.checkLanding(groundY);
+                }
+                
+                // Out of bounds
+                if (this.x < -100 || this.x > canvas.width + 100 || this.y > canvas.height + 100) {
+                    this.landed = true;
+                    this.landedSuccessfully = false;
+                }
+            }
+            
+            checkLanding(groundY) {
+                // Normalize angle to [-π, π]
+                let normalizedAngle = this.angle % (2 * Math.PI);
+                if (normalizedAngle > Math.PI) normalizedAngle -= 2 * Math.PI;
+                if (normalizedAngle < -Math.PI) normalizedAngle += 2 * Math.PI;
+                
+                // Success: angle ≈ ±π means cap up, base down (upright)
+                const uprightTolerance = Math.PI / 9;  // ~20 degrees
+                const deviationFromUpright = Math.abs(Math.abs(normalizedAngle) - Math.PI);
+                const isUpright = deviationFromUpright < uprightTolerance;
+                
+                // Energy-based stability criterion:
+                // Rotational KE < Potential energy to tip over edge
+                // (1/2)Iω² < Mg(√(R² + h²) - h)
+                //
+                // Solving for ω_max:
+                // ω_max = √(2Mg(√(R² + h²) - h) / I)
+                
+                const I = calculateMomentOfInertia(this.fill);
+                const M = calculateTotalMass(this.fill);
+                const h = this.com;  // h_COM
+                const R = BOTTLE_WIDTH / 2;
+                const g = 9.8;
+                
+                // Exact potential energy barrier (no small R/h approximation)
+                const deltaH = Math.sqrt(R * R + h * h) - h;
+                const omegaMax = Math.sqrt(2 * M * g * deltaH / I);
+                
+                // Exact stability threshold from energy criterion
+                const stabilityThreshold = omegaMax;
+                
+                const isStable = Math.abs(this.angularVel) < stabilityThreshold;
+                
+                this.landed = true;
+                this.landedSuccessfully = isUpright && isStable;
+                this.stabilityThreshold = stabilityThreshold;
+                this.omegaMax = omegaMax;
+                
+                const comOffset = this.com * SCALE;
+                const baseOffset = BOTTLE_HEIGHT * SCALE - comOffset;
+                
+                if (this.landedSuccessfully) {
+                    this.angle = Math.PI;  // Snap to upright (cap up)
+                    this.angularVel = 0;
+                    this.y = groundY - baseOffset;
+                } else {
+                    // Position based on whichever end is down
+                    this.y = groundY - Math.abs(Math.cos(this.angle)) * baseOffset;
+                }
+                
+                this.vx = 0;
+                this.vy = 0;
+            }
+            
+            getHeight() {
+                return (this.initialY - this.y) / SCALE;
+            }
+            
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
+                const h = BOTTLE_HEIGHT * SCALE;
+                const w = BOTTLE_WIDTH * SCALE;
+                const nh = BOTTLE_NECK_HEIGHT * SCALE;
+                const nw = BOTTLE_NECK_WIDTH * SCALE;
+                const comOffset = this.com * SCALE;
+                
+                const bodyTop = -comOffset;
+                const bodyBottom = h - comOffset - nh;
+                
+                // Bottle body gradient
+                const bodyGradient = ctx.createLinearGradient(-w/2, 0, w/2, 0);
+                bodyGradient.addColorStop(0, 'rgba(180, 210, 255, 0.25)');
+                bodyGradient.addColorStop(0.2, 'rgba(200, 230, 255, 0.5)');
+                bodyGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.7)');
+                bodyGradient.addColorStop(0.8, 'rgba(200, 230, 255, 0.5)');
+                bodyGradient.addColorStop(1, 'rgba(180, 210, 255, 0.25)');
+                
+                // Main body
+                ctx.beginPath();
+                ctx.roundRect(-w/2, bodyTop, w, bodyBottom - bodyTop, 8);
+                ctx.fillStyle = bodyGradient;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(100, 160, 220, 0.8)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Water
+                const waterMaxHeight = (h - nh) * 0.95;
+                const waterHeight = this.fill * waterMaxHeight;
+                const waterTop = bodyBottom - waterHeight + this.waterOffset * SCALE * 0.5;
+                
+                if (waterHeight > 0) {
+                    ctx.beginPath();
+                    ctx.roundRect(-w/2 + 4, Math.max(waterTop, bodyTop + 4), w - 8, 
+                                  Math.min(waterHeight, bodyBottom - Math.max(waterTop, bodyTop + 4) - 4), 4);
+                    const waterGradient = ctx.createLinearGradient(0, waterTop, 0, bodyBottom);
+                    waterGradient.addColorStop(0, 'rgba(64, 180, 240, 0.75)');
+                    waterGradient.addColorStop(0.5, 'rgba(40, 140, 220, 0.85)');
+                    waterGradient.addColorStop(1, 'rgba(30, 100, 180, 0.95)');
+                    ctx.fillStyle = waterGradient;
+                    ctx.fill();
+                }
+                
+                // Neck
+                ctx.beginPath();
+                ctx.moveTo(-w/2 + 5, bodyBottom);
+                ctx.lineTo(-nw/2, bodyBottom + nh * 0.3);
+                ctx.lineTo(-nw/2, bodyBottom + nh);
+                ctx.lineTo(nw/2, bodyBottom + nh);
+                ctx.lineTo(nw/2, bodyBottom + nh * 0.3);
+                ctx.lineTo(w/2 - 5, bodyBottom);
+                ctx.closePath();
+                ctx.fillStyle = bodyGradient;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(100, 160, 220, 0.8)';
+                ctx.stroke();
+                
+                // Cap
+                ctx.beginPath();
+                ctx.roundRect(-nw/2 - 3, bodyBottom + nh - 3, nw + 6, 10, 3);
+                ctx.fillStyle = '#4a9eff';
+                ctx.fill();
+                
+                // Highlight
+                ctx.beginPath();
+                ctx.moveTo(-w/3, bodyTop + 12);
+                ctx.quadraticCurveTo(-w/3 - 2, (bodyTop + bodyBottom) / 2, -w/3, bodyBottom - 12);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+        
+        // Initialize bottle
+        function initBottle() {
+            const inputs = getInputs();
+            const startX = canvas.width * 0.2;
+            const groundY = getGroundY();
+            const comOffset = calculateCOM(inputs.fill) * SCALE;
+            const bottomOffset = BOTTLE_HEIGHT * SCALE - comOffset;
+            const startY = groundY - bottomOffset;
+            
+            bottle = new Bottle(startX, startY, inputs.fill);
+            // Start with cap down (held by neck for flipping)
+            bottle.angle = Math.PI;
+            trajectory = [];
+            simulationTime = 0;
+            
+            updateDisplays();
+        }
+        
+        // Update real-time displays
+        function updateDisplays() {
+            if (bottle) {
+                document.getElementById('dispTime').textContent = simulationTime.toFixed(2) + ' s';
+                document.getElementById('dispHeight').textContent = Math.max(0, bottle.getHeight()).toFixed(2) + ' m';
+                document.getElementById('dispVelocity').textContent = Math.sqrt(bottle.vx*bottle.vx + bottle.vy*bottle.vy).toFixed(2) + ' m/s';
+                document.getElementById('dispRotations').textContent = (Math.abs(bottle.angle - Math.PI) / (2 * Math.PI)).toFixed(2);
+                
+                // theta_f: deviation from upright (±π)
+                // Upright = angle ≈ ±π, so deviation = |angle| - π (mapped to [-π, π])
+                let normalizedAngle = bottle.angle % (2 * Math.PI);
+                if (normalizedAngle > Math.PI) normalizedAngle -= 2 * Math.PI;
+                if (normalizedAngle < -Math.PI) normalizedAngle += 2 * Math.PI;
+                
+                // Deviation from upright: how far from ±π
+                let deviation;
+                if (normalizedAngle >= 0) {
+                    deviation = normalizedAngle - Math.PI;
+                } else {
+                    deviation = normalizedAngle + Math.PI;
+                }
+                document.getElementById('dispThetaF').textContent = deviation.toFixed(2) + ' rad';
+                
+                // omega_f (current angular velocity)
+                document.getElementById('dispOmegaF').textContent = bottle.angularVel.toFixed(2) + ' rad/s';
+            }
+        }
+        
+        // Draw scene
+        function draw() {
+            const inputs = getInputs();
+            
+            // Clear
+            ctx.fillStyle = '#0d1117';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Grid
+            ctx.strokeStyle = 'rgba(74, 158, 255, 0.07)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // Height scale
+            const groundY = getGroundY();
+            ctx.fillStyle = 'rgba(74, 158, 255, 0.5)';
+            ctx.font = '11px JetBrains Mono';
+            for (let h = 0; h <= 1.5; h += 0.25) {
+                const y = groundY - h * SCALE;
+                if (y > 20) {
+                    ctx.fillText(h.toFixed(2) + 'm', 5, y + 4);
+                    ctx.beginPath();
+                    ctx.moveTo(45, y);
+                    ctx.lineTo(55, y);
+                    ctx.strokeStyle = 'rgba(74, 158, 255, 0.3)';
+                    ctx.stroke();
+                }
+            }
+            
+            // Ground
+            const groundGradient = ctx.createLinearGradient(0, groundY, 0, canvas.height);
+            groundGradient.addColorStop(0, '#1e2028');
+            groundGradient.addColorStop(1, '#14161a');
+            ctx.fillStyle = groundGradient;
+            ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+            
+            ctx.strokeStyle = '#4a9eff';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = '#4a9eff';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            
+            // Draw predicted trajectory (when not flying)
+            if (!isFlying && bottle) {
+                const vx0 = inputs.v0 * Math.cos(inputs.angle);
+                const vy0 = inputs.v0 * Math.sin(inputs.angle);
+                
+                ctx.beginPath();
+                ctx.setLineDash([6, 6]);
+                ctx.moveTo(bottle.x, bottle.y);
+                
+                let px = bottle.x;
+                let py = bottle.y;
+                let pvx = vx0;
+                let pvy = -vy0;
+                
+                for (let t = 0; t < 150; t++) {
+                    pvy += inputs.g * 0.015;
+                    px += pvx * 0.015 * SCALE;
+                    py += pvy * 0.015 * SCALE;
+                    ctx.lineTo(px, py);
+                    if (py > groundY) break;
+                }
+                
+                ctx.strokeStyle = 'rgba(168, 85, 247, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw velocity vector
+                const arrowLen = inputs.v0 * 25;
+                const arrowX = bottle.x + arrowLen * Math.cos(-inputs.angle);
+                const arrowY = bottle.y + arrowLen * Math.sin(-inputs.angle);
+                
+                ctx.beginPath();
+                ctx.moveTo(bottle.x, bottle.y);
+                ctx.lineTo(arrowX, arrowY);
+                ctx.strokeStyle = '#ff6b35';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                
+                // Arrowhead
+                const aAngle = -inputs.angle;
+                ctx.beginPath();
+                ctx.moveTo(arrowX, arrowY);
+                ctx.lineTo(arrowX - 12 * Math.cos(aAngle - 0.4), arrowY - 12 * Math.sin(aAngle - 0.4));
+                ctx.moveTo(arrowX, arrowY);
+                ctx.lineTo(arrowX - 12 * Math.cos(aAngle + 0.4), arrowY - 12 * Math.sin(aAngle + 0.4));
+                ctx.stroke();
+                
+                // Label
+                ctx.fillStyle = '#ff6b35';
+                ctx.font = '12px JetBrains Mono';
+                ctx.fillText(`v₀ = ${inputs.v0.toFixed(1)} m/s`, arrowX + 10, arrowY - 5);
+                ctx.fillText(`θ = ${(inputs.angle * 180 / Math.PI).toFixed(0)}°`, arrowX + 10, arrowY + 12);
+            }
+            
+            // Draw actual trajectory
+            if (trajectory.length > 1) {
+                ctx.beginPath();
+                ctx.moveTo(trajectory[0].x, trajectory[0].y);
+                for (let i = 1; i < trajectory.length; i++) {
+                    ctx.lineTo(trajectory[i].x, trajectory[i].y);
+                }
+                ctx.strokeStyle = 'rgba(0, 212, 170, 0.6)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+            
+            // Draw bottle
+            if (bottle) {
+                bottle.draw();
+            }
+        }
+        
+        // Animation loop
+        let lastTime = 0;
+        function animate(time) {
+            const dt = Math.min((time - lastTime) / 1000, 0.033);
+            lastTime = time;
+            
+            if (isFlying && bottle && !bottle.landed) {
+                const inputs = getInputs();
+                bottle.update(dt, inputs.g);
+                simulationTime += dt;
+                
+                // Record trajectory
+                if (trajectory.length === 0 || 
+                    Math.hypot(bottle.x - trajectory[trajectory.length-1].x, 
+                               bottle.y - trajectory[trajectory.length-1].y) > 5) {
+                    trajectory.push({x: bottle.x, y: bottle.y});
+                }
+                
+                updateDisplays();
+                
+                if (bottle.landed) {
+                    isFlying = false;
+                    document.getElementById('launchBtn').disabled = false;
+                    document.getElementById('statusDot').classList.remove('flying');
+                    
+                    if (bottle.landedSuccessfully) {
+                        document.getElementById('statusText').textContent = 'Success! 🎉';
+                        showResult('LANDED!', true);
+                    } else {
+                        document.getElementById('statusText').textContent = 'Missed - try adjusting parameters';
+                        showResult('MISSED', false);
+                    }
+                }
+            }
+            
+            draw();
+            requestAnimationFrame(animate);
+        }
+        
+        function showResult(text, success) {
+            const overlay = document.getElementById('resultOverlay');
+            overlay.textContent = text;
+            overlay.className = 'result-overlay ' + (success ? 'success' : 'fail') + ' show';
+            setTimeout(() => overlay.classList.remove('show'), 1500);
+        }
+        
+        // Launch button
+        document.getElementById('launchBtn').addEventListener('click', () => {
+            if (isFlying) return;
+            
+            initBottle();
+            
+            const inputs = getInputs();
+            const vx0 = inputs.v0 * Math.cos(inputs.angle);
+            const vy0 = -inputs.v0 * Math.sin(inputs.angle); // Negative because y increases downward
+            
+            bottle.launch(vx0, vy0, inputs.omega0);
+            isFlying = true;
+            
+            document.getElementById('launchBtn').disabled = true;
+            document.getElementById('statusDot').classList.add('flying');
+            document.getElementById('statusText').textContent = 'In flight...';
+        });
+        
+        // Reset button
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            isFlying = false;
+            initBottle();
+            document.getElementById('launchBtn').disabled = false;
+            document.getElementById('statusDot').classList.remove('flying');
+            document.getElementById('statusText').textContent = 'Ready to launch';
+        });
+        
+
+        // Input change handlers
+        ['initialVelocity', 'launchAngle', 'angularVelocity', 'gravity', 'fillLevel'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                if (!isFlying) initBottle();
+            });
+        });
+        
+        // Initialize
+        initBottle();
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
