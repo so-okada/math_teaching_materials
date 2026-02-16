@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conic Sections — Interactive Demonstration</title>
+<script>
+MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0f1114;
+    --surface: #1a1d23;
+    --surface2: #22262e;
+    --border: #2e333d;
+    --text: #e2e4e9;
+    --text-dim: #8b909c;
+    --current-accent: #5b9cf5;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  header {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: 0.02em; margin-bottom: 0.3rem; }
+  header p { color: var(--text-dim); font-size: 0.95rem; font-style: italic; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: calc(100vh - 120px);
+  }
+
+  .panel { padding: 1.5rem; display: flex; flex-direction: column; align-items: center; }
+  .panel-left { border-right: 1px solid var(--border); }
+
+  .panel-title {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.15em;
+    color: var(--text-dim); margin-bottom: 1rem; font-family: 'JetBrains Mono', monospace;
+  }
+
+  canvas { background: transparent; display: block; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+
+  .controls { width: 100%; max-width: 420px; margin-top: 1.2rem; }
+
+  .control-group { margin-bottom: 1rem; }
+  .control-group label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.35rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .control-group label span.val { color: var(--text); font-weight: 500; }
+
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 4px;
+    background: var(--border); border-radius: 2px; outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--current-accent); cursor: pointer; border: 2px solid var(--bg);
+    box-shadow: 0 0 6px rgba(91, 156, 245, 0.4);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--current-accent); cursor: pointer; border: 2px solid var(--bg);
+  }
+
+  .type-indicator {
+    display: inline-block; padding: 0.3rem 0.9rem; border-radius: 100px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 500;
+    background: var(--surface2); border: 1px solid var(--current-accent);
+    color: var(--current-accent); margin-bottom: 0.8rem; transition: all 0.3s ease;
+    letter-spacing: 0.05em;
+  }
+
+  .equation-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 1rem 1.5rem; margin-top: 0.8rem; width: 100%; max-width: 420px;
+    min-height: 70px; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 0.5rem; transition: border-color 0.3s ease;
+  }
+  .equation-box .eq-label {
+    font-size: 0.75rem; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .equation-box .eq-content { font-size: 1.1rem; text-align: center; line-height: 1.6; }
+
+  .params-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 0.8rem 1.2rem; margin-top: 0.6rem; width: 100%; max-width: 420px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-dim);
+    line-height: 1.8;
+  }
+  .params-box .param-line { display: flex; justify-content: space-between; }
+  .params-box .param-val { color: var(--text); }
+
+  .description-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 1rem 1.2rem; margin-top: 0.6rem; width: 100%; max-width: 420px;
+    font-size: 0.88rem; line-height: 1.65; color: var(--text-dim);
+  }
+
+  .preset-buttons { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; margin-bottom: 0.5rem; }
+  .preset-btn {
+    padding: 0.3rem 0.75rem; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem; cursor: pointer; transition: all 0.2s ease; letter-spacing: 0.03em;
+  }
+  .preset-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--text-dim); }
+  .preset-btn.active { border-color: var(--current-accent); color: var(--current-accent); background: var(--surface2); }
+
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    .panel-left { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Conic Sections</h1>
+  <p>Slicing a double cone by a plane at varying angles</p>
+</header>
+
+<div class="layout">
+  <div class="panel panel-left">
+    <div class="panel-title">3D View — Cone &amp; Cutting Plane</div>
+    <canvas id="canvas3d" width="480" height="420"></canvas>
+    <div class="controls">
+      <div class="control-group">
+        <label>Plane Tilt Angle (θ) <span class="val" id="tiltVal">45°</span></label>
+        <input type="range" id="tiltSlider" min="-180" max="180" value="45" step="0.5">
+      </div>
+      <div class="control-group">
+        <label>Plane Height (h) <span class="val" id="heightVal">0.00</span></label>
+        <input type="range" id="heightSlider" min="-100" max="100" value="0" step="1">
+      </div>
+      <div class="control-group">
+        <label>Cone Half-Angle (α) <span class="val" id="coneAngleVal">30°</span></label>
+        <input type="range" id="coneAngleSlider" min="10" max="60" value="30" step="0.5">
+      </div>
+      <div class="control-group">
+        <label>3D Rotation <span class="val" id="rotVal">30°</span></label>
+        <input type="range" id="rotSlider" min="-180" max="180" value="30" step="1">
+      </div>
+    </div>
+    <div class="preset-buttons">
+      <button class="preset-btn" data-preset="circle">Circle</button>
+      <button class="preset-btn" data-preset="ellipse">Ellipse</button>
+      <button class="preset-btn" data-preset="parabola">Parabola</button>
+      <button class="preset-btn" data-preset="hyperbola">Hyperbola</button>
+      <button class="preset-btn" data-preset="point">Point</button>
+      <button class="preset-btn" data-preset="line">Line</button>
+    </div>
+  </div>
+
+  <div class="panel panel-right">
+    <div class="panel-title">2D Cross-Section</div>
+    <div class="type-indicator" id="typeIndicator">CIRCLE</div>
+    <canvas id="canvas2d" width="420" height="340"></canvas>
+    <div class="equation-box" id="equationBox">
+      <div class="eq-label">Standard Form</div>
+      <div class="eq-content" id="equationContent"></div>
+    </div>
+    <div class="params-box" id="paramsBox"></div>
+    <div class="description-box" id="descBox"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// Conic Sections — Correct Mathematics
+// ============================================================
+//
+// Cone (double, apex at origin, axis = y-axis):
+//   x² + z² = tan²(α) · y²
+//   α = half-angle between the axis and a generatrix
+//
+// Cutting plane (tilted θ from horizontal, offset h along axis):
+//   -sin(θ)·x + cos(θ)·y = cos(θ)·h·H
+//   ⟹ y = h·H + tan(θ)·x    (H = CONE_H)
+//
+// Substituting plane into cone:
+//   x² + z² = T²(k + mx)²   where T=tan(α), k=h·H, m=tan(θ)
+//   (1 - T²m²)x² − 2T²km·x + z² − T²k² = 0
+//
+// The coefficient A = 1 − T²m² = 1 − tan²α·tan²θ determines the type:
+//   A > 0 ⟹ ellipse  (circle when θ=0)
+//   A = 0 ⟹ parabola
+//   A < 0 ⟹ hyperbola
+//
+// Parabola condition: tan²α·tan²θ = 1, i.e. tanθ = cotα, i.e. θ = 90°−α
+//
+// Classification:
+//   θ_eff < 90° − α  ⟹  ellipse (circle if θ_eff=0)
+//   θ_eff = 90° − α  ⟹  parabola
+//   θ_eff > 90° − α  ⟹  hyperbola
+//
+// Eccentricity: e = sin(θ_eff) / cos(α)
+// ============================================================
+
+const canvas3d = document.getElementById('canvas3d');
+const ctx3d = canvas3d.getContext('2d');
+const canvas2d = document.getElementById('canvas2d');
+const ctx2d = canvas2d.getContext('2d');
+
+const tiltSlider = document.getElementById('tiltSlider');
+const heightSlider = document.getElementById('heightSlider');
+const coneAngleSlider = document.getElementById('coneAngleSlider');
+const rotSlider = document.getElementById('rotSlider');
+
+const tiltVal = document.getElementById('tiltVal');
+const heightVal = document.getElementById('heightVal');
+const coneAngleVal = document.getElementById('coneAngleVal');
+const rotVal = document.getElementById('rotVal');
+
+const typeIndicator = document.getElementById('typeIndicator');
+const equationContent = document.getElementById('equationContent');
+const paramsBox = document.getElementById('paramsBox');
+const descBox = document.getElementById('descBox');
+const equationBox = document.getElementById('equationBox');
+
+const presetBtns = document.querySelectorAll('.preset-btn');
+
+const COLORS = {
+  circle:    { accent: '#5b9cf5', bg: 'rgba(91,156,245,' },
+  ellipse:   { accent: '#e8915a', bg: 'rgba(232,145,90,' },
+  parabola:  { accent: '#6ecba0', bg: 'rgba(110,203,160,' },
+  hyperbola: { accent: '#d47be0', bg: 'rgba(212,123,224,' },
+  line:      { accent: '#f0c75e', bg: 'rgba(240,199,94,' },
+  point:     { accent: '#ef6b6b', bg: 'rgba(239,107,107,' },
+};
+
+// Presets: [tilt°, height(−100..100), coneAngle°]
+// For α=30°: parabola at θ = 90°−30° = 60°
+const PRESETS = {
+  circle:    [0,   40, 30],
+  ellipse:   [35,  40, 30],
+  parabola:  [60,  40, 30],
+  hyperbola: [75,  20, 30],
+  point:     [0,   0,  30],
+  line:      [60,  0,  30],
+};
+
+let tiltAngle = 45;
+let planeHeight = 0;
+let coneAlpha = 30;
+let rotAngle = 30;
+
+const CONE_H = 1.2;
+
+// ── helpers ──────────────────────────────────────────────────
+function effectiveTilt(deg) {
+  let e = Math.abs(deg) % 180;
+  return e > 90 ? 180 - e : e;
+}
+
+function getConicType(tiltDeg, alphaDeg, h) {
+  const eff = effectiveTilt(tiltDeg);
+  const thr = 90 - alphaDeg;
+  const eps = 0.4;
+  const hN = h / 100;
+
+  if (Math.abs(hN) < 0.02) {
+    if (eff < eps) return 'point';
+    if (Math.abs(eff - thr) < eps) return 'line';
+  }
+  if (eff < thr - eps) return eff < eps ? 'circle' : 'ellipse';
+  if (Math.abs(eff - thr) < eps) return 'parabola';
+  return 'hyperbola';
+}
+
+// ── 3D projection ────────────────────────────────────────────
+function proj(x, y, z, rot, elev) {
+  const cr = Math.cos(rot), sr = Math.sin(rot);
+  const ce = Math.cos(elev), se = Math.sin(elev);
+  const x1 = x * cr - z * sr, z1 = x * sr + z * cr;
+  const y2 = y * ce - z1 * se, z2 = y * se + z1 * ce;
+  const s = 180, d = 600, f = d / (d + z2);
+  return { sx: canvas3d.width / 2 + x1 * s * f, sy: canvas3d.height / 2 - y2 * s * f, z: z2 };
+}
+
+// ── draw 3D ──────────────────────────────────────────────────
+function draw3D() {
+  const W = canvas3d.width, H = canvas3d.height;
+  ctx3d.clearRect(0, 0, W, H);
+  const rot = rotAngle * Math.PI / 180, elev = 0.35;
+  const alpha = coneAlpha * Math.PI / 180;
+
+  // wireframe
+  ctx3d.strokeStyle = 'rgba(180,190,210,0.18)'; ctx3d.lineWidth = 0.8;
+  for (let i = 0; i < 24; i++) {
+    const phi = i / 24 * Math.PI * 2, r = Math.tan(alpha) * CONE_H;
+    const rx = r * Math.cos(phi), rz = r * Math.sin(phi);
+    const pA = proj(0, 0, 0, rot, elev);
+    const pT = proj(rx, CONE_H, rz, rot, elev);
+    const pB = proj(-rx, -CONE_H, -rz, rot, elev);
+    ctx3d.beginPath(); ctx3d.moveTo(pB.sx, pB.sy); ctx3d.lineTo(pA.sx, pA.sy); ctx3d.lineTo(pT.sx, pT.sy); ctx3d.stroke();
+  }
+  ctx3d.strokeStyle = 'rgba(180,190,210,0.12)';
+  for (let j = 1; j <= 8; j++) {
+    const t = j / 8;
+    for (const sign of [-1, 1]) {
+      const yy = sign * t * CONE_H, rr = Math.tan(alpha) * Math.abs(yy);
+      ctx3d.beginPath();
+      for (let i = 0; i <= 64; i++) {
+        const phi = i / 64 * Math.PI * 2;
+        const p = proj(rr * Math.cos(phi), yy, rr * Math.sin(phi), rot, elev);
+        i === 0 ? ctx3d.moveTo(p.sx, p.sy) : ctx3d.lineTo(p.sx, p.sy);
+      }
+      ctx3d.stroke();
+    }
+  }
+
+  // axis
+  ctx3d.strokeStyle = 'rgba(180,190,210,0.3)'; ctx3d.lineWidth = 1; ctx3d.setLineDash([4, 4]);
+  const a1 = proj(0, CONE_H * 1.15, 0, rot, elev), a2 = proj(0, -CONE_H * 1.15, 0, rot, elev);
+  ctx3d.beginPath(); ctx3d.moveTo(a2.sx, a2.sy); ctx3d.lineTo(a1.sx, a1.sy); ctx3d.stroke();
+  ctx3d.setLineDash([]);
+
+  // cutting plane
+  const tiltRad = tiltAngle * Math.PI / 180;
+  const hN = planeHeight / 100, pS = 1.4;
+  const nX = -Math.sin(tiltRad), nY = Math.cos(tiltRad);
+  const pD = nY * hN * CONE_H;
+  const nn = nX * nX + nY * nY;
+  const pcx = nX * pD / nn, pcy = nY * pD / nn;
+  const t1x = Math.cos(tiltRad), t1y = Math.sin(tiltRad);
+
+  const corners = [[-1,-1],[-1,1],[1,1],[1,-1]].map(([s, t]) => ({
+    x: pcx + s * pS * t1x, y: pcy + s * pS * t1y, z: t * pS
+  }));
+  const pc = corners.map(c => proj(c.x, c.y, c.z, rot, elev));
+
+  const ct = getConicType(tiltAngle, coneAlpha, planeHeight);
+  const col = COLORS[ct];
+
+  ctx3d.fillStyle = col.bg + '0.12)'; ctx3d.strokeStyle = col.bg + '0.5)'; ctx3d.lineWidth = 1.5;
+  ctx3d.beginPath(); ctx3d.moveTo(pc[0].sx, pc[0].sy);
+  for (let i = 1; i < 4; i++) ctx3d.lineTo(pc[i].sx, pc[i].sy);
+  ctx3d.closePath(); ctx3d.fill(); ctx3d.stroke();
+
+  // intersection
+  drawIntersection3D(rot, elev, alpha, tiltRad, hN, ct, col);
+
+  // apex dot
+  const pA = proj(0, 0, 0, rot, elev);
+  ctx3d.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx3d.beginPath(); ctx3d.arc(pA.sx, pA.sy, 3, 0, Math.PI * 2); ctx3d.fill();
+}
+
+// ── 3D intersection (parametric by φ around cone axis) ───────
+function drawIntersection3D(rot, elev, alpha, tiltRad, hN, ct, col) {
+  // Upper nappe (y>0):  y = k/(1 − mT·cosφ),  x = Ty·cosφ,  z = Ty·sinφ
+  // Lower nappe (y<0):  y = k/(1 + mT·cosφ),  x = −Ty·cosφ, z = −Ty·sinφ
+
+  const T = Math.tan(alpha);
+  const k = hN * CONE_H;
+  const m = Math.abs(Math.cos(tiltRad)) > 1e-4
+    ? Math.sin(tiltRad) / Math.cos(tiltRad)
+    : Math.sign(Math.sin(tiltRad)) * 1e5;
+  const mT = m * T;
+  const N = 500;
+  const maxY = CONE_H * 2.5; // generous bound to avoid spurious clipping
+
+  function traceNappe(upper) {
+    const pts = [];
+    let clipped = false;
+
+    for (let i = 0; i <= N; i++) {
+      const phi = (i / N) * 2 * Math.PI;
+      const cp = Math.cos(phi), sp = Math.sin(phi);
+
+      const denom = upper ? (1 - mT * cp) : (1 + mT * cp);
+      if (Math.abs(denom) < 1e-6) { clipped = true; continue; }
+
+      const y = k / denom;
+      if (upper && y <= 0) { continue; }
+      if (!upper && y >= 0) { continue; }
+
+      if (Math.abs(y) > maxY) { clipped = true; continue; }
+
+      const absY = Math.abs(y);
+      const x = T * absY * cp;
+      const z = T * absY * sp;
+
+      const p = proj(x, y, z, rot, elev);
+      pts.push({ sx: p.sx, sy: p.sy });
+    }
+
+    return { pts, complete: !clipped };
+  }
+
+  if (ct === 'hyperbola') {
+    const upper = traceNappe(true);
+    const lower = traceNappe(false);
+    drawBr(upper.pts, col, false);
+    drawBr(lower.pts, col, false);
+  } else {
+    const upper = traceNappe(true);
+    const lower = traceNappe(false);
+    // Use whichever nappe has more points
+    const branch = upper.pts.length >= lower.pts.length ? upper : lower;
+    // Only close the path if the curve is a complete loop with no clipped points
+    const shouldClose = branch.complete && ct !== 'parabola';
+    drawBr(branch.pts, col, shouldClose);
+  }
+}
+
+function drawBr(pts, col, close) {
+  if (pts.length < 2) return;
+  ctx3d.strokeStyle = col.accent; ctx3d.lineWidth = 2.5;
+  ctx3d.shadowColor = col.accent; ctx3d.shadowBlur = 8;
+
+  // Check for any large screen-space gaps (which would make closing wrong)
+  let hasGap = false;
+  ctx3d.beginPath(); ctx3d.moveTo(pts[0].sx, pts[0].sy);
+  for (let i = 1; i < pts.length; i++) {
+    const dx = pts[i].sx - pts[i - 1].sx, dy = pts[i].sy - pts[i - 1].sy;
+    if (dx * dx + dy * dy > 3000) {
+      ctx3d.moveTo(pts[i].sx, pts[i].sy);
+      hasGap = true;
+    } else {
+      ctx3d.lineTo(pts[i].sx, pts[i].sy);
+    }
+  }
+  if (close && !hasGap) ctx3d.closePath();
+  ctx3d.stroke(); ctx3d.shadowBlur = 0;
+}
+
+// ── compute conic parameters for 2D display ──────────────────
+function conicParams() {
+  const aRad = coneAlpha * Math.PI / 180;
+  const eff = effectiveTilt(tiltAngle);
+  const eRad = eff * Math.PI / 180;
+  const T = Math.tan(aRad);
+  const hN = Math.abs(planeHeight / 100);
+  const k = Math.max(hN * CONE_H, 0.001);
+  const m = Math.tan(eRad);
+  const Aq = 1 - T * T * m * m;
+  const ct = getConicType(tiltAngle, coneAlpha, planeHeight);
+  const ecc = Math.sin(eRad) / Math.cos(aRad);
+
+  // In the cutting plane's own coordinate system (s along tilt, t along z):
+  //   Aq·cos²θ · s² + Bq·cosθ · s + t² = T²k²
+  // After completing square in s:
+  //   Aq·cos²θ · (s − s₀)² + t² = R
+  //   where R = T²k² + (2T²km)²/(4·Aq·cos²θ) = T²k²·(Aq + T²m²)/(Aq) = T²k²/Aq
+  //     because Aq + T²m² = 1
+  //
+  // For ellipse (Aq > 0):
+  //   semi-axis in t:  b² = R = T²k²/Aq
+  //   semi-axis in s:  a² = R/(Aq cos²θ) = T²k²/(Aq² cos²θ)
+  //   a ≥ b always (since Aq cos²θ ≤ 1)
+  //
+  // For hyperbola (Aq < 0), let Aq' = −Aq > 0:
+  //   −Aq'cos²θ · (s − s₀)² + t² = −T²k²/Aq' ... rearrange:
+  //   t²/(T²k²/Aq') − (s − s₀)²/(T²k²/(Aq'² cos²θ)) = −1
+  //   Hmm, sign convention matters. Let's use a,b from e directly.
+
+  let sA = 0, sB = 0, pP = 0;
+
+  if (ct === 'circle') {
+    sA = sB = T * k;
+  } else if (ct === 'ellipse' && Aq > 0) {
+    sB = T * k / Math.sqrt(Aq);           // semi-minor (z-direction in plane)
+    sA = T * k / (Aq * Math.cos(eRad));   // semi-major (tilt direction in plane)
+    if (sA < sB) { const tmp = sA; sA = sB; sB = tmp; }
+  } else if (ct === 'parabola') {
+    // focal parameter: p = T·k·cos(θ)  (distance from vertex to focus)
+    pP = T * k * Math.cos(eRad) * 0.5;
+    if (pP < 0.01) pP = 0.3;
+  } else if (ct === 'hyperbola' && Aq < 0) {
+    const absAq = -Aq;
+    // transverse semi-axis a, conjugate semi-axis b
+    // from the intersection: the curve opens in the s-direction
+    sA = T * k / Math.sqrt(absAq);
+    sB = T * k / (absAq * Math.cos(eRad));
+    if (sA < 0.01) { sA = 0.5; sB = sA * Math.sqrt(Math.max(ecc * ecc - 1, 0.1)); }
+  }
+
+  return { ct, ecc, sA, sB, pP };
+}
+
+// ── draw 2D ──────────────────────────────────────────────────
+function draw2D() {
+  const W = canvas2d.width, H = canvas2d.height;
+  ctx2d.clearRect(0, 0, W, H);
+  const cx = W / 2, cy = H / 2;
+  const P = conicParams();
+  const col = COLORS[P.ct];
+  const sc = 110;
+
+  // grid
+  ctx2d.strokeStyle = 'rgba(180,190,210,0.08)'; ctx2d.lineWidth = 0.5;
+  for (let x = cx % 40; x < W; x += 40) { ctx2d.beginPath(); ctx2d.moveTo(x, 0); ctx2d.lineTo(x, H); ctx2d.stroke(); }
+  for (let y = cy % 40; y < H; y += 40) { ctx2d.beginPath(); ctx2d.moveTo(0, y); ctx2d.lineTo(W, y); ctx2d.stroke(); }
+
+  // axes
+  ctx2d.strokeStyle = 'rgba(180,190,210,0.25)'; ctx2d.lineWidth = 1;
+  ctx2d.beginPath(); ctx2d.moveTo(0, cy); ctx2d.lineTo(W, cy); ctx2d.stroke();
+  ctx2d.beginPath(); ctx2d.moveTo(cx, 0); ctx2d.lineTo(cx, H); ctx2d.stroke();
+  ctx2d.fillStyle = 'rgba(180,190,210,0.4)'; ctx2d.font = '12px "JetBrains Mono",monospace';
+  ctx2d.fillText('x', W - 16, cy - 8); ctx2d.fillText('y', cx + 8, 16);
+
+  ctx2d.strokeStyle = col.accent; ctx2d.lineWidth = 2.5;
+  ctx2d.shadowColor = col.accent; ctx2d.shadowBlur = 10;
+
+  if (P.ct === 'point') {
+    ctx2d.beginPath(); ctx2d.arc(cx, cy, 5, 0, Math.PI * 2);
+    ctx2d.fillStyle = col.accent; ctx2d.fill();
+
+  } else if (P.ct === 'line') {
+    ctx2d.beginPath(); ctx2d.moveTo(0, cy); ctx2d.lineTo(W, cy); ctx2d.stroke();
+
+  } else if (P.ct === 'circle') {
+    const r = clamp(P.sA * sc, 20, 160);
+    ctx2d.beginPath(); ctx2d.arc(cx, cy, r, 0, Math.PI * 2); ctx2d.stroke();
+    ctx2d.shadowBlur = 0;
+    dashed(ctx2d, cx, cy, cx + r, cy); label(cx + r / 2 - 4, cy - 8, 'r', col.accent);
+
+  } else if (P.ct === 'ellipse') {
+    const a = clamp(P.sA * sc, 20, 220), b = clamp(P.sB * sc, 10, 180);
+    ctx2d.beginPath(); ctx2d.ellipse(cx, cy, a, b, 0, 0, Math.PI * 2); ctx2d.stroke();
+    ctx2d.shadowBlur = 0;
+    dashed(ctx2d, cx - a, cy, cx + a, cy); dashed(ctx2d, cx, cy - b, cx, cy + b);
+    const cf = Math.sqrt(Math.abs(a * a - b * b));
+    drawFocus(cx - cf, cy, col.accent); drawFocus(cx + cf, cy, col.accent);
+    label(cx + a / 2 - 4, cy - 8, 'a', col.accent); label(cx + 8, cy - b / 2, 'b', col.accent);
+
+  } else if (P.ct === 'parabola') {
+    const pf = clamp(P.pP * sc, 20, 80);
+    ctx2d.beginPath();
+    let first = true;
+    for (let px = -220; px <= 220; px++) {
+      const sy = cy - px * px / (4 * pf);
+      if (sy < -10) continue;
+      first ? (ctx2d.moveTo(cx + px, sy), first = false) : ctx2d.lineTo(cx + px, sy);
+    }
+    ctx2d.stroke(); ctx2d.shadowBlur = 0;
+    drawFocus(cx, cy - pf, col.accent);
+    ctx2d.strokeStyle = 'rgba(180,190,210,0.3)'; ctx2d.lineWidth = 1; ctx2d.setLineDash([5, 5]);
+    ctx2d.beginPath(); ctx2d.moveTo(0, cy + pf); ctx2d.lineTo(W, cy + pf); ctx2d.stroke();
+    ctx2d.setLineDash([]);
+    ctx2d.fillStyle = 'rgba(180,190,210,0.4)'; ctx2d.font = '11px "JetBrains Mono",monospace';
+    ctx2d.fillText('directrix', 10, cy + pf - 6);
+
+  } else if (P.ct === 'hyperbola') {
+    const a = clamp(P.sA * sc, 20, 110), b = clamp(P.sB * sc, 15, 140);
+    // right branch  x = a cosh t,  y = b sinh t
+    for (const sign of [1, -1]) {
+      ctx2d.beginPath(); let first = true;
+      for (let ti = -30; ti <= 30; ti++) {
+        const t = ti * 0.1;
+        const sx = cx + sign * a * Math.cosh(t), sy = cy - b * Math.sinh(t);
+        if (sx < -20 || sx > W + 20 || sy < -20 || sy > H + 20) { first = true; continue; }
+        first ? (ctx2d.moveTo(sx, sy), first = false) : ctx2d.lineTo(sx, sy);
+      }
+      ctx2d.stroke();
+    }
+    ctx2d.shadowBlur = 0;
+    // asymptotes
+    const sl = b / a;
+    ctx2d.strokeStyle = 'rgba(180,190,210,0.2)'; ctx2d.lineWidth = 1; ctx2d.setLineDash([5, 5]);
+    ctx2d.beginPath(); ctx2d.moveTo(cx - 250, cy + 250 * sl); ctx2d.lineTo(cx + 250, cy - 250 * sl); ctx2d.stroke();
+    ctx2d.beginPath(); ctx2d.moveTo(cx - 250, cy - 250 * sl); ctx2d.lineTo(cx + 250, cy + 250 * sl); ctx2d.stroke();
+    ctx2d.setLineDash([]);
+    const ch = Math.sqrt(a * a + b * b);
+    drawFocus(cx + ch, cy, col.accent); drawFocus(cx - ch, cy, col.accent);
+    ctx2d.fillStyle = 'rgba(180,190,210,0.3)'; ctx2d.font = '11px "JetBrains Mono",monospace';
+    ctx2d.fillText('asymptote', cx + 80, cy - 80 * sl - 8);
+  }
+  ctx2d.shadowBlur = 0;
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function dashed(c, x1, y1, x2, y2) {
+  c.strokeStyle = 'rgba(180,190,210,0.3)'; c.lineWidth = 1; c.setLineDash([3, 3]);
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.setLineDash([]);
+}
+
+function label(x, y, text, color) {
+  ctx2d.fillStyle = color; ctx2d.font = '13px "Source Serif 4",serif'; ctx2d.fillText(text, x, y);
+}
+
+function drawFocus(x, y, color) {
+  ctx2d.fillStyle = color;
+  ctx2d.beginPath(); ctx2d.arc(x, y, 4, 0, Math.PI * 2); ctx2d.fill();
+  ctx2d.strokeStyle = color; ctx2d.lineWidth = 1;
+  ctx2d.beginPath(); ctx2d.arc(x, y, 8, 0, Math.PI * 2); ctx2d.stroke();
+  ctx2d.fillStyle = 'rgba(180,190,210,0.5)'; ctx2d.font = '11px "Source Serif 4",serif';
+  ctx2d.fillText('F', x + 12, y + 4);
+}
+
+// ── info panel ───────────────────────────────────────────────
+function updateInfo() {
+  const eff = effectiveTilt(tiltAngle);
+  const thr = 90 - coneAlpha;
+  const aRad = coneAlpha * Math.PI / 180;
+  const eRad = eff * Math.PI / 180;
+  const ct = getConicType(tiltAngle, coneAlpha, planeHeight);
+  const col = COLORS[ct];
+  const ecc = Math.sin(eRad) / Math.cos(aRad);
+
+  document.documentElement.style.setProperty('--current-accent', col.accent);
+  typeIndicator.textContent = ct.toUpperCase();
+  typeIndicator.style.borderColor = col.accent; typeIndicator.style.color = col.accent;
+  equationBox.style.borderColor = col.accent + '40';
+  presetBtns.forEach(b => b.classList.remove('active'));
+
+  const eqs = {
+    circle: '$x^2 + y^2 = r^2$',
+    ellipse: '$\\dfrac{x^2}{a^2} + \\dfrac{y^2}{b^2} = 1$',
+    parabola: '$x^2 = 4py$',
+    hyperbola: '$\\dfrac{x^2}{a^2} - \\dfrac{y^2}{b^2} = 1$',
+    point: '$(0,0)$', line: '$y = 0$',
+  };
+  const descs = {
+    circle: 'A <strong>circle</strong> is obtained when the cutting plane is perpendicular to the axis ($\\theta = 0$). Eccentricity $e = 0$.',
+    ellipse: 'An <strong>ellipse</strong> arises when $\\theta < 90^\\circ\\! - \\alpha$: the plane cuts only one nappe. Eccentricity $e = \\dfrac{\\sin\\theta}{\\cos\\alpha} \\in (0,1)$.',
+    parabola: 'A <strong>parabola</strong> occurs when $\\theta = 90^\\circ\\! - \\alpha$: the plane is parallel to a generatrix. Eccentricity $e = 1$.',
+    hyperbola: 'A <strong>hyperbola</strong> appears when $\\theta > 90^\\circ\\! - \\alpha$: the plane cuts both nappes. Eccentricity $e = \\dfrac{\\sin\\theta}{\\cos\\alpha} > 1$.',
+    point: 'A <strong>degenerate</strong> conic: the plane passes through the apex perpendicular to the axis.',
+    line: 'A <strong>degenerate</strong> conic: the plane passes through the apex parallel to a generatrix.',
+  };
+
+  equationContent.innerHTML = eqs[ct] || '';
+
+  let ph = '';
+  ph += `<div class="param-line"><span>Cone half-angle α</span><span class="param-val">${coneAlpha.toFixed(1)}°</span></div>`;
+  ph += `<div class="param-line"><span>Plane tilt θ</span><span class="param-val">${tiltAngle.toFixed(1)}°</span></div>`;
+  ph += `<div class="param-line"><span>Effective |θ|</span><span class="param-val">${eff.toFixed(1)}°</span></div>`;
+  ph += `<div class="param-line"><span>Parabola at</span><span class="param-val">90° − α = ${thr.toFixed(1)}°</span></div>`;
+  if (ct !== 'point' && ct !== 'line')
+    ph += `<div class="param-line"><span>Eccentricity e</span><span class="param-val">${ecc.toFixed(4)}</span></div>`;
+  ph += `<div class="param-line"><span>Condition</span><span class="param-val">${
+    ct === 'circle' ? 'θ = 0' : ct === 'ellipse' ? 'θ < 90° − α' :
+    ct === 'parabola' ? 'θ = 90° − α' : ct === 'hyperbola' ? 'θ > 90° − α' :
+    ct === 'point' ? 'apex, θ = 0' : 'apex, θ = 90° − α'
+  }</span></div>`;
+  paramsBox.innerHTML = ph;
+  descBox.innerHTML = descs[ct] || '';
+
+  if (window.MathJax && MathJax.typeset) {
+    MathJax.typesetClear([equationContent, descBox]);
+    MathJax.typeset([equationContent, descBox]);
+  }
+}
+
+// ── events ───────────────────────────────────────────────────
+function onSliderChange() {
+  tiltAngle = parseFloat(tiltSlider.value);
+  planeHeight = parseFloat(heightSlider.value);
+  coneAlpha = parseFloat(coneAngleSlider.value);
+  rotAngle = parseFloat(rotSlider.value);
+  tiltVal.textContent = tiltAngle.toFixed(1) + '°';
+  heightVal.textContent = (planeHeight / 100).toFixed(2);
+  coneAngleVal.textContent = coneAlpha.toFixed(1) + '°';
+  rotVal.textContent = rotAngle.toFixed(0) + '°';
+  draw3D(); draw2D(); updateInfo();
+}
+
+tiltSlider.addEventListener('input', onSliderChange);
+heightSlider.addEventListener('input', onSliderChange);
+coneAngleSlider.addEventListener('input', onSliderChange);
+rotSlider.addEventListener('input', onSliderChange);
+
+presetBtns.forEach(btn => btn.addEventListener('click', () => {
+  const [t, h, c] = PRESETS[btn.dataset.preset];
+  tiltSlider.value = t; heightSlider.value = h; coneAngleSlider.value = c;
+  presetBtns.forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  onSliderChange();
+}));
+
+let drag = false, lastX = 0;
+canvas3d.addEventListener('mousedown', e => { drag = true; lastX = e.clientX; });
+window.addEventListener('mouseup', () => drag = false);
+window.addEventListener('mousemove', e => {
+  if (!drag) return;
+  rotAngle = clamp(rotAngle + (e.clientX - lastX) * 0.5, -180, 180);
+  lastX = e.clientX; rotSlider.value = rotAngle; rotVal.textContent = rotAngle.toFixed(0) + '°'; draw3D();
+});
+canvas3d.addEventListener('touchstart', e => { drag = true; lastX = e.touches[0].clientX; });
+canvas3d.addEventListener('touchend', () => drag = false);
+canvas3d.addEventListener('touchmove', e => {
+  if (!drag) return; e.preventDefault();
+  rotAngle = clamp(rotAngle + (e.touches[0].clientX - lastX) * 0.5, -180, 180);
+  lastX = e.touches[0].clientX; rotSlider.value = rotAngle; rotVal.textContent = rotAngle.toFixed(0) + '°'; draw3D();
+}, { passive: false });
+
+window.addEventListener('load', () => onSliderChange());
+setTimeout(() => updateInfo(), 1500);
+</script>
+</body>
+</html>

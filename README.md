@@ -18,6 +18,8 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
 | [Maxwell's Equations FDTD](https://so-okada.github.io/math_teaching_materials/maxwell.html) | Electromagnetism | Wave propagation, finite-difference methods |
 | [Binomial to Gaussian](https://so-okada.github.io/math_teaching_materials/binomialtogaussian.html) | Probability & Statistics | Central limit theorem, de Moivre-Laplace |
+| [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html) | Probability & Statistics | Normal distribution, random walks |
+| [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
@@ -305,6 +307,55 @@ The binomial distribution approaches a normal distribution with mean $\mu = np$ 
 
 ---
 
+### [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html)
+**File:** `galton_board.html`
+
+Physical simulation of a Galton board (bean machine), demonstrating how random binary choices lead to a normal distribution.
+
+**Mathematical Background:**
+As balls fall through $n$ rows of pegs, each taking a random left/right path with probability $p$, the final distribution follows:
+$$P(X = k) = \binom{n}{k} p^k (1-p)^{n-k}$$
+
+The histogram of landed balls approximates the Gaussian:
+$$f(x) = \frac{N}{\sigma\sqrt{2\pi}} e^{-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2}$$
+
+where $\mu = np$ and $\sigma = \sqrt{np(1-p)}$.
+
+**Controls:**
+- **Rows**: Number of peg rows (5–25)
+- **Probability (Right)**: Bias for left/right bounce (10%–90%)
+- **Drop Rate**: Speed of ball generation
+- **Show Bell Curve**: Overlay theoretical normal distribution
+- Live calculation of mean, standard deviation, and scaling factor
+
+---
+
+## Geometry
+
+### [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html)
+**File:** `conic_sections.html`
+
+Interactive 3D visualization showing how slicing a double cone at different angles produces the four conic sections.
+
+**Mathematical Background:**
+The type of conic depends on the plane's tilt angle $\theta$ relative to the cone's half-angle $\alpha$:
+
+- **Circle** ($\theta = 0$): Plane perpendicular to axis, eccentricity $e = 0$
+- **Ellipse** ($\theta < 90° - \alpha$): Plane cuts one nappe, $0 < e < 1$
+- **Parabola** ($\theta = 90° - \alpha$): Plane parallel to generatrix, $e = 1$
+- **Hyperbola** ($\theta > 90° - \alpha$): Plane cuts both nappes, $e > 1$
+
+Eccentricity is computed as $e = \dfrac{\sin\theta}{\cos\alpha}$.
+
+**Controls:**
+- **Plane Tilt Angle (θ)**: Angle of cutting plane (−180° to 180°)
+- **Plane Height (h)**: Vertical position of the plane
+- **Cone Half-Angle (α)**: Opening angle of the cone (10°–60°)
+- **3D Rotation**: Rotate the view (drag or slider)
+- **Preset buttons**: Jump to Circle, Ellipse, Parabola, Hyperbola, Point, or Line
+
+---
+
 ## Trigonometry
 
 ### [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html)
@@ -445,6 +496,8 @@ The shifting center of mass due to water sloshing creates a damping effect on ro
 - `quadrature_xn.html`: Uses MathJax (CDN)
 - `clothoid_highway_demo.html`: Uses MathJax (CDN)
 - `bottle_flip_edu.html`: Uses MathJax (CDN)
+- `galton_board.html`: Uses MathJax (CDN)
+- `conic_sections.html`: Uses MathJax (CDN)
 
 **Offline Use:** Download the HTML files. Demos using CDN libraries require internet on first load (libraries are typically cached thereafter).
 
