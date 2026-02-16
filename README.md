@@ -477,7 +477,6 @@ The shifting center of mass due to water sloshing creates a damping effect on ro
 **Browser Compatibility:** All demos use vanilla JavaScript and HTML5 Canvas.
 
 **Dependencies:**
-- Most demos are completely standalone (no external libraries)
 - `brachistochrone.html`: Uses Tailwind CSS (CDN)
 - `stirling_formula.html`: Uses Chart.js and Tailwind CSS (CDN)
 - `indefinite_integral.html`: Uses MathJax and Tailwind CSS (CDN)
@@ -492,8 +491,6 @@ The shifting center of mass due to water sloshing creates a damping effect on ro
 - `bottle_flip_edu.html`: Uses MathJax (CDN)
 - `galton_board.html`: Uses MathJax (CDN)
 - `conic_sections.html`: Uses MathJax (CDN)
-
-**Offline Use:** Download the HTML files. Demos using CDN libraries require internet on first load (libraries are typically cached thereafter).
 
 ---
 
