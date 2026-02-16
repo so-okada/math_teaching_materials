@@ -313,20 +313,15 @@ The binomial distribution approaches a normal distribution with mean $\mu = np$ 
 Physical simulation of a Galton board (bean machine), demonstrating how random binary choices lead to a normal distribution.
 
 **Mathematical Background:**
-As balls fall through $n$ rows of pegs, each taking a random left/right path with probability $p$, the final distribution follows:
-$$P(X = k) = \binom{n}{k} p^k (1-p)^{n-k}$$
-
-The histogram of landed balls approximates the Gaussian:
+As balls fall through $n$ rows of pegs, each bouncing left or right with equal probability ($p = 0.5$), the final distribution follows the binomial distribution, which approximates the Gaussian:
 $$f(x) = \frac{N}{\sigma\sqrt{2\pi}} e^{-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2}$$
 
-where $\mu = np$ and $\sigma = \sqrt{np(1-p)}$.
+where $\mu = 0.5n$ and $\sigma = \sqrt{0.25n}$.
 
 **Controls:**
 - **Rows**: Number of peg rows (5–25)
-- **Probability (Right)**: Bias for left/right bounce (10%–90%)
 - **Drop Rate**: Speed of ball generation
 - **Show Bell Curve**: Overlay theoretical normal distribution
-- Live calculation of mean, standard deviation, and scaling factor
 
 ---
 
@@ -425,7 +420,6 @@ where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three 
 - **Rectangles (N)**: Number of subdivisions (1–100)
 - **Sum type**: Left, Right, or Midpoint rule
 - **Animate**: Watch rectangles increase and error decrease
-- Live display of Riemann sum, exact value, and error
 
 ---
 
