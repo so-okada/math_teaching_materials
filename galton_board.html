@@ -40,7 +40,7 @@
         }
 
         .container {
-            max-width: 850px;
+            max-width: 800px;
             width: 95%;
             margin: 20px auto;
             background: var(--card-bg);
@@ -57,7 +57,7 @@
 
         .controls {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 20px;
             width: 100%;
             margin-bottom: 24px;
@@ -72,8 +72,7 @@
             gap: 8px;
         }
 
-        label { font-size: 0.85rem; font-weight: 600; display: flex; justify-content: space-between; }
-        label span { color: var(--primary); }
+        label { font-size: 0.85rem; font-weight: 600; }
         
         input[type="range"] { width: 100%; cursor: pointer; }
 
@@ -81,12 +80,10 @@
             display: flex;
             gap: 10px;
             margin-top: 10px;
-            grid-column: 1 / -1;
-            justify-content: center;
         }
 
         button {
-            padding: 8px 24px;
+            padding: 8px 16px;
             border-radius: 6px;
             border: none;
             background: var(--primary);
@@ -152,20 +149,16 @@
 <body>
 
 <div class="container">
-    <h1>Galton Board Simulation</h1>
+    <h1>Galton Board</h1>
     <p>Watch as random paths build a predictable Normal Distribution.</p>
 
     <div class="controls">
         <div class="control-group">
-            <label>Rows: <span id="rowsVal">12</span></label>
+            <label id="rowsLabel">Rows: 12</label>
             <input type="range" id="rowsInput" min="5" max="25" value="12">
         </div>
         <div class="control-group">
-            <label>Prob (Right): <span id="probVal">50%</span></label>
-            <input type="range" id="probInput" min="10" max="90" value="50">
-        </div>
-        <div class="control-group">
-            <label>Drop Rate: <span id="speedVal">2x</span></label>
+            <label id="speedLabel">Drop Rate: 2x</label>
             <input type="range" id="speedInput" min="1" max="10" value="2">
         </div>
         <div class="control-group">
@@ -193,11 +186,11 @@
         <div id="mainFormulaBlock" class="math-block">
             $$F(x) = N \cdot \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2}$$
         </div>
-        <p>Current calculated values for $n = \text{rows}$ and $p = \text{probability}$:</p>
+        <p>Current calculated values for $n = \text{rows}$ and $p = 0.5$:</p>
         <ul>
-            <li id="meanFormula"><strong>Mean:</strong> $\mu = n \cdot p$</li>
+            <li id="meanFormula"><strong>Mean:</strong> $\mu = n \cdot p = 0.5n$</li>
             <li id="stdDevFormula"><strong>Standard Deviation:</strong> $\sigma = \sqrt{n \cdot p(1-p)}$</li>
-            <li id="scalingFormula"><strong>Scaling Factor ($N$):</strong> $0$ balls dropped</li>
+            <li id="scalingFormula"><strong>Scaling Factor ($N$):</strong> $0$ balls</li>
         </ul>
     </div>
 </div>
@@ -208,11 +201,9 @@
     
     // UI Elements
     const rowsInput = document.getElementById('rowsInput');
-    const rowsVal = document.getElementById('rowsVal');
-    const probInput = document.getElementById('probInput');
-    const probVal = document.getElementById('probVal');
+    const rowsLabel = document.getElementById('rowsLabel');
     const speedInput = document.getElementById('speedInput');
-    const speedVal = document.getElementById('speedVal');
+    const speedLabel = document.getElementById('speedLabel');
     const resetBtn = document.getElementById('resetBtn');
     const pauseBtn = document.getElementById('pauseBtn');
     const bellCurveCheck = document.getElementById('bellCurveCheck');
@@ -224,23 +215,20 @@
     const stdDevFormulaEl = document.getElementById('stdDevFormula');
     const scalingFormulaEl = document.getElementById('scalingFormula');
 
-    // Simulation State
+    // Simulation Constants & State
     let width = 600;
     let height = 600;
     let rows = parseInt(rowsInput.value);
-    let probabilityRight = parseInt(probInput.value) / 100;
     let balls = [];
     let buckets = [];
     let isPaused = false;
     let totalBallsDropped = 0;
     let lastDropTime = 0;
 
-    // Physics Constants
     const PEG_RADIUS = 3.5;
     const BALL_RADIUS = 4.5;
-    const GRAVITY = 0.35;        
-    const BOUNCE_FACTOR = 0.25;  
-    const AIR_RESISTANCE = 0.98; 
+    const GRAVITY = 0.25;
+    const BOUNCE_FACTOR = 0.45;
 
     function init() {
         canvas.width = width;
@@ -253,28 +241,29 @@
     }
 
     /**
-     * Dynamically updates the LaTeX text in the formula card using MathJax
+     * Dynamically updates the LaTeX text in the formula card
      */
     function updateFormula() {
         const n = rows;
-        const p = probabilityRight;
-        const mu = (n * p).toFixed(2);
+        const p = 0.5;
+        const mu = (n * p).toFixed(1);
         const sigma = Math.sqrt(n * p * (1 - p)).toFixed(2);
         
-        meanFormulaEl.innerHTML = `<strong>Mean:</strong> $\\mu = ${n} \\cdot ${p} = ${mu}$`;
-        stdDevFormulaEl.innerHTML = `<strong>Standard Deviation:</strong> $\\sigma = \\sqrt{${n} \\cdot ${p} \\cdot ${(1-p).toFixed(2)}} = ${sigma}$`;
+        meanFormulaEl.innerHTML = `<strong>Mean:</strong> $\\mu = ${n} \\cdot 0.5 = ${mu}$`;
+        stdDevFormulaEl.innerHTML = `<strong>Standard Deviation:</strong> $\\sigma = \\sqrt{${n} \\cdot 0.25} = ${sigma}$`;
         scalingFormulaEl.innerHTML = `<strong>Scaling Factor ($N$):</strong> ${totalBallsDropped} balls dropped`;
 
+        // Request MathJax to re-render the updated elements
         if (window.MathJax && MathJax.typesetPromise) {
-            MathJax.typesetPromise([meanFormulaEl, stdDevFormulaEl, scalingFormulaEl]).catch((err) => {});
+            MathJax.typesetPromise([meanFormulaEl, stdDevFormulaEl, scalingFormulaEl]).catch((err) => console.log(err));
         }
     }
 
     class Ball {
         constructor() {
-            this.x = width / 2 + (Math.random() - 0.5) * 2;
-            this.y = 10;
-            this.vx = (Math.random() - 0.5) * 0.2;
+            this.x = width / 2 + (Math.random() - 0.5) * 4;
+            this.y = 20;
+            this.vx = (Math.random() - 0.5) * 0.5;
             this.vy = 0;
             this.radius = BALL_RADIUS;
             this.color = `hsl(${Math.random() * 360}, 80%, 55%)`;
@@ -285,11 +274,9 @@
             if (this.isFinished) return;
 
             this.vy += GRAVITY;
-            this.vx *= AIR_RESISTANCE;
             this.x += this.vx;
             this.y += this.vy;
-
-            if (Math.abs(this.vx) > 4) this.vx *= 0.8;
+            this.vx *= 0.99;
 
             const pegSpacingX = width / (rows + 2);
             const pegSpacingY = (height * 0.6) / rows;
@@ -310,15 +297,17 @@
 
                         if (dist < this.radius + PEG_RADIUS) {
                             const angle = Math.atan2(dy, dx);
-                            this.x = px + Math.cos(angle) * (this.radius + PEG_RADIUS);
-                            this.y = py + Math.sin(angle) * (this.radius + PEG_RADIUS);
+                            const targetX = px + Math.cos(angle) * (this.radius + PEG_RADIUS);
+                            const targetY = py + Math.sin(angle) * (this.radius + PEG_RADIUS);
                             
-                            const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-                            const roll = Math.random();
-                            const sideBias = (roll < probabilityRight) ? 0.8 : -0.8;
+                            this.x = targetX;
+                            this.y = targetY;
+
+                            const force = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                            const scatter = (Math.random() - 0.5) * 2.0;
                             
-                            this.vx = Math.cos(angle) * currentSpeed * BOUNCE_FACTOR + sideBias;
-                            this.vy = Math.abs(Math.sin(angle) * currentSpeed * BOUNCE_FACTOR) + 1;
+                            this.vx = Math.cos(angle) * force * BOUNCE_FACTOR + scatter;
+                            this.vy = Math.sin(angle) * force * BOUNCE_FACTOR;
                         }
                     }
                 }
@@ -335,13 +324,11 @@
                 totalBallsDropped++;
                 updateStats();
                 
+                // Update formula values every 10 balls to avoid excessive MathJax overhead
                 if (totalBallsDropped % 10 === 0) {
                     updateFormula();
                 }
             }
-
-            if (this.x < 0) this.vx *= -0.5, this.x = 1;
-            if (this.x > width) this.vx *= -0.5, this.x = width - 1;
         }
 
         draw() {
@@ -371,9 +358,7 @@
         buckets.forEach((count, i) => {
             const bx = i * bucketWidth;
             ctx.fillStyle = '#cbd5e1';
-            const barHeight = Math.min(count * 2.5, 150); 
-            ctx.fillRect(bx + 2, height - 10, bucketWidth - 4, -barHeight);
-            
+            ctx.fillRect(bx + 2, height - 10, bucketWidth - 4, -count * 2.5);
             ctx.strokeStyle = '#f1f5f9';
             ctx.setLineDash([5, 5]);
             ctx.beginPath();
@@ -381,7 +366,6 @@
             ctx.lineTo(bx, height);
             ctx.stroke();
             ctx.setLineDash([]);
-
             ctx.fillStyle = '#94a3b8';
             ctx.font = '10px Arial';
             ctx.textAlign = 'center';
@@ -396,7 +380,10 @@
                 const py = rowY;
                 ctx.beginPath();
                 ctx.arc(px, py, PEG_RADIUS, 0, Math.PI * 2);
-                const pegGrad = ctx.createRadialGradient(px - PEG_RADIUS * 0.3, py - PEG_RADIUS * 0.3, 0.5, px, py, PEG_RADIUS);
+                const pegGrad = ctx.createRadialGradient(
+                    px - PEG_RADIUS * 0.3, py - PEG_RADIUS * 0.3, 0.5,
+                    px, py, PEG_RADIUS
+                );
                 pegGrad.addColorStop(0, '#f1f5f9');
                 pegGrad.addColorStop(0.4, '#94a3b8');
                 pegGrad.addColorStop(1, '#475569');
@@ -415,12 +402,12 @@
 
     function drawNormalCurve() {
         ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
-        ctx.setLineDash([]);
         ctx.lineWidth = 3;
+        ctx.setLineDash([]);
         ctx.beginPath();
 
         const n = rows;
-        const p = probabilityRight;
+        const p = 0.5;
         const mean = n * p;
         const stdDev = Math.sqrt(n * p * (1 - p));
 
@@ -428,9 +415,9 @@
             const k = (x / width) * (rows + 1) - 0.5;
             const exponent = -Math.pow(k - mean, 2) / (2 * Math.pow(stdDev, 2));
             const yOffset = (1 / (stdDev * Math.sqrt(2 * Math.PI))) * Math.exp(exponent);
-            
+            // Scaling factor 2.7 is used to match visual stack height
             const curveHeight = yOffset * totalBallsDropped * 2.7; 
-            const plotY = height - 10 - Math.min(curveHeight, height - 50);
+            const plotY = height - 10 - curveHeight;
             
             if (x === 0) ctx.moveTo(x, plotY);
             else ctx.lineTo(x, plotY);
@@ -458,18 +445,12 @@
 
     rowsInput.addEventListener('input', () => {
         rows = parseInt(rowsInput.value);
-        rowsVal.textContent = rows;
-        init();
-    });
-
-    probInput.addEventListener('input', () => {
-        probabilityRight = parseInt(probInput.value) / 100;
-        probVal.textContent = probInput.value + "%";
+        rowsLabel.textContent = `Rows: ${rows}`;
         init();
     });
 
     speedInput.addEventListener('input', () => {
-        speedVal.textContent = speedInput.value + "x";
+        speedLabel.textContent = `Drop Rate: ${speedInput.value}x`;
     });
 
     resetBtn.addEventListener('click', init);
