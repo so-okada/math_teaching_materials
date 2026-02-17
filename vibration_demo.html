@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Second-Order Linear ODE: Vibration</title>
+<script>
+MathJax = {
+  tex: { inlineMath: [['$','$'], ['\\(','\\)']], displayMath: [['$$','$$'], ['\\[','\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #faf8f5;
+    --bg-panel: #ffffff;
+    --text: #2c2420;
+    --text-dim: #7a6e64;
+    --accent: #c0392b;
+    --accent2: #2472a4;
+    --accent3: #27864a;
+    --border: #e0d8cf;
+    --border-strong: #c4b8aa;
+    --shadow: rgba(44, 36, 32, 0.06);
+    --canvas-bg: #fefdfb;
+    --grid: #ece6de;
+    --underdamped: #c0392b;
+    --critical: #d4740e;
+    --overdamped: #7b6ba4;
+    --envelope: rgba(192, 57, 43, 0.25);
+    --forced-steady: #2472a4;
+    --forced-transient: rgba(192, 57, 43, 0.35);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  .header {
+    padding: 28px 32px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-panel);
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .header .subtitle {
+    font-size: 0.92rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-weight: 300;
+  }
+
+  .main-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    min-height: calc(100vh - 90px);
+  }
+
+  /* Control Panel */
+  .controls {
+    background: var(--bg-panel);
+    border-right: 1px solid var(--border);
+    padding: 20px 24px;
+    overflow-y: auto;
+    max-height: calc(100vh - 90px);
+  }
+
+  .control-section {
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .control-section:last-child { border-bottom: none; }
+
+  .control-section h3 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .slider-group {
+    margin-bottom: 10px;
+  }
+
+  .slider-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+
+  .slider-label .name {
+    font-size: 0.88rem;
+    font-weight: 400;
+  }
+
+  .slider-label .value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 500;
+    min-width: 50px;
+    text-align: right;
+  }
+
+  input[type="range"] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg-panel);
+    box-shadow: 0 1px 4px var(--shadow);
+    cursor: pointer;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg-panel);
+    box-shadow: 0 1px 4px var(--shadow);
+    cursor: pointer;
+  }
+
+  .mode-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .mode-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-dim);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+  }
+
+  .mode-btn:hover {
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+
+  .mode-btn.active {
+    background: var(--text);
+    color: var(--bg-panel);
+    border-color: var(--text);
+  }
+
+  .damping-indicator {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid;
+  }
+
+  .damping-indicator.underdamped {
+    background: rgba(192, 57, 43, 0.06);
+    border-color: rgba(192, 57, 43, 0.2);
+    color: var(--underdamped);
+  }
+
+  .damping-indicator.critical {
+    background: rgba(212, 116, 14, 0.06);
+    border-color: rgba(212, 116, 14, 0.2);
+    color: var(--critical);
+  }
+
+  .damping-indicator.overdamped {
+    background: rgba(123, 107, 164, 0.06);
+    border-color: rgba(123, 107, 164, 0.2);
+    color: var(--overdamped);
+  }
+
+  .damping-indicator.negative {
+    background: rgba(39, 134, 74, 0.06);
+    border-color: rgba(39, 134, 74, 0.2);
+    color: #1a7a3a;
+  }
+
+  .anim-controls {
+    display: flex;
+    gap: 8px;
+  }
+
+  .anim-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    padding: 7px 16px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
+    flex: 1;
+  }
+
+  .anim-btn:hover {
+    border-color: var(--border-strong);
+    background: var(--border);
+  }
+
+  .anim-btn.playing {
+    background: var(--text);
+    color: var(--bg-panel);
+    border-color: var(--text);
+  }
+
+  .anim-canvas-wrap {
+    position: relative;
+    background: var(--canvas-bg);
+  }
+
+  .anim-time-display {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.85);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  .checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .checkbox-group input {
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .ic-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .ic-input label {
+    font-size: 0.82rem;
+    display: block;
+    margin-bottom: 3px;
+    color: var(--text-dim);
+  }
+
+  .ic-input input {
+    width: 100%;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    background: var(--bg);
+    color: var(--text);
+    text-align: center;
+  }
+
+  .ic-input input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  /* Visualization area */
+  .viz-area {
+    padding: 24px 28px;
+    overflow-y: auto;
+    max-height: calc(100vh - 90px);
+  }
+
+  .equation-display {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px var(--shadow);
+    min-height: 50px;
+  }
+
+  .equation-display .eq-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+
+  .canvas-container {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+
+  .canvas-header {
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .canvas-header h4 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+  }
+
+  .canvas-header .legend {
+    display: flex;
+    gap: 14px;
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-dim);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 3px;
+    border-radius: 1px;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    background: var(--canvas-bg);
+  }
+
+  .two-canvas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .solution-display {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px var(--shadow);
+  }
+
+  .solution-display .eq-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .info-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .info-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text-dim);
+  }
+
+  @media (max-width: 900px) {
+    .main-layout {
+      grid-template-columns: 1fr;
+    }
+    .controls {
+      max-height: none;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    .viz-area { max-height: none; }
+    .two-canvas {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Second-Order Linear ODE — Vibration</h1>
+  <div class="subtitle">Mass–spring–damper system: $\,m\ddot{x} + c\dot{x} + kx = F_0\cos(\omega t)$</div>
+</div>
+
+<div class="main-layout">
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-section">
+      <h3>Mode</h3>
+      <div class="mode-buttons">
+        <button class="mode-btn active" data-mode="free">Free</button>
+        <button class="mode-btn" data-mode="forced">Forced</button>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>System Parameters</h3>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="name">Mass $m$</span>
+          <span class="value" id="val-m">1.00</span>
+        </div>
+        <input type="range" id="slider-m" min="0.1" max="5" step="0.05" value="1">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="name">Damping $c$</span>
+          <span class="value" id="val-c">0.50</span>
+        </div>
+        <input type="range" id="slider-c" min="-10" max="10" step="0.05" value="0.5">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="name">Stiffness $k$</span>
+          <span class="value" id="val-k">4.00</span>
+        </div>
+        <input type="range" id="slider-k" min="0.1" max="20" step="0.1" value="4">
+      </div>
+
+      <div id="damping-indicator" class="damping-indicator underdamped">
+        Underdamped: $\zeta &lt; 1$
+      </div>
+    </div>
+
+    <div class="control-section" id="forcing-section" style="display:none;">
+      <h3>Forcing</h3>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="name">Amplitude $F_0$</span>
+          <span class="value" id="val-F0">1.00</span>
+        </div>
+        <input type="range" id="slider-F0" min="0" max="5" step="0.05" value="1">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="name">Frequency $\omega$</span>
+          <span class="value" id="val-omega">1.00</span>
+        </div>
+        <input type="range" id="slider-omega" min="0" max="8" step="0.05" value="1">
+      </div>
+      <div id="natural-freq-display" style="margin-top:8px; font-size:0.82rem; font-family:'JetBrains Mono',monospace; color:var(--text-dim); padding:6px 10px; background:var(--bg); border:1px solid var(--border); border-radius:4px;">
+        $\omega_n = 2.00$ &nbsp;($\omega/\omega_n = 0.50$)
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Initial Conditions</h3>
+      <div class="ic-inputs">
+        <div class="ic-input">
+          <label>$x(0)$</label>
+          <input type="number" id="ic-x0" value="1" step="0.1">
+        </div>
+        <div class="ic-input">
+          <label>$\dot{x}(0)$</label>
+          <input type="number" id="ic-v0" value="0" step="0.1">
+        </div>
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Animation</h3>
+      <div class="anim-controls">
+        <button class="anim-btn" id="btn-play">▶ Play</button>
+        <button class="anim-btn" id="btn-reset">↺ Reset</button>
+      </div>
+      <div class="slider-group" style="margin-top:10px;">
+        <div class="slider-label">
+          <span class="name">Speed</span>
+          <span class="value" id="val-speed">1.0×</span>
+        </div>
+        <input type="range" id="slider-speed" min="0.1" max="3" step="0.1" value="1">
+      </div>
+    </div>
+
+    <div class="control-section">
+      <h3>Display</h3>
+      <div class="slider-group">
+        <div class="slider-label">
+          <span class="name">Time range</span>
+          <span class="value" id="val-tmax">20</span>
+        </div>
+        <input type="range" id="slider-tmax" min="5" max="60" step="1" value="20">
+      </div>
+      <label class="checkbox-group">
+        <input type="checkbox" id="show-envelope" checked> Show envelope
+      </label>
+      <label class="checkbox-group">
+        <input type="checkbox" id="show-phase" checked> Show phase portrait
+      </label>
+    </div>
+  </div>
+
+  <!-- Visualization -->
+  <div class="viz-area">
+    <div class="equation-display">
+      <div class="eq-label">Governing Equation</div>
+      <div id="equation-text"></div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-header">
+        <h4>Spring–Mass–Damper Animation</h4>
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #555; height:4px;"></div>
+            <span>spring</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-dot" style="background: #a89e92; height:4px;"></div>
+            <span>damper</span>
+          </div>
+        </div>
+      </div>
+      <div class="anim-canvas-wrap">
+        <canvas id="canvas-anim" height="200"></canvas>
+        <div class="anim-time-display" id="anim-time">t = 0.00</div>
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-header">
+        <h4>Displacement $x(t)$</h4>
+        <div class="legend" id="legend-main">
+          <div class="legend-item">
+            <div class="legend-dot" style="background: var(--underdamped)"></div>
+            <span>$x(t)$</span>
+          </div>
+          <div class="legend-item" id="legend-envelope-item">
+            <div class="legend-dot" style="background: var(--envelope); height:6px;"></div>
+            <span>envelope</span>
+          </div>
+        </div>
+      </div>
+      <canvas id="canvas-xt" height="320"></canvas>
+    </div>
+
+    <div class="two-canvas">
+      <div class="canvas-container" id="phase-container">
+        <div class="canvas-header">
+          <h4>Phase Portrait $(x, \dot{x})$</h4>
+          <div class="legend"></div>
+        </div>
+        <canvas id="canvas-phase" height="320"></canvas>
+      </div>
+
+      <div class="canvas-container" id="freq-container">
+        <div class="canvas-header">
+          <h4 id="freq-title">Energy</h4>
+          <div class="legend" id="legend-energy">
+            <div class="legend-item">
+              <div class="legend-dot" style="background: var(--accent)"></div>
+              <span>KE</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: var(--accent2)"></div>
+              <span>PE</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background: var(--accent3)"></div>
+              <span>Total</span>
+            </div>
+          </div>
+        </div>
+        <canvas id="canvas-energy" height="320"></canvas>
+      </div>
+    </div>
+
+    <div class="solution-display">
+      <div class="eq-label">Analytical Solution</div>
+      <div id="solution-text"></div>
+      <div class="info-row" id="info-chips"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  State
+// ============================================================
+const state = {
+  mode: 'free',       // 'free' | 'forced'
+  m: 1, c: 0.5, k: 4,
+  F0: 1, omega: 1,
+  x0: 1, v0: 0,
+  tmax: 20,
+  showEnvelope: true,
+  showPhase: true,
+};
+
+// ============================================================
+//  DOM references
+// ============================================================
+const $ = id => document.getElementById(id);
+const sliders = {
+  m: $('slider-m'), c: $('slider-c'), k: $('slider-k'),
+  F0: $('slider-F0'), omega: $('slider-omega'), tmax: $('slider-tmax'),
+};
+const vals = {
+  m: $('val-m'), c: $('val-c'), k: $('val-k'),
+  F0: $('val-F0'), omega: $('val-omega'), tmax: $('val-tmax'),
+};
+const canvasXt = $('canvas-xt');
+const canvasPhase = $('canvas-phase');
+const canvasEnergy = $('canvas-energy');
+const canvasAnim = $('canvas-anim');
+
+// ============================================================
+//  Animation state
+// ============================================================
+const anim = {
+  playing: false,
+  t: 0,
+  speed: 1,
+  lastFrame: null,
+  rafId: null,
+  sol: null,       // cached solution for animation
+};
+
+// ============================================================
+//  Helpers
+// ============================================================
+function classify(m, c, k) {
+  if (c < 0) return 'negative';
+  const disc = c*c - 4*m*k;
+  if (Math.abs(disc) < 1e-9) return 'critical';
+  return disc < 0 ? 'underdamped' : 'overdamped';
+}
+
+// Solve mx'' + cx' + kx = F0 cos(wt), x(0)=x0, x'(0)=v0
+// via Runge-Kutta 4
+function solve(params) {
+  const { m, c, k, F0, omega, x0, v0, tmax, mode } = params;
+  const dt = tmax / 4000;
+  const n = Math.ceil(tmax / dt);
+  const ts = [], xs = [], vs = [];
+
+  let x = x0, v = v0;
+  for (let i = 0; i <= n; i++) {
+    const t = i * dt;
+    ts.push(t); xs.push(x); vs.push(v);
+
+    const f = (tt, xx, vv) => {
+      const forcing = mode === 'forced' ? F0 * Math.cos(omega * tt) : 0;
+      return (forcing - c * vv - k * xx) / m;
+    };
+
+    const k1v = f(t, x, v);
+    const k1x = v;
+    const k2v = f(t + dt/2, x + k1x*dt/2, v + k1v*dt/2);
+    const k2x = v + k1v*dt/2;
+    const k3v = f(t + dt/2, x + k2x*dt/2, v + k2v*dt/2);
+    const k3x = v + k2v*dt/2;
+    const k4v = f(t + dt, x + k3x*dt, v + k3v*dt);
+    const k4x = v + k3v*dt;
+
+    x += (k1x + 2*k2x + 2*k3x + k4x) * dt / 6;
+    v += (k1v + 2*k2v + 2*k3v + k4v) * dt / 6;
+  }
+  return { ts, xs, vs };
+}
+
+// ============================================================
+//  Drawing
+// ============================================================
+function setupCanvas(canvas) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w: rect.width, h: rect.height };
+}
+
+function drawGrid(ctx, w, h, xmin, xmax, ymin, ymax, xlabel, ylabel) {
+  const pad = { l: 52, r: 16, t: 16, b: 34 };
+  const pw = w - pad.l - pad.r;
+  const ph = h - pad.t - pad.b;
+
+  const toX = v => pad.l + (v - xmin) / (xmax - xmin) * pw;
+  const toY = v => pad.t + (ymax - v) / (ymax - ymin) * ph;
+
+  // Grid lines
+  ctx.strokeStyle = '#ece6de';
+  ctx.lineWidth = 0.5;
+
+  // Y gridlines
+  const nyTicks = 6;
+  for (let i = 0; i <= nyTicks; i++) {
+    const v = ymin + (ymax - ymin) * i / nyTicks;
+    const y = toY(v);
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(w - pad.r, y); ctx.stroke();
+    ctx.fillStyle = '#a89e92';
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(1), pad.l - 6, y + 3);
+  }
+
+  // X gridlines
+  const nxTicks = 8;
+  for (let i = 0; i <= nxTicks; i++) {
+    const v = xmin + (xmax - xmin) * i / nxTicks;
+    const x = toX(v);
+    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, h - pad.b); ctx.stroke();
+    ctx.fillStyle = '#a89e92';
+    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(v.toFixed(1), x, h - pad.b + 14);
+  }
+
+  // Zero line
+  if (ymin < 0 && ymax > 0) {
+    ctx.strokeStyle = '#c4b8aa';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pad.l, toY(0)); ctx.lineTo(w - pad.r, toY(0)); ctx.stroke();
+  }
+  if (xmin < 0 && xmax > 0) {
+    ctx.strokeStyle = '#c4b8aa';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(toX(0), pad.t); ctx.lineTo(toX(0), h - pad.b); ctx.stroke();
+  }
+
+  return { pad, pw, ph, toX, toY };
+}
+
+function drawCurve(ctx, xs, ys, toX, toY, color, lineWidth = 1.8) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.beginPath();
+  // Downsample for drawing
+  const step = Math.max(1, Math.floor(xs.length / 2000));
+  for (let i = 0; i < xs.length; i += step) {
+    const px = toX(xs[i]);
+    const py = toY(ys[i]);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+}
+
+function drawXtPlot(sol) {
+  const { ctx, w, h } = setupCanvas(canvasXt);
+  const { ts, xs } = sol;
+
+  let ymax = 0;
+  for (const x of xs) ymax = Math.max(ymax, Math.abs(x));
+  ymax = Math.max(ymax * 1.15, 0.5);
+
+  const grid = drawGrid(ctx, w, h, 0, state.tmax, -ymax, ymax);
+
+  // Envelope for underdamped free vibration
+  if (state.showEnvelope && state.mode === 'free' && (classify(state.m, state.c, state.k) === 'underdamped' || classify(state.m, state.c, state.k) === 'negative')) {
+    const gamma = state.c / (2 * state.m);
+    const omega_n2 = state.k / state.m;
+    const gamma2 = gamma * gamma;
+    if (omega_n2 > gamma2) {
+      const omega_d = Math.sqrt(omega_n2 - gamma2);
+      const A_cos = state.x0;
+      const A_sin = (state.v0 + gamma * state.x0) / omega_d;
+      const A = Math.sqrt(A_cos * A_cos + A_sin * A_sin);
+
+      const envTs = [];
+      const envPlus = [];
+      const envMinus = [];
+      const step = state.tmax / 500;
+      for (let t = 0; t <= state.tmax; t += step) {
+        const e = A * Math.exp(-gamma * t);
+        envTs.push(t);
+        envPlus.push(e);
+        envMinus.push(-e);
+      }
+
+      const envColor = state.c < 0 ? 'rgba(26,122,58,0.35)' : 'rgba(192,57,43,0.35)';
+      ctx.setLineDash([6, 4]);
+      drawCurve(ctx, envTs, envPlus, grid.toX, grid.toY, envColor, 1.2);
+      drawCurve(ctx, envTs, envMinus, grid.toX, grid.toY, envColor, 1.2);
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Main curve
+  const type = classify(state.m, state.c, state.k);
+  const colors = { negative: '#1a7a3a', underdamped: '#c0392b', critical: '#d4740e', overdamped: '#7b6ba4' };
+  const curveColor = state.mode === 'forced' ? '#2472a4' : (colors[type] || '#c0392b');
+  drawCurve(ctx, ts, xs, grid.toX, grid.toY, curveColor, 2);
+}
+
+function drawPhasePlot(sol) {
+  if (!state.showPhase) {
+    $('phase-container').style.display = 'none';
+    return;
+  }
+  $('phase-container').style.display = '';
+
+  const { ctx, w, h } = setupCanvas(canvasPhase);
+  const { xs, vs } = sol;
+
+  let xmax = 0, vmax = 0;
+  for (let i = 0; i < xs.length; i++) {
+    xmax = Math.max(xmax, Math.abs(xs[i]));
+    vmax = Math.max(vmax, Math.abs(vs[i]));
+  }
+  xmax = Math.max(xmax * 1.15, 0.5);
+  vmax = Math.max(vmax * 1.15, 0.5);
+
+  const grid = drawGrid(ctx, w, h, -xmax, xmax, -vmax, vmax);
+
+  // Draw trajectory with fading color
+  const step = Math.max(1, Math.floor(xs.length / 2000));
+  const n = Math.floor(xs.length / step);
+  for (let i = 1; i < n; i++) {
+    const idx = i * step;
+    const prev = (i - 1) * step;
+    const alpha = 0.15 + 0.85 * (i / n);
+    const type = classify(state.m, state.c, state.k);
+    let r, g, b;
+    if (state.mode === 'forced') { r=36; g=114; b=164; }
+    else if (type === 'negative') { r=26; g=122; b=58; }
+    else if (type === 'underdamped') { r=192; g=57; b=43; }
+    else if (type === 'critical') { r=212; g=116; b=14; }
+    else { r=123; g=107; b=164; }
+
+    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(grid.toX(xs[prev]), grid.toY(vs[prev]));
+    ctx.lineTo(grid.toX(xs[idx]), grid.toY(vs[idx]));
+    ctx.stroke();
+  }
+
+  // Mark starting point
+  ctx.fillStyle = '#c0392b';
+  ctx.beginPath();
+  ctx.arc(grid.toX(xs[0]), grid.toY(vs[0]), 4, 0, 2*Math.PI);
+  ctx.fill();
+}
+
+function drawEnergyPlot(sol) {
+  const { ctx, w, h } = setupCanvas(canvasEnergy);
+  const { ts, xs, vs } = sol;
+
+  const ke = [], pe = [], te = [];
+  for (let i = 0; i < ts.length; i++) {
+    const k_e = 0.5 * state.m * vs[i] * vs[i];
+    const p_e = 0.5 * state.k * xs[i] * xs[i];
+    ke.push(k_e);
+    pe.push(p_e);
+    te.push(k_e + p_e);
+  }
+
+  let emax = 0;
+  for (const e of te) emax = Math.max(emax, e);
+  emax = Math.max(emax * 1.15, 0.1);
+
+  const grid = drawGrid(ctx, w, h, 0, state.tmax, 0, emax);
+
+  drawCurve(ctx, ts, pe, grid.toX, grid.toY, '#2472a4', 1.5);
+  drawCurve(ctx, ts, ke, grid.toX, grid.toY, '#c0392b', 1.5);
+  drawCurve(ctx, ts, te, grid.toX, grid.toY, '#27864a', 2);
+}
+
+// ============================================================
+//  Spring-Mass-Damper Animation
+// ============================================================
+function getDisplacementAtTime(t) {
+  if (!anim.sol) return { x: 0, v: 0 };
+  const { ts, xs, vs } = anim.sol;
+  if (t <= ts[0]) return { x: xs[0], v: vs[0] };
+  if (t >= ts[ts.length-1]) return { x: xs[xs.length-1], v: vs[vs.length-1] };
+  // Binary search
+  let lo = 0, hi = ts.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (ts[mid] <= t) lo = mid; else hi = mid;
+  }
+  const frac = (t - ts[lo]) / (ts[hi] - ts[lo]);
+  return {
+    x: xs[lo] + frac * (xs[hi] - xs[lo]),
+    v: vs[lo] + frac * (vs[hi] - vs[lo])
+  };
+}
+
+function drawSpring(ctx, x1, y, x2, numCoils) {
+  const n = numCoils || 12;
+  const coilW = 8;
+  const leadIn = (x2 - x1) * 0.08;
+
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  ctx.lineTo(x1 + leadIn, y);
+
+  const zigLen = (x2 - x1) - 2 * leadIn;
+  const stepX = zigLen / n;
+  for (let i = 0; i < n; i++) {
+    const zx = x1 + leadIn + stepX * (i + 0.5);
+    const zy = y + (i % 2 === 0 ? -coilW : coilW);
+    ctx.lineTo(zx, zy);
+  }
+
+  ctx.lineTo(x2 - leadIn, y);
+  ctx.lineTo(x2, y);
+  ctx.stroke();
+}
+
+function drawDamper(ctx, x1, y, x2) {
+  const boxW = 18;
+  const boxH = 14;
+  const midX = (x1 + x2) / 2;
+
+  // Piston rod from left
+  ctx.beginPath();
+  ctx.moveTo(x1, y);
+  ctx.lineTo(midX - boxW/2, y);
+  ctx.stroke();
+
+  // Cylinder body
+  ctx.strokeRect(midX - boxW/2, y - boxH/2, boxW, boxH);
+
+  // Piston rod right (extends from cylinder)
+  ctx.beginPath();
+  ctx.moveTo(midX + boxW/2, y);
+  ctx.lineTo(x2, y);
+  ctx.stroke();
+
+  // Piston line inside
+  const pistonX = midX - boxW * 0.15 + (x2 - x1 - 100) * 0.001; // subtle shift
+  ctx.beginPath();
+  ctx.moveTo(midX, y - boxH/2 + 2);
+  ctx.lineTo(midX, y + boxH/2 - 2);
+  ctx.stroke();
+}
+
+function drawAnimFrame(t) {
+  const { ctx, w, h } = setupCanvas(canvasAnim);
+  const disp = getDisplacementAtTime(t);
+
+  // Layout
+  const wallX = 40;
+  const ballR = 16 + state.m * 3;  // ball radius scales with mass
+  const rightMargin = 60;
+  const restX = (wallX + ballR + 40 + w - rightMargin) / 2;  // centered equilibrium
+  const maxTravel = Math.min(restX - wallX - ballR - 20, w - rightMargin - restX - ballR - 10);
+
+  // Fixed scale: 30 pixels per unit of x, so same x(0) always looks the same.
+  // If displacement exceeds available space, clamp (ball hits visual limit).
+  const pixPerUnit = 30;
+  const rawOffset = disp.x * pixPerUnit;
+  const clampedOffset = Math.max(-maxTravel, Math.min(maxTravel, rawOffset));
+  const massX = restX + clampedOffset;
+
+  const cy = h / 2;
+
+  // Wall
+  ctx.fillStyle = '#c4b8aa';
+  ctx.fillRect(0, cy - 60, wallX, 120);
+  // Wall hash marks
+  ctx.strokeStyle = '#a89e92';
+  ctx.lineWidth = 1;
+  for (let yy = cy - 55; yy <= cy + 55; yy += 10) {
+    ctx.beginPath();
+    ctx.moveTo(wallX - 8, yy);
+    ctx.lineTo(wallX, yy + 6);
+    ctx.stroke();
+  }
+
+  // Spring (upper path)
+  const springY = cy - 16;
+  ctx.strokeStyle = '#555';
+  ctx.lineWidth = 1.5;
+  const connX = massX - ballR;
+  if (connX > wallX + 10) {
+    drawSpring(ctx, wallX, springY, connX, 14);
+  } else {
+    // Compressed: just draw a line
+    ctx.beginPath(); ctx.moveTo(wallX, springY); ctx.lineTo(connX, springY); ctx.stroke();
+  }
+
+  // Damper (lower path)
+  const damperY = cy + 16;
+  ctx.strokeStyle = '#a89e92';
+  ctx.lineWidth = 1.5;
+  if (connX > wallX + 30) {
+    drawDamper(ctx, wallX, damperY, connX);
+  } else {
+    ctx.beginPath(); ctx.moveTo(wallX, damperY); ctx.lineTo(connX, damperY); ctx.stroke();
+  }
+
+  // Ground line
+  ctx.strokeStyle = '#e0d8cf';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, cy + 55);
+  ctx.lineTo(w, cy + 55);
+  ctx.stroke();
+
+  // Equilibrium line (dashed)
+  ctx.strokeStyle = '#d4d0c8';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(restX, cy - 50);
+  ctx.lineTo(restX, cy + 50);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Equilibrium label
+  ctx.fillStyle = '#b0a898';
+  ctx.font = '10px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('x = 0', restX, cy + 48);
+
+  // Mass (ball)
+  const type = classify(state.m, state.c, state.k);
+  const ballColors = {
+    negative: '#1a7a3a', underdamped: '#c0392b',
+    critical: '#d4740e', overdamped: '#7b6ba4'
+  };
+  const ballColor = state.mode === 'forced' ? '#2472a4' : (ballColors[type] || '#c0392b');
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.08)';
+  ctx.beginPath();
+  ctx.ellipse(massX + 2, cy + 3, ballR, ballR * 0.95, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ball
+  const grad = ctx.createRadialGradient(massX - ballR*0.3, cy - ballR*0.3, ballR*0.1, massX, cy, ballR);
+  grad.addColorStop(0, lightenColor(ballColor, 40));
+  grad.addColorStop(0.7, ballColor);
+  grad.addColorStop(1, darkenColor(ballColor, 30));
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(massX, cy, ballR, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Ball highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.beginPath();
+  ctx.arc(massX - ballR*0.25, cy - ballR*0.25, ballR * 0.35, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Mass label
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${Math.max(10, ballR * 0.7)}px "JetBrains Mono", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('m', massX, cy);
+
+  // Displacement arrow
+  if (Math.abs(disp.x) > 0.05) {
+    const arrowY = cy - ballR - 14;
+    const arrowStart = restX;
+    const arrowEnd = massX;
+    ctx.strokeStyle = ballColor;
+    ctx.fillStyle = ballColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(arrowStart, arrowY);
+    ctx.lineTo(arrowEnd, arrowY);
+    ctx.stroke();
+    // Arrowhead
+    const dir = disp.x > 0 ? 1 : -1;
+    ctx.beginPath();
+    ctx.moveTo(arrowEnd, arrowY);
+    ctx.lineTo(arrowEnd - dir * 7, arrowY - 4);
+    ctx.lineTo(arrowEnd - dir * 7, arrowY + 4);
+    ctx.closePath();
+    ctx.fill();
+    // Label
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(`x = ${disp.x.toFixed(2)}`, (arrowStart + arrowEnd) / 2, arrowY - 4);
+  }
+
+  // Force arrow for forced vibration
+  if (state.mode === 'forced') {
+    const F = state.F0 * Math.cos(state.omega * t);
+    if (Math.abs(F) > 0.05) {
+      const fArrowY = cy;
+      const fLen = (F / state.F0) * 40;
+      const fStart = massX + ballR + 4;
+      ctx.strokeStyle = '#2472a4';
+      ctx.fillStyle = '#2472a4';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(fStart, fArrowY);
+      ctx.lineTo(fStart + fLen, fArrowY);
+      ctx.stroke();
+      const dir = fLen > 0 ? 1 : -1;
+      ctx.beginPath();
+      ctx.moveTo(fStart + fLen, fArrowY);
+      ctx.lineTo(fStart + fLen - dir * 8, fArrowY - 5);
+      ctx.lineTo(fStart + fLen - dir * 8, fArrowY + 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.textAlign = dir > 0 ? 'left' : 'right';
+      ctx.fillText('F(t)', fStart + fLen + dir * 4, fArrowY - 6);
+    }
+  }
+
+  // Update time display
+  $('anim-time').textContent = `t = ${t.toFixed(2)}`;
+}
+
+function lightenColor(hex, amt) {
+  let r = parseInt(hex.slice(1,3), 16);
+  let g = parseInt(hex.slice(3,5), 16);
+  let b = parseInt(hex.slice(5,7), 16);
+  r = Math.min(255, r + amt); g = Math.min(255, g + amt); b = Math.min(255, b + amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+function darkenColor(hex, amt) {
+  let r = parseInt(hex.slice(1,3), 16);
+  let g = parseInt(hex.slice(3,5), 16);
+  let b = parseInt(hex.slice(5,7), 16);
+  r = Math.max(0, r - amt); g = Math.max(0, g - amt); b = Math.max(0, b - amt);
+  return `rgb(${r},${g},${b})`;
+}
+
+// Draw time cursor on x(t) plot
+function drawTimeCursorOnXt(sol, t) {
+  // Redraw the plot
+  drawXtPlot(sol);
+
+  if (t <= 0) return;
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvasXt.getBoundingClientRect();
+  const ctx = canvasXt.getContext('2d');
+  // Grid params (must match drawGrid)
+  const pad = { l: 52, r: 16, t: 16, b: 34 };
+  const pw = rect.width - pad.l - pad.r;
+  const ph = rect.height - pad.t - pad.b;
+  const toXpx = v => pad.l + (v - 0) / (state.tmax - 0) * pw;
+
+  const cursorX = toXpx(t);
+  if (cursorX < pad.l || cursorX > rect.width - pad.r) return;
+
+  ctx.save();
+  // Vertical line
+  ctx.strokeStyle = 'rgba(44, 36, 32, 0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(cursorX, pad.t);
+  ctx.lineTo(cursorX, rect.height - pad.b);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Dot on curve
+  const disp = getDisplacementAtTime(t);
+  let ymax = 0;
+  for (const x of sol.xs) ymax = Math.max(ymax, Math.abs(x));
+  ymax = Math.max(ymax * 1.15, 0.5);
+  const toYpx = v => pad.t + (ymax - v) / (ymax * 2) * ph;
+
+  const dotY = toYpx(disp.x);
+  ctx.fillStyle = '#2c2420';
+  ctx.beginPath();
+  ctx.arc(cursorX, dotY, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(cursorX, dotY, 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ============================================================
+//  Animation loop
+// ============================================================
+function animLoop(timestamp) {
+  if (!anim.playing) return;
+
+  if (anim.lastFrame === null) anim.lastFrame = timestamp;
+  const dt = (timestamp - anim.lastFrame) / 1000 * anim.speed;
+  anim.lastFrame = timestamp;
+  anim.t += dt;
+
+  if (anim.t > state.tmax) {
+    anim.t = state.tmax;
+    stopAnim();
+  }
+
+  drawAnimFrame(anim.t);
+  drawTimeCursorOnXt(anim.sol, anim.t);
+  drawPhasePlotUpTo(anim.sol, anim.t);
+
+  anim.rafId = requestAnimationFrame(animLoop);
+}
+
+function drawPhasePlotUpTo(sol, t) {
+  if (!state.showPhase) return;
+  $('phase-container').style.display = '';
+
+  const { ctx, w, h } = setupCanvas(canvasPhase);
+  const { ts, xs, vs } = sol;
+
+  let xmax = 0, vmax = 0;
+  for (let i = 0; i < xs.length; i++) {
+    xmax = Math.max(xmax, Math.abs(xs[i]));
+    vmax = Math.max(vmax, Math.abs(vs[i]));
+  }
+  xmax = Math.max(xmax * 1.15, 0.5);
+  vmax = Math.max(vmax * 1.15, 0.5);
+
+  const grid = drawGrid(ctx, w, h, -xmax, xmax, -vmax, vmax);
+
+  // Find index up to time t
+  let maxIdx = ts.length - 1;
+  for (let i = 0; i < ts.length; i++) {
+    if (ts[i] > t) { maxIdx = i; break; }
+  }
+
+  const step = Math.max(1, Math.floor(maxIdx / 2000));
+  const n = Math.floor(maxIdx / step);
+  const type = classify(state.m, state.c, state.k);
+  for (let i = 1; i < n; i++) {
+    const idx = i * step;
+    const prev = (i - 1) * step;
+    const alpha = 0.15 + 0.85 * (i / n);
+    let r, g, b;
+    if (state.mode === 'forced') { r=36; g=114; b=164; }
+    else if (type === 'negative') { r=26; g=122; b=58; }
+    else if (type === 'underdamped') { r=192; g=57; b=43; }
+    else if (type === 'critical') { r=212; g=116; b=14; }
+    else { r=123; g=107; b=164; }
+
+    ctx.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(grid.toX(xs[prev]), grid.toY(vs[prev]));
+    ctx.lineTo(grid.toX(xs[idx]), grid.toY(vs[idx]));
+    ctx.stroke();
+  }
+
+  // Current position dot
+  const disp = getDisplacementAtTime(t);
+  ctx.fillStyle = '#2c2420';
+  ctx.beginPath();
+  ctx.arc(grid.toX(disp.x), grid.toY(disp.v), 5, 0, 2*Math.PI);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(grid.toX(disp.x), grid.toY(disp.v), 2.5, 0, 2*Math.PI);
+  ctx.fill();
+
+  // Start dot
+  ctx.fillStyle = '#c0392b';
+  ctx.beginPath();
+  ctx.arc(grid.toX(xs[0]), grid.toY(vs[0]), 4, 0, 2*Math.PI);
+  ctx.fill();
+}
+
+function startAnim() {
+  anim.playing = true;
+  anim.lastFrame = null;
+  $('btn-play').textContent = '⏸ Pause';
+  $('btn-play').classList.add('playing');
+  anim.rafId = requestAnimationFrame(animLoop);
+}
+
+function stopAnim() {
+  anim.playing = false;
+  if (anim.rafId) cancelAnimationFrame(anim.rafId);
+  $('btn-play').textContent = '▶ Play';
+  $('btn-play').classList.remove('playing');
+}
+
+function resetAnim() {
+  stopAnim();
+  anim.t = 0;
+  anim.lastFrame = null;
+  if (anim.sol) {
+    drawAnimFrame(0);
+    drawTimeCursorOnXt(anim.sol, 0);
+    drawPhasePlot(anim.sol);
+  }
+}
+
+// ============================================================
+//  MathJax updates
+// ============================================================
+function updateEquation() {
+  const m = state.m, c = state.c, k = state.k;
+  const mStr = m === 1 ? '' : numStr(m);
+  const cAbs = Math.abs(c);
+  let cStr;
+  if (c === 0) cStr = '';
+  else if (c > 0) cStr = (c === 1 ? '+\\dot{x}' : `+${numStr(c)}\\dot{x}`);
+  else cStr = (c === -1 ? '-\\dot{x}' : `-${numStr(cAbs)}\\dot{x}`);
+  const kStr = k === 1 ? '+x' : `+${numStr(k)}x`;
+
+  let lhs = `${mStr}\\ddot{x}${cStr}${kStr}`;
+  // Clean leading '+'
+  lhs = lhs.replace(/^\+/, '');
+
+  let rhs = '0';
+  if (state.mode === 'forced') {
+    rhs = state.F0 === 1 ? `\\cos(${numStr(state.omega)}\\,t)` : `${numStr(state.F0)}\\cos(${numStr(state.omega)}\\,t)`;
+  }
+
+  $('equation-text').innerHTML = `$$${lhs} = ${rhs}$$`;
+  MathJax.typesetPromise([$('equation-text')]);
+}
+
+function numStr(v) {
+  return Number.isInteger(v) ? v.toString() : v.toFixed(2).replace(/\.?0+$/, '');
+}
+
+function updateSolution() {
+  const m = state.m, c = state.c, k = state.k;
+  const zeta = c / (2 * Math.sqrt(m * k));
+  const omega_n = Math.sqrt(k / m);
+  const type = classify(m, c, k);
+
+  let html = '';
+  let chips = '';
+
+  chips += `<span class="info-chip">Natural frequency: $\\omega_n = \\sqrt{k/m} = ${numStr(parseFloat(omega_n.toFixed(4)))}$</span>`;
+  chips += `<span class="info-chip">Damping ratio: $\\zeta = \\dfrac{c}{2\\sqrt{mk}} = ${numStr(parseFloat(zeta.toFixed(4)))}$</span>`;
+
+  if (state.mode === 'free') {
+    if (type === 'negative' || type === 'underdamped') {
+      const gamma = c / (2 * m);
+      const omega_n2 = k / m;
+      const gamma2 = gamma * gamma;
+      if (omega_n2 > gamma2) {
+        const omega_d = Math.sqrt(omega_n2 - gamma2);
+        chips += `<span class="info-chip">Damped frequency: $\\omega_d = \\omega_n\\sqrt{1-\\zeta^2} = ${numStr(parseFloat(omega_d.toFixed(4)))}$</span>`;
+        const gammaStr = gamma >= 0 ? `-${numStr(parseFloat(gamma.toFixed(3)))}` : `+${numStr(parseFloat(Math.abs(gamma).toFixed(3)))}`;
+        html = `$$x(t) = e^{${gammaStr}\\,t}\\!\\left(A\\cos(${numStr(parseFloat(omega_d.toFixed(3)))}\\,t) + B\\sin(${numStr(parseFloat(omega_d.toFixed(3)))}\\,t)\\right)$$`;
+        if (type === 'negative') {
+          html += `<div style="margin-top:6px;font-size:0.88rem;color:#1a7a3a;">Negative damping: amplitude grows as $e^{${numStr(parseFloat(Math.abs(gamma).toFixed(3)))}\\,t}$.</div>`;
+        }
+      } else {
+        // |c| large enough for real roots even with c<0
+        const disc = Math.sqrt(c*c - 4*m*k);
+        const r1 = (-c + disc) / (2 * m);
+        const r2 = (-c - disc) / (2 * m);
+        html = `$$x(t) = A\\,e^{${numStr(parseFloat(r1.toFixed(3)))}\\,t} + B\\,e^{${numStr(parseFloat(r2.toFixed(3)))}\\,t}$$`;
+        chips += `<span class="info-chip">Char. root: $r_1 = ${numStr(parseFloat(r1.toFixed(4)))}$</span>`;
+        chips += `<span class="info-chip">Char. root: $r_2 = ${numStr(parseFloat(r2.toFixed(4)))}$</span>`;
+        if (type === 'negative') {
+          html += `<div style="margin-top:6px;font-size:0.88rem;color:#1a7a3a;">Negative damping with real roots: exponential growth.</div>`;
+        }
+      }
+    } else if (type === 'critical') {
+      const r = -c / (2 * m);
+      html = `$$x(t) = (A + Bt)\\,e^{${numStr(parseFloat(r.toFixed(3)))}\\,t}$$`;
+    } else {
+      const disc = Math.sqrt(c*c - 4*m*k);
+      const r1 = (-c + disc) / (2 * m);
+      const r2 = (-c - disc) / (2 * m);
+      html = `$$x(t) = A\\,e^{${numStr(parseFloat(r1.toFixed(3)))}\\,t} + B\\,e^{${numStr(parseFloat(r2.toFixed(3)))}\\,t}$$`;
+      chips += `<span class="info-chip">Char. root: $r_1 = ${numStr(parseFloat(r1.toFixed(4)))}$</span>`;
+      chips += `<span class="info-chip">Char. root: $r_2 = ${numStr(parseFloat(r2.toFixed(4)))}$</span>`;
+    }
+  } else {
+    // Forced: show particular solution amplitude & phase
+    const w = state.omega;
+    const denom = Math.sqrt((k - m*w*w)**2 + (c*w)**2);
+    const X = state.F0 / denom;
+    const phi = Math.atan2(c*w, k - m*w*w);
+    chips += `<span class="info-chip">Steady-state amplitude: $|X| = ${numStr(parseFloat(X.toFixed(4)))}$</span>`;
+    chips += `<span class="info-chip">Phase lag: $\\phi = ${numStr(parseFloat(phi.toFixed(4)))}$</span>`;
+    chips += `<span class="info-chip">Frequency ratio: $\\omega/\\omega_n = ${numStr(parseFloat((w/omega_n).toFixed(4)))}$</span>`;
+    html = `$$x_p(t) = ${numStr(parseFloat(X.toFixed(4)))}\\cos(${numStr(state.omega)}\\,t - ${numStr(parseFloat(phi.toFixed(3)))})$$`;
+    html += `<div style="margin-top:6px;font-size:0.88rem;color:var(--text-dim);">Full solution: $x(t) = x_h(t) + x_p(t)$ where $x_h(t)$ is the homogeneous (transient) part.</div>`;
+  }
+
+  $('solution-text').innerHTML = html;
+  $('info-chips').innerHTML = chips;
+  MathJax.typesetPromise([$('solution-text'), $('info-chips')]);
+}
+
+function updateDampingIndicator() {
+  const type = classify(state.m, state.c, state.k);
+  const el = $('damping-indicator');
+  el.className = 'damping-indicator ' + type;
+  const zeta = state.c / (2 * Math.sqrt(state.m * state.k));
+  const labels = {
+    negative: `Negative damping: $\\zeta = ${zeta.toFixed(3)} < 0$ (unstable)`,
+    underdamped: `Underdamped: $\\zeta = ${zeta.toFixed(3)} < 1$`,
+    critical: `Critically damped: $\\zeta = ${zeta.toFixed(3)} \\approx 1$`,
+    overdamped: `Overdamped: $\\zeta = ${zeta.toFixed(3)} > 1$`,
+  };
+  el.innerHTML = labels[type];
+  MathJax.typesetPromise([el]);
+}
+
+function updateNaturalFreqDisplay() {
+  const omega_n = Math.sqrt(state.k / state.m);
+  const ratio = state.omega / omega_n;
+  const el = $('natural-freq-display');
+  el.innerHTML = `$\\omega_n = ${omega_n.toFixed(3)}$ &nbsp;($\\omega/\\omega_n = ${ratio.toFixed(3)}$)`;
+  MathJax.typesetPromise([el]);
+}
+
+// ============================================================
+//  Main update
+// ============================================================
+function update() {
+  const sol = solve(state);
+  anim.sol = sol;  // Cache for animation
+
+  drawXtPlot(sol);
+  drawPhasePlot(sol);
+  drawEnergyPlot(sol);
+  drawAnimFrame(anim.t);
+  if (anim.t > 0) {
+    drawTimeCursorOnXt(sol, anim.t);
+  }
+  updateEquation();
+  updateSolution();
+  updateDampingIndicator();
+  updateNaturalFreqDisplay();
+
+  // Toggle legends
+  const envItem = $('legend-envelope-item');
+  if (envItem) {
+    const dampType = classify(state.m, state.c, state.k);
+    envItem.style.display = (state.showEnvelope && state.mode === 'free' && (dampType === 'underdamped' || dampType === 'negative')) ? '' : 'none';
+  }
+}
+
+// ============================================================
+//  Event binding
+// ============================================================
+// Mode buttons
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.mode = btn.dataset.mode;
+    $('forcing-section').style.display = state.mode === 'forced' ? '' : 'none';
+    resetAnim();
+    update();
+  });
+});
+
+// Sliders
+for (const key of ['m','c','k','F0','omega','tmax']) {
+  sliders[key].addEventListener('input', () => {
+    const v = parseFloat(sliders[key].value);
+    state[key] = v;
+    vals[key].textContent = key === 'tmax' ? v.toFixed(0) : v.toFixed(2);
+    resetAnim();
+    update();
+  });
+}
+
+// ICs
+$('ic-x0').addEventListener('input', () => { state.x0 = parseFloat($('ic-x0').value) || 0; resetAnim(); update(); });
+$('ic-v0').addEventListener('input', () => { state.v0 = parseFloat($('ic-v0').value) || 0; resetAnim(); update(); });
+
+// Checkboxes
+$('show-envelope').addEventListener('change', () => { state.showEnvelope = $('show-envelope').checked; update(); });
+$('show-phase').addEventListener('change', () => { state.showPhase = $('show-phase').checked; update(); });
+
+// Animation controls
+$('btn-play').addEventListener('click', () => {
+  if (anim.playing) {
+    stopAnim();
+  } else {
+    if (anim.t >= state.tmax) anim.t = 0;
+    startAnim();
+  }
+});
+
+$('btn-reset').addEventListener('click', () => {
+  resetAnim();
+});
+
+$('slider-speed').addEventListener('input', () => {
+  anim.speed = parseFloat($('slider-speed').value);
+  $('val-speed').textContent = anim.speed.toFixed(1) + '×';
+});
+
+// Resize
+window.addEventListener('resize', update);
+
+// Initial render
+update();
+</script>
+
+</body>
+</html>

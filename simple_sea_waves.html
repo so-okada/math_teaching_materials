@@ -1,0 +1,449 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Sea Waves</title>
+    
+    <!-- MathJax Configuration -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+            }
+        };
+    </script>
+    <!-- Loading MathJax v3 -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+
+    <style>
+        :root {
+            --bg-dark: #001219;
+            --panel-bg: #00232e;
+            --accent: #94d2bd;
+            --text: #e9d8a6;
+            --card-border: rgba(148, 210, 189, 0.2);
+            --super-color: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .viewport-header {
+            width: 100%;
+            height: 50vh;
+            min-height: 300px;
+            position: relative;
+            background: #001219;
+            overflow: hidden;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        canvas {
+            display: block;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1150px;
+            padding: 40px 20px;
+            box-sizing: border-box;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        h1, h2 {
+            margin-top: 0;
+            color: var(--accent);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        h1 { font-size: 1.6rem; border-left: 4px solid var(--accent); padding-left: 15px; }
+        h2 { font-size: 1.2rem; border-bottom: 1px solid var(--card-border); padding-bottom: 10px; }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
+        }
+
+        @media (min-width: 1100px) {
+            .controls-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .label-text {
+            flex-shrink: 1;
+            padding-right: 8px;
+        }
+
+        .val-display {
+            color: var(--accent);
+            font-family: monospace;
+            flex-shrink: 0;
+            white-space: nowrap;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        input[type=range] {
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: rgba(148, 210, 189, 0.1);
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--accent);
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid var(--bg-dark);
+            box-shadow: 0 0 15px rgba(148, 210, 189, 0.3);
+        }
+
+        /* Checkbox styling */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .checkbox-container input {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent);
+        }
+
+        .math-block {
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        .formula {
+            display: block;
+            text-align: center;
+            font-size: 1.8rem;
+            margin: 25px 0;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px dashed var(--accent);
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        strong {
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="viewport-header">
+        <canvas id="waveCanvas"></canvas>
+    </div>
+
+    <div class="container">
+        <div class="panel">
+            <h1>Simple Sea Waves</h1>
+            <div class="controls-grid">
+                <!-- 1st row: base amplitude, base frequency, base speed, wave layers -->
+                <div class="control-group">
+                    <label><span class="label-text">Base Amplitude</span> <span id="ampVal" class="val-display">40</span></label>
+                    <input type="range" id="ampInput" min="5" max="200" value="40">
+                </div>
+                <div class="control-group">
+                    <label><span class="label-text">Base Frequency</span> <span id="freqVal" class="val-display">0.005</span></label>
+                    <input type="range" id="freqInput" min="0.001" max="0.05" step="0.001" value="0.005">
+                </div>
+                <div class="control-group">
+                    <label><span class="label-text">Base Speed ($\omega$)</span> <span id="speedVal" class="val-display">0.02</span></label>
+                    <input type="range" id="speedInput" min="0" max="0.2" step="0.001" value="0.02">
+                </div>
+                <div class="control-group">
+                    <label><span class="label-text">Wave Layers</span> <span id="layerVal" class="val-display">3</span></label>
+                    <input type="range" id="layerInput" min="1" max="6" step="1" value="3">
+                </div>
+
+                <!-- 2nd row: speed variance, amplitude reduction factor, frequency increment factor, initial phase offset -->
+                <div class="control-group">
+                    <label><span class="label-text">Speed Variance</span> <span id="varVal" class="val-display">0.08</span></label>
+                    <input type="range" id="varInput" min="0" max="0.5" step="0.01" value="0.08">
+                </div>
+                <div class="control-group">
+                    <label><span class="label-text">Amplitude Reduction</span> <span id="ampRedVal" class="val-display">0.12</span></label>
+                    <input type="range" id="ampRedInput" min="0" max="0.4" step="0.01" value="0.12">
+                </div>
+                <div class="control-group">
+                    <label><span class="label-text">Frequency Increment</span> <span id="freqIncVal" class="val-display">0.15</span></label>
+                    <input type="range" id="freqIncInput" min="0" max="1.0" step="0.01" value="0.15">
+                </div>
+                <div class="control-group">
+                    <label><span class="label-text">Initial Phase Offset ($\phi_0$)</span> <span id="offsetVal" class="val-display">0.00</span></label>
+                    <input type="range" id="offsetInput" min="-10" max="10" step="0.01" value="0">
+                </div>
+
+                <!-- 3rd row: vertical position, water opacity, layer separation, superposition toggle -->
+                <div class="control-group">
+                    <label><span class="label-text">Vertical Position</span> <span id="posVal" class="val-display">0.65</span></label>
+                    <input type="range" id="posInput" min="0.1" max="0.9" step="0.01" value="0.65">
+                </div>
+                <div class="control-group">
+                    <label><span class="label-text">Water Opacity</span> <span id="opacityVal" class="val-display">0.50</span></label>
+                    <input type="range" id="opacityInput" min="0.1" max="1.0" step="0.05" value="0.5">
+                </div>
+                <div class="control-group">
+                    <label><span class="label-text">Layer Separation</span> <span id="spreadVal" class="val-display">2.50</span></label>
+                    <input type="range" id="spreadInput" min="0" max="10" step="0.1" value="2.5">
+                </div>
+                <div class="control-group" style="justify-content: flex-end; padding-bottom: 5px;">
+                    <label class="checkbox-container">
+                        <input type="checkbox" id="superToggle">
+                        Show Superposition
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel math-block">
+            <h2>The Mathematics of Waves</h2>
+            <p>The position of the water surface is calculated for each individual layer $i$ (where $i=0$ is the topmost layer) using the periodic function:</p>
+            
+            <div class="formula">
+                $$y_{i}(x, t) = y_{pos} + A_{i} \sin(k_{i}x + \omega_{i}t + \phi_{i})$$
+            </div>
+
+            <p>Each parameter in the equation is derived from your slider settings and scales based on the layer index $i$:</p>
+            <ul>
+                <li><strong>Amplitude ($A_{i}$):</strong> $A_{i} = A_{base} \cdot (1 - C_A \cdot i)$. The <strong>Amplitude Reduction</strong> ($C_A$) causes background layers to flatten.</li>
+                <li><strong>Wave Number ($k_{i}$):</strong> $k_{i} = k_{base} \cdot (1 + C_k \cdot i)$. The <strong>Frequency Increment</strong> ($C_k$) makes background waves more "choppy".</li>
+                <li><strong>Angular Frequency ($\omega_{i}$):</strong> $\omega_{i} = \omega_{base} \cdot (1 + i \cdot \text{Variance})$. This controls the relative speed between layers.</li>
+                <li><strong>Phase Offset ($\phi_{i}$):</strong> $\phi_{i} = \phi_{0} + (i \cdot \text{Separation})$. This handles horizontal alignment and the initial shift.</li>
+            </ul>
+
+            <p>When you enable <strong>Superposition</strong>, the resultant wave is the algebraic sum of all active layers at every point $x$ along the surface:</p>
+
+            <div class="formula">
+                $$y_{total}(x, t) = y_{pos} + \sum_{i=0}^{n-1} A_{i} \sin(k_{i}x + \omega_{i}t + \phi_{i})$$
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('waveCanvas');
+        const ctx = canvas.getContext('2d');
+        const header = document.querySelector('.viewport-header');
+
+        // UI Inputs
+        const ampInput = document.getElementById('ampInput');
+        const freqInput = document.getElementById('freqInput');
+        const speedInput = document.getElementById('speedInput');
+        const varInput = document.getElementById('varInput');
+        const layerInput = document.getElementById('layerInput');
+        const posInput = document.getElementById('posInput');
+        const spreadInput = document.getElementById('spreadInput');
+        const opacityInput = document.getElementById('opacityInput');
+        const offsetInput = document.getElementById('offsetInput');
+        const ampRedInput = document.getElementById('ampRedInput');
+        const freqIncInput = document.getElementById('freqIncInput');
+        const superToggle = document.getElementById('superToggle');
+
+        // UI Value Displays
+        const ampVal = document.getElementById('ampVal');
+        const freqVal = document.getElementById('freqVal');
+        const speedVal = document.getElementById('speedVal');
+        const varVal = document.getElementById('varVal');
+        const layerVal = document.getElementById('layerVal');
+        const posVal = document.getElementById('posVal');
+        const spreadVal = document.getElementById('spreadVal');
+        const opacityVal = document.getElementById('opacityVal');
+        const offsetVal = document.getElementById('offsetVal');
+        const ampRedVal = document.getElementById('ampRedVal');
+        const freqIncVal = document.getElementById('freqIncVal');
+
+        let width, height;
+        let tick = 0;
+
+        const baseColors = [
+            { r: 0, g: 95, b: 115 },
+            { r: 10, g: 147, b: 150 },
+            { r: 148, g: 210, b: 189 },
+            { r: 233, g: 216, b: 166 },
+            { r: 72, g: 202, b: 228 },
+            { r: 0, g: 18, b: 25 }
+        ];
+
+        function resize() {
+            width = canvas.width = header.clientWidth;
+            height = canvas.height = header.clientHeight;
+        }
+
+        function drawBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, height);
+            gradient.addColorStop(0, '#001219');
+            gradient.addColorStop(1, '#005f73');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+        }
+
+        function getLayerParams(index) {
+            const userAmp = parseFloat(ampInput.value);
+            const userFreq = parseFloat(freqInput.value);
+            const userSpeed = parseFloat(speedInput.value);
+            const userVar = parseFloat(varInput.value);
+            const userOffset = parseFloat(offsetInput.value);
+            const userSpread = parseFloat(spreadInput.value);
+            const userAmpRed = parseFloat(ampRedInput.value);
+            const userFreqInc = parseFloat(freqIncInput.value);
+
+            return {
+                amplitude: userAmp * (1 - index * userAmpRed),
+                frequency: userFreq * (1 + index * userFreqInc),
+                speed: userSpeed * (1 + index * userVar),
+                totalPhase: userOffset + (index * userSpread)
+            };
+        }
+
+        function drawWave(index) {
+            const { amplitude, frequency, speed, totalPhase } = getLayerParams(index);
+            const userPos = parseFloat(posInput.value);
+            const userOpacity = parseFloat(opacityInput.value);
+
+            ctx.beginPath();
+            ctx.moveTo(0, height);
+            const startY = height * userPos;
+
+            for (let x = 0; x <= width; x += 3) {
+                const y = startY + Math.sin(x * frequency + tick * speed + totalPhase) * amplitude;
+                ctx.lineTo(x, y);
+            }
+
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            
+            const c = baseColors[index % baseColors.length];
+            const finalAlpha = superToggle.checked ? userOpacity * 0.4 : userOpacity;
+            ctx.fillStyle = `rgba(${c.r}, ${c.g}, ${c.b}, ${finalAlpha})`;
+            ctx.fill();
+        }
+
+        function drawSuperposition() {
+            const numLayers = parseInt(layerInput.value);
+            const userPos = parseFloat(posInput.value);
+            const startY = height * userPos;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = 'rgba(255, 255, 255, 0.5)';
+
+            for (let x = 0; x <= width; x += 3) {
+                let sumYOffset = 0;
+                for (let i = 0; i < numLayers; i++) {
+                    const p = getLayerParams(i);
+                    sumYOffset += Math.sin(x * p.frequency + tick * p.speed + p.totalPhase) * p.amplitude;
+                }
+                
+                const y = startY + sumYOffset;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        function animate() {
+            tick++;
+            
+            ampVal.innerText = ampInput.value;
+            freqVal.innerText = freqInput.value;
+            speedVal.innerText = speedInput.value;
+            varVal.innerText = parseFloat(varInput.value).toFixed(2);
+            layerVal.innerText = layerInput.value;
+            posVal.innerText = posInput.value;
+            spreadVal.innerText = spreadInput.value;
+            opacityVal.innerText = opacityInput.value;
+            offsetVal.innerText = parseFloat(offsetInput.value).toFixed(2);
+            ampRedVal.innerText = parseFloat(ampRedInput.value).toFixed(2);
+            freqIncVal.innerText = parseFloat(freqIncInput.value).toFixed(2);
+
+            ctx.clearRect(0, 0, width, height);
+            drawBackground();
+
+            const numLayers = parseInt(layerInput.value);
+            for (let i = numLayers - 1; i >= 0; i--) {
+                drawWave(i);
+            }
+
+            if (superToggle.checked) {
+                drawSuperposition();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
+</body>
+</html>

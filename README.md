@@ -21,10 +21,12 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html) | Probability & Statistics | Normal distribution, random walks |
 | [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
+| [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
 | [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
+| [Vibration (2nd-Order ODE)](https://so-okada.github.io/math_teaching_materials/vibration_demo.html) | Differential Equations | Damped harmonic oscillator, phase portraits |
 
 ---
 
@@ -377,6 +379,32 @@ For small $|x|$, the higher-order terms become negligible, yielding $\sin x \app
 
 ---
 
+### [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html)
+**File:** `simple_sea_waves.html`
+
+Animated visualization of layered sine waves and the parameters that control wave behavior.
+
+**Mathematical Background:**
+Each wave layer $i$ is computed using:
+$$y_i(x, t) = y_{\text{pos}} + A_i \sin(k_i x + \omega_i t + \phi_i)$$
+
+The parameters scale across layers:
+- **Amplitude**: $A_i = A_{\text{base}} \cdot (1 - C_A \cdot i)$
+- **Wave number**: $k_i = k_{\text{base}} \cdot (1 + C_k \cdot i)$
+- **Angular frequency**: $\omega_i = \omega_{\text{base}} \cdot (1 + i \cdot \text{variance})$
+- **Phase**: $\phi_i = \phi_0 + i \cdot \text{separation}$
+
+**Controls:**
+- **Base Amplitude/Frequency/Speed**: Primary wave parameters
+- **Wave Layers**: Number of superimposed waves (1–6)
+- **Amplitude Reduction**: How quickly amplitude decreases per layer
+- **Frequency Increment**: How frequency increases per layer
+- **Phase Offset ($\phi_0$)**: Initial phase shift
+- **Layer Separation**: Phase difference between layers
+- **Show Superposition**: Display the sum $y_{\text{total}} = \sum_i A_i \sin(k_i x + \omega_i t + \phi_i)$
+
+---
+
 ## Calculus
 
 ### [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html)
@@ -472,6 +500,33 @@ The shifting center of mass due to water sloshing creates a damping effect on ro
 
 ---
 
+## Differential Equations
+
+### [Vibration (2nd-Order ODE)](https://so-okada.github.io/math_teaching_materials/vibration_demo.html)
+**File:** `vibration_demo.html`
+
+Interactive visualization of the second-order linear ODE governing mechanical vibrations, with real-time phase portraits and energy analysis.
+
+**Mathematical Background:**
+The damped harmonic oscillator is described by:
+$$m\ddot{x} + c\dot{x} + kx = F(t)$$
+
+The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior:
+- **Underdamped** ($\zeta < 1$): Oscillatory decay with $x(t) = e^{-\gamma t}(A\cos\omega_d t + B\sin\omega_d t)$
+- **Critically damped** ($\zeta = 1$): Fastest non-oscillatory return
+- **Overdamped** ($\zeta > 1$): Slow exponential decay
+- **Negative damping** ($\zeta < 0$): Unstable growth
+
+**Controls:**
+- **Mass (m), Damping (c), Stiffness (k)**: System parameters
+- **Initial conditions**: $x(0)$ and $\dot{x}(0)$
+- **Mode**: Free vibration or forced ($F_0\cos\omega t$)
+- **Show Envelope**: Display exponential decay envelope
+- **Animation**: Play/pause with adjustable speed
+- Plots: Displacement vs time, phase portrait ($x$ vs $\dot{x}$), energy
+
+---
+
 ## Technical Notes
 
 **Browser Compatibility:** All demos use vanilla JavaScript and HTML5 Canvas.
@@ -491,6 +546,8 @@ The shifting center of mass due to water sloshing creates a damping effect on ro
 - `bottle_flip_edu.html`: Uses MathJax (CDN)
 - `galton_board.html`: Uses MathJax (CDN)
 - `conic_sections.html`: Uses MathJax (CDN)
+- `simple_sea_waves.html`: Uses MathJax (CDN)
+- `vibration_demo.html`: Uses MathJax (CDN)
 
 ---
 
