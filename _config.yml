@@ -1,2 +1,4 @@
 theme: minima
 title: Mathematical Teaching Demonstrations
+baseurl: "/math_teaching_materials"
+url: "https://so-okada.github.io"
