@@ -1,6 +1,7 @@
 ---
 layout: default
 ---
+
 # Mathematical Teaching Demonstrations
 
 A collection of interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser.

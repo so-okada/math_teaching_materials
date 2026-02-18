@@ -14,6 +14,8 @@ old/
 202*
 
 !.gitignore
+!_includes/
+!_includes/**
 !tests/
 !tests/logfiles/
 
