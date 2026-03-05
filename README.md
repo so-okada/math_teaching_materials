@@ -325,6 +325,8 @@ where $\mu = 0.5n$ and $\sigma = \sqrt{0.25n}$.
 - **Drop Rate**: Speed of ball generation
 - **Show Bell Curve**: Overlay theoretical normal distribution
 
+**See also:** Cédric Villani's TED talk [*What's So Sexy About Math?*](https://www.ted.com/talks/cedric_villani_what_s_so_sexy_about_math)
+
 ---
 
 ## Geometry
