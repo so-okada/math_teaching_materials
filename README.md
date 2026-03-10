@@ -366,7 +366,7 @@ Demonstrates the small angle approximation $\sin x \approx x$ (for $x$ in radian
 The Taylor series expansion of sine is:
 $$\sin x = x - \frac{x^3}{3!} + \frac{x^5}{5!} - \cdots$$
 
-For small $|x|$, the higher-order terms become negligible, yielding $\sin x \approx x$. This approximation is fundamental in physics (pendulum motion, optics, wave mechanics) and engineering.
+For small $x$, the higher-order terms become negligible, yielding $\sin x \approx x$. This approximation is fundamental in physics (pendulum motion, optics, wave mechanics) and engineering.
 
 **Error Analysis:**
 - At $x = 0.1$ rad (5.7°): Error ≈ 0.17%
