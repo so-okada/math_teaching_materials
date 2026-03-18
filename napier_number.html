@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Napier's Number e</title>
+<script>
+MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+  startup: { pageReady: () => MathJax.startup.defaultPageReady().then(() => {}) }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background: #f7f7f5;
+    color: #2c2c2c;
+    line-height: 1.6;
+  }
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 1.7em;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #1a1a1a;
+  }
+  .subtitle {
+    text-align: center;
+    font-size: 1.05em;
+    color: #666;
+    margin-bottom: 28px;
+  }
+  .section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .section h2 {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #1a1a1a;
+    border-bottom: 2px solid #e8e8e8;
+    padding-bottom: 6px;
+  }
+  .formula {
+    text-align: center;
+    margin: 12px 0 16px;
+    font-size: 1.1em;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0;
+    flex-wrap: wrap;
+  }
+  .controls label {
+    font-weight: 600;
+    font-size: 0.95em;
+    min-width: 30px;
+  }
+  .controls input[type="range"] {
+    flex: 1;
+    min-width: 140px;
+    accent-color: #2266cc;
+  }
+  .value-display {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.95em;
+    background: #f0f4f8;
+    padding: 2px 10px;
+    border-radius: 4px;
+    min-width: 80px;
+    text-align: center;
+  }
+  canvas {
+    display: block;
+    margin: 8px auto;
+    max-width: 100%;
+  }
+  .result-box {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+  .result-item {
+    text-align: center;
+    background: #f0f4f8;
+    padding: 10px 18px;
+    border-radius: 6px;
+    min-width: 200px;
+  }
+  .result-item .label { font-size: 0.85em; color: #666; }
+  .result-item .val {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 1.15em;
+    font-weight: 700;
+    color: #2266cc;
+  }
+  .btn {
+    padding: 6px 16px;
+    border: 1px solid #2266cc;
+    background: #fff;
+    color: #2266cc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.15s;
+  }
+  .btn:hover { background: #eef3fc; }
+  .btn.active { background: #2266cc; color: #fff; }
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 6px;
+    font-size: 0.85em;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .legend-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  .tab-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Napier's Number $e$</h1>
+  <div class="subtitle">$e \approx 2.71828182845904523536\ldots$</div>
+
+  <!-- Section 1: Limit Definition -->
+  <div class="section">
+    <h2>1. Limit Definition</h2>
+    <div class="formula">
+      $\displaystyle e = \lim_{n \to \infty}\left(1 + \frac{1}{n}\right)^{n}$
+    </div>
+    <div class="controls">
+      <label>$n$:</label>
+      <input type="range" id="slider-n" min="1" max="500" value="1" step="1">
+      <span class="value-display" id="disp-n">1</span>
+    </div>
+    <canvas id="canvas-limit" width="900" height="380"></canvas>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#2266cc;"></span> $(1+1/n)^n$</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#cc3333;"></span> $e$</div>
+    </div>
+    <div class="result-box">
+      <div class="result-item"><div class="label">$(1+1/n)^n$</div><div class="val" id="val-limit">—</div></div>
+      <div class="result-item"><div class="label">Error</div><div class="val" id="val-limit-err">—</div></div>
+    </div>
+  </div>
+
+  <!-- Section 2: Series Definition -->
+  <div class="section">
+    <h2>2. Series Definition</h2>
+    <div class="formula">
+      $\displaystyle e = \sum_{k=0}^{\infty}\frac{1}{k!}$
+    </div>
+    <div class="controls">
+      <label>Terms:</label>
+      <input type="range" id="slider-terms" min="1" max="20" value="1" step="1">
+      <span class="value-display" id="disp-terms">1</span>
+    </div>
+    <canvas id="canvas-series" width="900" height="380"></canvas>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#2e8b57;"></span> Partial sum $S_N = \sum_{k=0}^{N}\frac{1}{k!}$</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#cc3333;"></span> $e$</div>
+    </div>
+    <div class="result-box">
+      <div class="result-item"><div class="label">Partial Sum $S_N$</div><div class="val" id="val-series">—</div></div>
+      <div class="result-item"><div class="label">Error</div><div class="val" id="val-series-err">—</div></div>
+    </div>
+  </div>
+
+  <!-- Section 3: Convergence Comparison -->
+  <div class="section">
+    <h2>3. Convergence Comparison</h2>
+    <p style="font-size:0.92em;color:#555;margin-bottom:12px;">
+      The series $\sum 1/k!$ converges much faster than the limit $(1+1/n)^n$.
+    </p>
+    <canvas id="canvas-compare" width="900" height="380"></canvas>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#2266cc;"></span> $|(1+1/n)^n - e|$ (limit)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#2e8b57;"></span> $|S_n - e|$ (series)</div>
+    </div>
+  </div>
+
+  <!-- Section 4: Slope of y=a^x at x=0 -->
+  <div class="section">
+    <h2>4. Slope of $y = a^x$ at $x = 0$</h2>
+    <p style="font-size:0.92em;color:#555;margin-bottom:8px;">
+      $e$ is the unique base $a > 0$ for which the slope of $y = a^x$ at $x = 0$ is exactly $1$.
+    </p>
+    <div class="controls">
+      <label>$a$:</label>
+      <input type="range" id="slider-a" min="0.5" max="5.0" value="2.718" step="0.001">
+      <span class="value-display" id="disp-a">2.718</span>
+      <button class="btn" id="btn-set-e">Set $a = e$</button>
+    </div>
+    <canvas id="canvas-slope" width="900" height="420"></canvas>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#2266cc;"></span> $y = a^x$</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#cc3333;"></span> Tangent at $x = 0$ (slope $= \log a$)</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:rgba(150,150,150,0.35);"></span> Other bases</div>
+    </div>
+    <div class="result-box">
+      <div class="result-item"><div class="label">Base $a$</div><div class="val" id="val-a">—</div></div>
+      <div class="result-item"><div class="label">Slope $= \log a$</div><div class="val" id="val-slope">—</div></div>
+    </div>
+  </div>
+
+  <!-- Section 5: Compound Interest -->
+  <div class="section">
+    <h2>5. Compound Interest Interpretation</h2>
+    <div class="formula">
+      $\displaystyle A = P\left(1 + \frac{r}{n}\right)^{nt}$
+    </div>
+    <p style="font-size:0.92em;color:#555;margin-bottom:12px;">
+      With principal $P=1$, annual rate $r=100\%$, and time $t=1$ year,
+      the amount $A = (1+1/n)^n$ approaches $e$ as the compounding frequency $n$ increases.
+    </p>
+    <canvas id="canvas-compound" width="900" height="360"></canvas>
+    <div class="legend">
+      <div class="legend-item"><span class="legend-swatch" style="background:#2266cc;"></span> Amount after 1 year</div>
+      <div class="legend-item"><span class="legend-swatch" style="background:#cc3333;"></span> Continuous limit $e$</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const E = Math.E;
+const dpr = window.devicePixelRatio || 1;
+
+function setupCanvas(id) {
+  const c = document.getElementById(id);
+  const w = c.width, h = c.height;
+  c.style.width = w + 'px';
+  c.style.height = h + 'px';
+  c.width = w * dpr;
+  c.height = h * dpr;
+  const ctx = c.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { ctx, w, h };
+}
+
+function factorial(n) {
+  let f = 1;
+  for (let i = 2; i <= n; i++) f *= i;
+  return f;
+}
+
+function partialSumE(N) {
+  let s = 0;
+  for (let k = 0; k <= N; k++) s += 1 / factorial(k);
+  return s;
+}
+
+function limitE(n) {
+  return Math.pow(1 + 1 / n, n);
+}
+
+// ===== Section 1: Limit =====
+const lim = setupCanvas('canvas-limit');
+const sliderN = document.getElementById('slider-n');
+const dispN = document.getElementById('disp-n');
+
+function drawLimit() {
+  const N = parseInt(sliderN.value);
+  dispN.textContent = N;
+  const ctx = lim.ctx, w = lim.w, h = lim.h;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 60, r: 30, t: 20, b: 50 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+
+  // Collect data for all n up to N
+  const pts = [];
+  const maxN = N;
+  for (let i = 1; i <= maxN; i++) {
+    pts.push({ n: i, val: limitE(i) });
+  }
+
+  // Axes
+  const xMin = 0, xMax = Math.max(maxN, 10);
+  const yMin = 1.8, yMax = 2.85;
+  const xScale = pw / (xMax - xMin);
+  const yScale = ph / (yMax - yMin);
+  const toX = n => pad.l + (n - xMin) * xScale;
+  const toY = v => pad.t + (yMax - v) * yScale;
+
+  // Grid
+  ctx.strokeStyle = '#e8e8e8';
+  ctx.lineWidth = 1;
+  for (let y = 2.0; y <= 2.8; y += 0.1) {
+    const py = toY(y);
+    ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+  }
+
+  // e reference line
+  ctx.strokeStyle = '#cc3333';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  const ey = toY(E);
+  ctx.beginPath(); ctx.moveTo(pad.l, ey); ctx.lineTo(w - pad.r, ey); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#cc3333';
+  ctx.font = '12px "Courier New"';
+  ctx.fillText('e ≈ 2.71828...', w - pad.r - 110, ey - 6);
+
+  // Axes
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h - pad.b); ctx.lineTo(w - pad.r, h - pad.b); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = '#666';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  const xTicks = xMax <= 20 ? 1 : xMax <= 100 ? 10 : xMax <= 300 ? 50 : 100;
+  for (let x = 0; x <= xMax; x += xTicks) {
+    if (x === 0 && xTicks > 1) continue;
+    const px = toX(x);
+    ctx.beginPath(); ctx.moveTo(px, h - pad.b); ctx.lineTo(px, h - pad.b + 5); ctx.stroke();
+    ctx.fillText(x, px, h - pad.b + 20);
+  }
+  ctx.fillText('n', w - pad.r + 10, h - pad.b + 5);
+
+  ctx.textAlign = 'right';
+  for (let y = 2.0; y <= 2.8; y += 0.1) {
+    const py = toY(y);
+    ctx.fillText(y.toFixed(1), pad.l - 8, py + 4);
+  }
+
+  // Plot points
+  ctx.fillStyle = '#2266cc';
+  if (pts.length <= 100) {
+    for (const p of pts) {
+      ctx.beginPath();
+      ctx.arc(toX(p.n), toY(p.val), 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else {
+    ctx.strokeStyle = '#2266cc';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < pts.length; i++) {
+      const px = toX(pts[i].n), py = toY(pts[i].val);
+      if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+  }
+
+  // Highlight current
+  const curVal = limitE(N);
+  ctx.fillStyle = '#2266cc';
+  ctx.beginPath();
+  ctx.arc(toX(N), toY(curVal), 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(toX(N), toY(curVal), 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  document.getElementById('val-limit').textContent = curVal.toFixed(15);
+  document.getElementById('val-limit-err').textContent = Math.abs(curVal - E).toExponential(4);
+}
+
+sliderN.addEventListener('input', drawLimit);
+drawLimit();
+
+// ===== Section 2: Series =====
+const ser = setupCanvas('canvas-series');
+const sliderTerms = document.getElementById('slider-terms');
+const dispTerms = document.getElementById('disp-terms');
+
+function drawSeries() {
+  const N = parseInt(sliderTerms.value);
+  dispTerms.textContent = N;
+  const ctx = ser.ctx, w = ser.w, h = ser.h;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 60, r: 30, t: 20, b: 50 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+
+  const maxK = 20;
+  const yMin = 0.5, yMax = 3.0;
+  const xScale = pw / maxK;
+  const yScale = ph / (yMax - yMin);
+  const toX = k => pad.l + k * xScale;
+  const toY = v => pad.t + (yMax - v) * yScale;
+
+  // Grid
+  ctx.strokeStyle = '#e8e8e8';
+  ctx.lineWidth = 1;
+  for (let y = 1.0; y <= 3.0; y += 0.5) {
+    const py = toY(y);
+    ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+  }
+
+  // e line
+  ctx.strokeStyle = '#cc3333';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  const ey = toY(E);
+  ctx.beginPath(); ctx.moveTo(pad.l, ey); ctx.lineTo(w - pad.r, ey); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#cc3333';
+  ctx.font = '12px "Courier New"';
+  ctx.fillText('e ≈ 2.71828...', w - pad.r - 110, ey - 6);
+
+  // Axes
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h - pad.b); ctx.lineTo(w - pad.r, h - pad.b); ctx.stroke();
+
+  ctx.fillStyle = '#666';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  for (let k = 0; k <= maxK; k += 2) {
+    const px = toX(k);
+    ctx.beginPath(); ctx.moveTo(px, h - pad.b); ctx.lineTo(px, h - pad.b + 5); ctx.stroke();
+    ctx.fillText(k, px, h - pad.b + 20);
+  }
+  ctx.fillText('N (number of terms − 1)', pad.l + pw / 2, h - pad.b + 40);
+
+  ctx.textAlign = 'right';
+  for (let y = 1.0; y <= 3.0; y += 0.5) {
+    ctx.fillText(y.toFixed(1), pad.l - 8, toY(y) + 4);
+  }
+
+  // Bar chart for 1/k! terms
+  const barW = xScale * 0.5;
+  for (let k = 0; k <= N; k++) {
+    const term = 1 / factorial(k);
+    const bh = term * yScale;
+    const bx = toX(k) - barW / 2;
+    const by = toY(yMin) - bh;
+    ctx.fillStyle = (k <= N) ? 'rgba(46,139,87,0.25)' : 'rgba(200,200,200,0.2)';
+    ctx.fillRect(bx, by, barW, bh);
+    ctx.strokeStyle = (k <= N) ? 'rgba(46,139,87,0.6)' : '#ccc';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, barW, bh);
+  }
+
+  // Partial sum step line
+  ctx.strokeStyle = '#2e8b57';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let k = 0; k <= maxK; k++) {
+    const s = partialSumE(k);
+    const px = toX(k), py = toY(Math.min(s, yMax));
+    if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  // Dots up to N
+  for (let k = 0; k <= N; k++) {
+    const s = partialSumE(k);
+    ctx.fillStyle = '#2e8b57';
+    ctx.beginPath();
+    ctx.arc(toX(k), toY(Math.min(s, yMax)), 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Highlight current
+  const curVal = partialSumE(N);
+  ctx.fillStyle = '#2e8b57';
+  ctx.beginPath();
+  ctx.arc(toX(N), toY(Math.min(curVal, yMax)), 6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(toX(N), toY(Math.min(curVal, yMax)), 2.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  document.getElementById('val-series').textContent = curVal.toFixed(15);
+  document.getElementById('val-series-err').textContent = Math.abs(curVal - E).toExponential(4);
+}
+
+sliderTerms.addEventListener('input', drawSeries);
+drawSeries();
+
+// ===== Section 3: Compound Interest =====
+const comp = setupCanvas('canvas-compound');
+
+function drawCompound() {
+  const ctx = comp.ctx, w = comp.w, h = comp.h;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 60, r: 30, t: 20, b: 60 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+
+  const freqs = [
+    { n: 1, label: 'Annual' },
+    { n: 2, label: 'Semi' },
+    { n: 4, label: 'Quarterly' },
+    { n: 12, label: 'Monthly' },
+    { n: 52, label: 'Weekly' },
+    { n: 365, label: 'Daily' },
+    { n: 8760, label: 'Hourly' },
+    { n: 525600, label: 'Per min' },
+  ];
+
+  const barW = pw / freqs.length * 0.6;
+  const gap = pw / freqs.length;
+  const yMin = 1.8, yMax = 2.85;
+  const yScale = ph / (yMax - yMin);
+  const toY = v => pad.t + (yMax - v) * yScale;
+
+  // Grid
+  ctx.strokeStyle = '#e8e8e8';
+  ctx.lineWidth = 1;
+  for (let y = 2.0; y <= 2.8; y += 0.1) {
+    const py = toY(y);
+    ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+  }
+
+  // e line
+  ctx.strokeStyle = '#cc3333';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([6, 4]);
+  const ey = toY(E);
+  ctx.beginPath(); ctx.moveTo(pad.l, ey); ctx.lineTo(w - pad.r, ey); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#cc3333';
+  ctx.font = '12px "Courier New"';
+  ctx.textAlign = 'left';
+  ctx.fillText('e ≈ 2.71828...', w - pad.r - 110, ey - 6);
+
+  // Axes
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h - pad.b); ctx.lineTo(w - pad.r, h - pad.b); ctx.stroke();
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#666';
+  ctx.font = '12px sans-serif';
+  for (let y = 2.0; y <= 2.8; y += 0.1) {
+    ctx.fillText(y.toFixed(1), pad.l - 8, toY(y) + 4);
+  }
+
+  // Bars
+  for (let i = 0; i < freqs.length; i++) {
+    const { n, label } = freqs[i];
+    const val = Math.pow(1 + 1 / n, n);
+    const bx = pad.l + i * gap + (gap - barW) / 2;
+    const by = toY(val);
+    const bh = toY(yMin) - by;
+
+    const gradient = ctx.createLinearGradient(bx, by, bx, by + bh);
+    gradient.addColorStop(0, '#4488dd');
+    gradient.addColorStop(1, '#2266cc');
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, barW, bh, [4, 4, 0, 0]);
+    ctx.fill();
+
+    // Value on top
+    ctx.fillStyle = '#2266cc';
+    ctx.font = '11px "Courier New"';
+    ctx.textAlign = 'center';
+    ctx.fillText(val.toFixed(5), bx + barW / 2, by - 5);
+
+    // Label
+    ctx.fillStyle = '#444';
+    ctx.font = '11px sans-serif';
+    ctx.save();
+    ctx.translate(bx + barW / 2, h - pad.b + 12);
+    ctx.rotate(-Math.PI / 6);
+    ctx.textAlign = 'right';
+    ctx.fillText(label + ' (n=' + n + ')', 0, 0);
+    ctx.restore();
+  }
+}
+
+drawCompound();
+
+// ===== Section 4: Slope of y=a^x at x=0 =====
+const slp = setupCanvas('canvas-slope');
+const sliderA = document.getElementById('slider-a');
+const dispA = document.getElementById('disp-a');
+const btnSetE = document.getElementById('btn-set-e');
+
+const refBases = [0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 5.0];
+
+function drawSlope() {
+  const a = parseFloat(sliderA.value);
+  dispA.textContent = a.toFixed(3);
+  const slope = Math.log(a);
+
+  document.getElementById('val-a').textContent = a.toFixed(6);
+  document.getElementById('val-slope').textContent = slope.toFixed(6);
+
+  // ---- Left canvas: y = a^x with tangent ----
+  const ctx = slp.ctx, w = slp.w, h = slp.h;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 50, r: 20, t: 20, b: 45 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+
+  const xMin = -3, xMax = 3;
+  const yMin = -1, yMax = 6;
+  const xScale = pw / (xMax - xMin);
+  const yScale = ph / (yMax - yMin);
+  const toX = v => pad.l + (v - xMin) * xScale;
+  const toY = v => pad.t + (yMax - v) * yScale;
+
+  // Grid
+  ctx.strokeStyle = '#ebebeb';
+  ctx.lineWidth = 1;
+  for (let gx = Math.ceil(xMin); gx <= xMax; gx++) {
+    ctx.beginPath(); ctx.moveTo(toX(gx), pad.t); ctx.lineTo(toX(gx), h - pad.b); ctx.stroke();
+  }
+  for (let gy = Math.ceil(yMin); gy <= yMax; gy++) {
+    ctx.beginPath(); ctx.moveTo(pad.l, toY(gy)); ctx.lineTo(w - pad.r, toY(gy)); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(pad.l, toY(0)); ctx.lineTo(w - pad.r, toY(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(toX(0), pad.t); ctx.lineTo(toX(0), h - pad.b); ctx.stroke();
+
+  // Axis labels
+  ctx.fillStyle = '#888';
+  ctx.font = '11px sans-serif';
+  ctx.textAlign = 'center';
+  for (let gx = Math.ceil(xMin); gx <= xMax; gx++) {
+    if (gx === 0) continue;
+    ctx.fillText(gx, toX(gx), toY(0) + 16);
+  }
+  ctx.textAlign = 'right';
+  for (let gy = Math.ceil(yMin); gy <= yMax; gy++) {
+    if (gy === 0) continue;
+    ctx.fillText(gy, toX(0) - 6, toY(gy) + 4);
+  }
+
+  // Draw reference curves (faint)
+  for (const b of refBases) {
+    if (Math.abs(b - a) < 0.05) continue;
+    ctx.strokeStyle = 'rgba(150,150,150,0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    let started = false;
+    for (let px = 0; px <= pw; px += 2) {
+      const xv = xMin + px / xScale;
+      const yv = Math.pow(b, xv);
+      if (yv < yMin || yv > yMax + 1) { started = false; continue; }
+      const sx = pad.l + px, sy = toY(yv);
+      if (!started) { ctx.moveTo(sx, sy); started = true; } else { ctx.lineTo(sx, sy); }
+    }
+    ctx.stroke();
+  }
+
+  // Draw y = e^x (special reference) if a is not near e
+  if (Math.abs(a - E) > 0.05) {
+    ctx.strokeStyle = 'rgba(46,139,87,0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    let started = false;
+    for (let px = 0; px <= pw; px += 2) {
+      const xv = xMin + px / xScale;
+      const yv = Math.exp(xv);
+      if (yv < yMin || yv > yMax + 1) { started = false; continue; }
+      const sx = pad.l + px, sy = toY(yv);
+      if (!started) { ctx.moveTo(sx, sy); started = true; } else { ctx.lineTo(sx, sy); }
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+    // label
+    ctx.fillStyle = 'rgba(46,139,87,0.7)';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    const elX = 1.2, elY = Math.exp(1.2);
+    if (elY < yMax) ctx.fillText('y = eˣ', toX(elX) + 4, toY(elY) - 4);
+  }
+
+  // Draw y = a^x (highlighted)
+  ctx.strokeStyle = '#2266cc';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  let started = false;
+  for (let px = 0; px <= pw; px += 1) {
+    const xv = xMin + px / xScale;
+    const yv = Math.pow(a, xv);
+    if (yv < yMin || yv > yMax + 1) { started = false; continue; }
+    const sx = pad.l + px, sy = toY(yv);
+    if (!started) { ctx.moveTo(sx, sy); started = true; } else { ctx.lineTo(sx, sy); }
+  }
+  ctx.stroke();
+
+  // Label for y = a^x
+  ctx.fillStyle = '#2266cc';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.textAlign = 'left';
+  const labX = 0.5;
+  const labY = Math.pow(a, labX);
+  if (labY < yMax - 0.5) {
+    ctx.fillText('y = ' + a.toFixed(2) + 'ˣ', toX(labX) + 6, toY(labY) - 8);
+  }
+
+  // Tangent line at x=0: y = 1 + slope * x
+  ctx.strokeStyle = '#cc3333';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const tanXMin = Math.max(xMin, slope !== 0 ? (yMin - 1) / slope : xMin);
+  const tanXMax = Math.min(xMax, slope !== 0 ? (yMax - 1) / slope : xMax);
+  const tx0 = Math.max(xMin, Math.min(tanXMin, tanXMax));
+  const tx1 = Math.min(xMax, Math.max(tanXMin, tanXMax));
+  ctx.moveTo(toX(tx0), toY(1 + slope * tx0));
+  ctx.lineTo(toX(tx1), toY(1 + slope * tx1));
+  ctx.stroke();
+
+  // Point at (0, 1)
+  ctx.fillStyle = '#cc3333';
+  ctx.beginPath();
+  ctx.arc(toX(0), toY(1), 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(toX(0), toY(1), 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Slope annotation
+  ctx.fillStyle = '#cc3333';
+  ctx.font = '12px "Courier New"';
+  ctx.textAlign = 'left';
+  const isEBase = Math.abs(a - E) < 0.01;
+  const slopeText = isEBase ? 'slope = log e = 1' : 'slope = log(' + a.toFixed(3) + ') = ' + slope.toFixed(4);
+  ctx.fillText(slopeText, toX(0.15), toY(1) + 22);
+
+  // y = x + 1 reference (slope=1 line) when a != e
+  if (!isEBase) {
+    ctx.strokeStyle = 'rgba(46,139,87,0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    const ry0 = 1 + 1 * xMin, ry1 = 1 + 1 * xMax;
+    ctx.beginPath();
+    ctx.moveTo(toX(xMin), toY(Math.max(yMin, ry0)));
+    ctx.lineTo(toX(xMax), toY(Math.min(yMax, ry1)));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Title inside canvas
+  ctx.fillStyle = '#444';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('y = aˣ and tangent at x = 0', pad.l + 4, pad.t + 16);
+}
+
+btnSetE.addEventListener('click', () => {
+  sliderA.value = E.toFixed(3);
+  drawSlope();
+});
+sliderA.addEventListener('input', drawSlope);
+drawSlope();
+
+// ===== Section 5: Convergence Comparison =====
+const cmp = setupCanvas('canvas-compare');
+
+function drawCompare() {
+  const ctx = cmp.ctx, w = cmp.w, h = cmp.h;
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 70, r: 30, t: 20, b: 50 };
+  const pw = w - pad.l - pad.r, ph = h - pad.t - pad.b;
+
+  const maxN = 15;
+  const xScale = pw / maxN;
+
+  // Compute errors (log scale)
+  const limErr = [], serErr = [];
+  for (let n = 1; n <= maxN; n++) {
+    limErr.push(Math.abs(limitE(n) - E));
+    serErr.push(Math.abs(partialSumE(n) - E));
+  }
+
+  // y-axis: log10 of error
+  const yMinLog = -16, yMaxLog = 0;
+  const yScale = ph / (yMaxLog - yMinLog);
+  const toX = n => pad.l + n * xScale;
+  const toY = logErr => pad.t + (yMaxLog - logErr) * yScale;
+
+  // Grid
+  ctx.strokeStyle = '#e8e8e8';
+  ctx.lineWidth = 1;
+  for (let y = yMinLog; y <= yMaxLog; y += 2) {
+    const py = toY(y);
+    ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(w - pad.r, py); ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(pad.l, pad.t); ctx.lineTo(pad.l, h - pad.b); ctx.lineTo(w - pad.r, h - pad.b); ctx.stroke();
+
+  ctx.fillStyle = '#666';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'center';
+  for (let k = 0; k <= maxN; k += 1) {
+    const px = toX(k);
+    if (k > 0) {
+      ctx.beginPath(); ctx.moveTo(px, h - pad.b); ctx.lineTo(px, h - pad.b + 5); ctx.stroke();
+    }
+    ctx.fillText(k, px, h - pad.b + 20);
+  }
+  ctx.fillText('n', pad.l + pw / 2, h - pad.b + 42);
+
+  ctx.textAlign = 'right';
+  for (let y = yMinLog; y <= yMaxLog; y += 2) {
+    ctx.fillText('10^' + y, pad.l - 8, toY(y) + 4);
+  }
+
+  // Plot limit errors
+  ctx.strokeStyle = '#2266cc';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < limErr.length; i++) {
+    const le = Math.log10(Math.max(limErr[i], 1e-17));
+    const px = toX(i + 1), py = toY(le);
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  for (let i = 0; i < limErr.length; i++) {
+    const le = Math.log10(Math.max(limErr[i], 1e-17));
+    ctx.fillStyle = '#2266cc';
+    ctx.beginPath();
+    ctx.arc(toX(i + 1), toY(le), 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Plot series errors
+  ctx.strokeStyle = '#2e8b57';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  let stopped = false;
+  for (let i = 0; i < serErr.length; i++) {
+    if (serErr[i] === 0) { stopped = true; break; }
+    const le = Math.log10(serErr[i]);
+    const px = toX(i + 1), py = toY(Math.max(le, yMinLog));
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  for (let i = 0; i < serErr.length; i++) {
+    if (serErr[i] === 0) break;
+    const le = Math.log10(serErr[i]);
+    ctx.fillStyle = '#2e8b57';
+    ctx.beginPath();
+    ctx.arc(toX(i + 1), toY(Math.max(le, yMinLog)), 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Arrow annotation
+  ctx.fillStyle = '#2e8b57';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText('Series: super-exponential convergence', toX(4), toY(-12) - 6);
+
+  ctx.fillStyle = '#2266cc';
+  ctx.fillText('Limit: O(1/n) convergence', toX(6), toY(-1.5));
+}
+
+drawCompare();
+
+// Handle resize
+window.addEventListener('resize', () => {
+  // Canvases have fixed CSS sizes so no action needed
+});
+</script>
+</body>
+</html>
