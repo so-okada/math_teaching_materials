@@ -24,6 +24,8 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
+| [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html) | Numerical Analysis | Root finding, tangent line iteration |
+| [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html) | Analysis | Limit definition, series, compound interest |
 | [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
 | [Vibration (2nd-Order ODE)](https://so-okada.github.io/math_teaching_materials/vibration_demo.html) | Differential Equations | Damped harmonic oscillator, phase portraits |
@@ -325,8 +327,6 @@ where $\mu = 0.5n$ and $\sigma = \sqrt{0.25n}$.
 - **Drop Rate**: Speed of ball generation
 - **Show Bell Curve**: Overlay theoretical normal distribution
 
-**See also:** Cédric Villani's TED talk [*What's So Sexy About Math?*](https://www.ted.com/talks/cedric_villani_what_s_so_sexy_about_math)
-
 ---
 
 ## Geometry
@@ -366,7 +366,7 @@ Demonstrates the small angle approximation $\sin x \approx x$ (for $x$ in radian
 The Taylor series expansion of sine is:
 $$\sin x = x - \frac{x^3}{3!} + \frac{x^5}{5!} - \cdots$$
 
-For small $x$, the higher-order terms become negligible, yielding $\sin x \approx x$. This approximation is fundamental in physics (pendulum motion, optics, wave mechanics) and engineering.
+For small $|x|$, the higher-order terms become negligible, yielding $\sin x \approx x$. This approximation is fundamental in physics (pendulum motion, optics, wave mechanics) and engineering.
 
 **Error Analysis:**
 - At $x = 0.1$ rad (5.7°): Error ≈ 0.17%
@@ -450,6 +450,51 @@ where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three 
 - **Rectangles (N)**: Number of subdivisions (1–100)
 - **Sum type**: Left, Right, or Midpoint rule
 - **Animate**: Watch rectangles increase and error decrease
+
+---
+
+## Numerical Analysis
+
+### [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html)
+**File:** `newton_method.html`
+
+Interactive visualization of the Newton–Raphson root-finding algorithm with step-by-step iteration display.
+
+**Mathematical Background:**
+Newton's method iteratively approximates a root of $f(x) = 0$ using:
+$$x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}$$
+
+Starting from an initial guess $x_0$, each iteration follows the tangent line at $(x_n, f(x_n))$ to its $x$-intercept.
+
+**Controls:**
+- **Preset functions**: Common examples ($x^3 - 2x - 5$, $\cos x - x$, etc.)
+- **Custom f(x) and f′(x)**: Enter any function and its derivative
+- **Initial guess (x₀)**: Starting point (click on graph to set)
+- **Run/Step/Reset**: Execute all iterations, single step, or restart
+- Drag to pan, scroll to zoom
+
+---
+
+## Analysis
+
+### [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html)
+**File:** `napier_number.html`
+
+Multiple visualizations of Euler's number $e \approx 2.71828$ through its various definitions.
+
+**Mathematical Background:**
+The number $e$ can be defined in several equivalent ways:
+
+1. **Limit definition**: $e = \displaystyle\lim_{n \to \infty}\left(1 + \frac{1}{n}\right)^n$
+2. **Series definition**: $e = \displaystyle\sum_{k=0}^{\infty}\frac{1}{k!}$
+3. **Exponential slope**: $e$ is the unique base where $\dfrac{d}{dx}a^x\big|_{x=0} = 1$
+
+**Features:**
+- Limit convergence: watch $(1 + 1/n)^n$ approach $e$
+- Series convergence: add terms of $\sum 1/k!$
+- Convergence comparison: series vs limit (log scale)
+- Slope of $y = a^x$: adjust base to see when tangent slope equals 1
+- Compound interest interpretation
 
 ---
 
@@ -550,6 +595,8 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `conic_sections.html`: Uses MathJax (CDN)
 - `simple_sea_waves.html`: Uses MathJax (CDN)
 - `vibration_demo.html`: Uses MathJax (CDN)
+- `newton_method.html`: Uses MathJax (CDN)
+- `napier_number.html`: Uses MathJax (CDN)
 
 ---
 
