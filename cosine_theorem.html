@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Law of Cosines</title>
+<script>
+MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Georgia', serif;
+    background: #fafafa;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  h1 { font-size: 1.6em; margin-bottom: 6px; }
+  .formula-box {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 10px 20px;
+    margin: 8px 0 12px 0;
+    font-size: 1.1em;
+    text-align: center;
+  }
+  .instructions {
+    font-size: 0.9em;
+    color: #666;
+    margin-bottom: 10px;
+  }
+  .presets {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .presets button {
+    padding: 6px 16px;
+    font-family: 'Georgia', serif;
+    font-size: 0.9em;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background: #fff;
+    cursor: pointer;
+  }
+  .presets button:hover {
+    background: #eee;
+  }
+  canvas {
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: #fff;
+    cursor: default;
+    touch-action: none;
+  }
+  .info-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    font-size: 1.0em;
+  }
+  .info-panel .col { text-align: center; line-height: 1.8; }
+  .check-box {
+    margin-top: 10px;
+    padding: 8px 18px;
+    border-radius: 6px;
+    font-size: 1.0em;
+    text-align: center;
+  }
+  .check-ok { background: #e8f5e9; border: 1px solid #81c784; }
+</style>
+</head>
+<body>
+
+<h1>Law of Cosines</h1>
+<div class="formula-box" id="formula">
+  $c^2 = a^2 + b^2 - 2ab\cos C$
+</div>
+<div class="instructions">Drag vertices A, B, C to reshape the triangle.</div>
+<div class="presets">
+  <button onclick="setEquilateral()">Equilateral</button>
+  <button onclick="setRightTriangle()">Right (C = 90°)</button>
+</div>
+<canvas id="canvas" width="700" height="480"></canvas>
+
+<div class="info-panel">
+  <div class="col" id="panelSides"></div>
+  <div class="col" id="panelAngles"></div>
+  <div class="col" id="panelCheck"></div>
+</div>
+<div class="check-box check-ok" id="verification"></div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// Triangle vertices (pixel coordinates)
+let vertices = [
+  { x: 160, y: 380, label: 'A' },
+  { x: 560, y: 380, label: 'B' },
+  { x: 300, y: 100, label: 'C' }
+];
+
+const RADIUS = 8;
+let dragging = null;
+let hovered = null;
+
+// --- Geometry helpers ---
+function dist(p, q) {
+  return Math.hypot(p.x - q.x, p.y - q.y);
+}
+
+function angleBetween(vertex, p1, p2) {
+  const v1 = { x: p1.x - vertex.x, y: p1.y - vertex.y };
+  const v2 = { x: p2.x - vertex.x, y: p2.y - vertex.y };
+  const dot = v1.x * v2.x + v1.y * v2.y;
+  const cross = v1.x * v2.y - v1.y * v2.x;
+  return Math.atan2(Math.abs(cross), dot);
+}
+
+// --- Drawing ---
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const [A, B, C] = vertices;
+
+  // Side lengths in pixels
+  const a_px = dist(B, C); // side a opposite A
+  const b_px = dist(A, C); // side b opposite B
+  const c_px = dist(A, B); // side c opposite C
+
+  // Angles at each vertex
+  const angleA = angleBetween(A, B, C);
+  const angleB = angleBetween(B, A, C);
+  const angleC = angleBetween(C, A, B);
+
+  // Draw angle arcs
+  drawAngleArc(A, B, C, angleA, '#e57373', 'A');
+  drawAngleArc(B, A, C, angleB, '#64b5f6', 'B');
+  drawAngleArc(C, A, B, angleC, '#81c784', 'C');
+
+  // Draw triangle edges
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(B.x, B.y);
+  ctx.lineTo(C.x, C.y);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(200, 220, 255, 0.15)';
+  ctx.fill();
+  ctx.strokeStyle = '#444';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Label sides at midpoints
+  drawSideLabel(B, C, 'a', '#e57373', A);
+  drawSideLabel(A, C, 'b', '#64b5f6', B);
+  drawSideLabel(A, B, 'c', '#81c784', C);
+
+  // Draw vertices
+  for (let i = 0; i < 3; i++) {
+    const v = vertices[i];
+    const isHover = (hovered === i || dragging === i);
+    ctx.beginPath();
+    ctx.arc(v.x, v.y, isHover ? RADIUS + 3 : RADIUS, 0, Math.PI * 2);
+    ctx.fillStyle = isHover ? '#ff7043' : '#555';
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px Georgia';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(v.label, v.x, v.y);
+  }
+
+  // Update info panel
+  updateInfo(a_px, b_px, c_px, angleA, angleB, angleC);
+}
+
+function drawAngleArc(vertex, p1, p2, angle, color, label) {
+  const arcR = 30;
+  const a1 = Math.atan2(p1.y - vertex.y, p1.x - vertex.x);
+  const a2 = Math.atan2(p2.y - vertex.y, p2.x - vertex.x);
+
+  // Determine sweep direction (always draw the smaller arc)
+  let start = a1, end = a2;
+  let diff = end - start;
+  if (diff > Math.PI) start += 2 * Math.PI;
+  if (diff < -Math.PI) end += 2 * Math.PI;
+  const ccw = (start > end);
+
+  ctx.beginPath();
+  ctx.arc(vertex.x, vertex.y, arcR, start, end, ccw);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Angle label
+  const mid = (start + end) / 2;
+  const lx = vertex.x + (arcR + 14) * Math.cos(mid);
+  const ly = vertex.y + (arcR + 14) * Math.sin(mid);
+  ctx.fillStyle = color;
+  ctx.font = 'italic 14px Georgia';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, lx, ly);
+}
+
+function drawSideLabel(p1, p2, label, color, opposite) {
+  const mx = (p1.x + p2.x) / 2;
+  const my = (p1.y + p2.y) / 2;
+  // Offset label away from opposite vertex
+  const dx = mx - opposite.x;
+  const dy = my - opposite.y;
+  const d = Math.hypot(dx, dy) || 1;
+  const ox = mx + (dx / d) * 18;
+  const oy = my + (dy / d) * 18;
+
+  ctx.fillStyle = color;
+  ctx.font = 'italic bold 16px Georgia';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, ox, oy);
+}
+
+// Use a fixed scale so side lengths are in nice units
+const SCALE = 100; // 100 px = 1 unit
+
+function updateInfo(a_px, b_px, c_px, angleA, angleB, angleC) {
+  const a = a_px / SCALE;
+  const b = b_px / SCALE;
+  const c = c_px / SCALE;
+
+  const degA = (angleA * 180 / Math.PI).toFixed(1);
+  const degB = (angleB * 180 / Math.PI).toFixed(1);
+  const degC = (angleC * 180 / Math.PI).toFixed(1);
+
+  document.getElementById('panelSides').innerHTML =
+    `<strong>Sides</strong><br>` +
+    `<span style="color:#e57373">a = ${a.toFixed(3)}</span> &nbsp;&nbsp; ` +
+    `<span style="color:#64b5f6">b = ${b.toFixed(3)}</span> &nbsp;&nbsp; ` +
+    `<span style="color:#81c784">c = ${c.toFixed(3)}</span>`;
+
+  document.getElementById('panelAngles').innerHTML =
+    `<strong>Angles</strong><br>` +
+    `<span style="color:#e57373">A = ${degA}°</span> &nbsp;&nbsp; ` +
+    `<span style="color:#64b5f6">B = ${degB}°</span> &nbsp;&nbsp; ` +
+    `<span style="color:#81c784">C = ${degC}°</span>`;
+
+  // Verification: c² vs a² + b² - 2ab cos C
+  const lhs = c * c;
+  const a2b2 = a * a + b * b;
+  const twoCos = 2 * a * b * Math.cos(angleC);
+  const rhs = a2b2 - twoCos;
+
+  document.getElementById('panelCheck').innerHTML =
+    `<strong>Verification</strong><br>` +
+    `c² = ${lhs.toFixed(4)} &nbsp;&nbsp; ` +
+    `a² + b² = ${a2b2.toFixed(4)} &nbsp;&nbsp; ` +
+    `2ab cos C = ${twoCos.toFixed(4)} &nbsp;&nbsp; ` +
+    `a² + b² − 2ab cos C = ${rhs.toFixed(4)}`;
+
+  document.getElementById('verification').innerHTML =
+    `c² = a² + b² − 2ab cos C &nbsp; ✓ &nbsp; (difference: ${Math.abs(lhs - rhs).toExponential(2)})`;
+}
+
+// --- Interaction ---
+function getPointerPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY
+  };
+}
+
+function findVertex(pos) {
+  for (let i = 0; i < 3; i++) {
+    if (dist(pos, vertices[i]) < RADIUS + 10) return i;
+  }
+  return null;
+}
+
+canvas.addEventListener('pointerdown', e => {
+  const pos = getPointerPos(e);
+  dragging = findVertex(pos);
+  if (dragging !== null) canvas.style.cursor = 'grabbing';
+});
+
+canvas.addEventListener('pointermove', e => {
+  const pos = getPointerPos(e);
+  if (dragging !== null) {
+    vertices[dragging].x = Math.max(10, Math.min(canvas.width - 10, pos.x));
+    vertices[dragging].y = Math.max(10, Math.min(canvas.height - 10, pos.y));
+    draw();
+  } else {
+    const h = findVertex(pos);
+    if (h !== hovered) {
+      hovered = h;
+      canvas.style.cursor = h !== null ? 'grab' : 'default';
+      draw();
+    }
+  }
+});
+
+canvas.addEventListener('pointerup', () => {
+  dragging = null;
+  canvas.style.cursor = hovered !== null ? 'grab' : 'default';
+});
+
+canvas.addEventListener('pointerleave', () => {
+  dragging = null;
+  hovered = null;
+  canvas.style.cursor = 'default';
+  draw();
+});
+
+// --- Presets ---
+function setEquilateral() {
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+  const side = 300;
+  const h = side * Math.sqrt(3) / 2;
+  vertices[0] = { x: cx - side / 2, y: cy + h / 3, label: 'A' };
+  vertices[1] = { x: cx + side / 2, y: cy + h / 3, label: 'B' };
+  vertices[2] = { x: cx, y: cy - 2 * h / 3, label: 'C' };
+  draw();
+}
+
+function setRightTriangle() {
+  vertices[0] = { x: 160, y: 380, label: 'A' };
+  vertices[1] = { x: 520, y: 120, label: 'B' };
+  vertices[2] = { x: 520, y: 380, label: 'C' };
+  draw();
+}
+
+// Initial draw
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Law of Sines (Sine Theorem)</title>
+<script>
+MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #fdfdfd;
+  color: #222;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+h1 { font-size: 1.4em; margin-bottom: 8px; }
+#formula-box {
+  font-size: 1.1em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+canvas {
+  border: 1px solid #ccc;
+  cursor: default;
+  background: #fff;
+  display: block;
+}
+#info {
+  margin-top: 12px;
+  font-size: 1.0em;
+  line-height: 1.8;
+  text-align: center;
+  min-height: 120px;
+}
+#instructions {
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: #666;
+}
+#btn-row {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+#btn-row button {
+  padding: 6px 16px;
+  font-size: 0.95em;
+  cursor: pointer;
+  border: 1px solid #888;
+  background: #f0f0f0;
+  border-radius: 4px;
+}
+#btn-row button:hover { background: #e0e0e0; }
+</style>
+</head>
+<body>
+
+<h1>Law of Sines (Sine Theorem)</h1>
+<div id="formula-box">
+  $ \dfrac{a}{\sin A} = \dfrac{b}{\sin B} = \dfrac{c}{\sin C} = 2R $
+</div>
+
+<canvas id="canvas" width="600" height="500"></canvas>
+
+<div id="btn-row">
+  <button onclick="toggleCircumcircle()">Show / Hide Circumscribed Circle</button>
+  <button onclick="presetEquilateral()">Equilateral Triangle</button>
+  <button onclick="presetRight()">Right Triangle (C = 90°)</button>
+</div>
+
+<div id="info"></div>
+<div id="instructions">Drag vertices A, B, C to reshape the triangle.</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+// Triangle vertices (canvas coordinates, y-down)
+let verts = [
+  { x: 150, y: 400, label: 'A' },
+  { x: 450, y: 400, label: 'B' },
+  { x: 300, y: 100, label: 'C' }
+];
+
+let dragging = null;
+let showCircumcircle = true;
+
+// Colors
+const COL_TRI = '#1a1a1a';
+const COL_CIRC = '#2266bb';
+const COL_VERT = ['#d03030', '#2080d0', '#109010']; // A, B, C
+const COL_SIDE = ['#b06000', '#7030a0', '#007060']; // a, b, c
+const COL_R = '#2266bb';
+
+function dist(p, q) {
+  return Math.hypot(p.x - q.x, p.y - q.y);
+}
+
+function angleBetween(p, vertex, q) {
+  const v1x = p.x - vertex.x, v1y = p.y - vertex.y;
+  const v2x = q.x - vertex.x, v2y = q.y - vertex.y;
+  const dot = v1x * v2x + v1y * v2y;
+  const cross = v1x * v2y - v1y * v2x;
+  return Math.abs(Math.atan2(cross, dot));
+}
+
+function circumcircle(A, B, C) {
+  const ax = A.x, ay = A.y;
+  const bx = B.x, by = B.y;
+  const cx = C.x, cy = C.y;
+  const D = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+  if (Math.abs(D) < 1e-10) return null;
+  const ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / D;
+  const uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / D;
+  const r = Math.hypot(ax - ux, ay - uy);
+  return { cx: ux, cy: uy, r: r };
+}
+
+function midpoint(p, q) {
+  return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+}
+
+function labelOffset(p, q, off) {
+  const mx = (p.x + q.x) / 2;
+  const my = (p.y + q.y) / 2;
+  const dx = q.y - p.y;
+  const dy = -(q.x - p.x);
+  const len = Math.hypot(dx, dy) || 1;
+  return { x: mx + off * dx / len, y: my + off * dy / len };
+}
+
+function drawArc(vertex, p1, p2, radius, color) {
+  const a1 = Math.atan2(p1.y - vertex.y, p1.x - vertex.x);
+  const a2 = Math.atan2(p2.y - vertex.y, p2.x - vertex.x);
+  // Determine correct sweep direction
+  let start = a1, end = a2;
+  let diff = end - start;
+  if (diff > Math.PI) end -= 2 * Math.PI;
+  if (diff < -Math.PI) end += 2 * Math.PI;
+  const ccw = (end < start);
+  ctx.beginPath();
+  ctx.arc(vertex.x, vertex.y, radius, start, end, ccw);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const [A, B, C] = verts;
+
+  // Side lengths (in pixels)
+  const a_px = dist(B, C); // side a opposite A
+  const b_px = dist(A, C); // side b opposite B
+  const c_px = dist(A, B); // side c opposite C
+
+  // Angles (radians)
+  const angA = angleBetween(B, A, C);
+  const angB = angleBetween(A, B, C);
+  const angC = angleBetween(A, C, B);
+
+  // Circumscribed circle
+  const cc = circumcircle(A, B, C);
+
+  // Draw circumscribed circle
+  if (showCircumcircle && cc) {
+    ctx.beginPath();
+    ctx.arc(cc.cx, cc.cy, cc.r, 0, 2 * Math.PI);
+    ctx.strokeStyle = COL_CIRC;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Center of circumscribed circle
+    ctx.beginPath();
+    ctx.arc(cc.cx, cc.cy, 3, 0, 2 * Math.PI);
+    ctx.fillStyle = COL_CIRC;
+    ctx.fill();
+
+    // Radius line from center to A
+    ctx.beginPath();
+    ctx.moveTo(cc.cx, cc.cy);
+    ctx.lineTo(A.x, A.y);
+    ctx.strokeStyle = COL_R;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label R
+    const rmid = midpoint({ x: cc.cx, y: cc.cy }, A);
+    ctx.fillStyle = COL_R;
+    ctx.font = 'italic 15px serif';
+    ctx.fillText('R', rmid.x + 8, rmid.y - 6);
+
+    // Label O
+    ctx.fillStyle = COL_CIRC;
+    ctx.font = '14px serif';
+    ctx.fillText('O', cc.cx + 8, cc.cy - 8);
+  }
+
+  // Draw triangle sides
+  const sides = [
+    { p1: B, p2: C, color: COL_SIDE[0], label: 'a' },
+    { p1: A, p2: C, color: COL_SIDE[1], label: 'b' },
+    { p1: A, p2: B, color: COL_SIDE[2], label: 'c' }
+  ];
+
+  for (const s of sides) {
+    ctx.beginPath();
+    ctx.moveTo(s.p1.x, s.p1.y);
+    ctx.lineTo(s.p2.x, s.p2.y);
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Side labels (offset outward from triangle centroid)
+  const centroid = { x: (A.x + B.x + C.x) / 3, y: (A.y + B.y + C.y) / 3 };
+  ctx.font = 'italic bold 16px serif';
+  for (const s of sides) {
+    const mid = midpoint(s.p1, s.p2);
+    // Push label away from centroid
+    const dx = mid.x - centroid.x;
+    const dy = mid.y - centroid.y;
+    const d = Math.hypot(dx, dy) || 1;
+    const off = 18;
+    const lx = mid.x + off * dx / d;
+    const ly = mid.y + off * dy / d;
+    ctx.fillStyle = s.color;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(s.label, lx, ly);
+  }
+
+  // Draw angle arcs
+  const arcR = 25;
+  drawArc(A, B, C, arcR, COL_VERT[0]);
+  drawArc(B, A, C, arcR, COL_VERT[1]);
+  drawArc(C, A, B, arcR, COL_VERT[2]);
+
+  // Draw vertices
+  for (let i = 0; i < 3; i++) {
+    const v = verts[i];
+    ctx.beginPath();
+    ctx.arc(v.x, v.y, 6, 0, 2 * Math.PI);
+    ctx.fillStyle = COL_VERT[i];
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Vertex labels pushed away from centroid
+    const dx = v.x - centroid.x;
+    const dy = v.y - centroid.y;
+    const dd = Math.hypot(dx, dy) || 1;
+    const loff = 22;
+    ctx.fillStyle = COL_VERT[i];
+    ctx.font = 'bold 17px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(v.label, v.x + loff * dx / dd, v.y + loff * dy / dd);
+  }
+
+  // Update info
+  updateInfo(a_px, b_px, c_px, angA, angB, angC, cc);
+}
+
+function updateInfo(a, b, c, angA, angB, angC, cc) {
+  const toDeg = r => r * 180 / Math.PI;
+
+  const sinA = Math.sin(angA);
+  const sinB = Math.sin(angB);
+  const sinC = Math.sin(angC);
+
+  const ratioA = (sinA > 1e-8) ? (a / sinA) : Infinity;
+  const ratioB = (sinB > 1e-8) ? (b / sinB) : Infinity;
+  const ratioC = (sinC > 1e-8) ? (c / sinC) : Infinity;
+  const R = cc ? cc.r : 0;
+  const twoR = 2 * R;
+
+  const info = document.getElementById('info');
+  info.innerHTML =
+    `$A = ${toDeg(angA).toFixed(2)}^\\circ, \\quad B = ${toDeg(angB).toFixed(2)}^\\circ, \\quad C = ${toDeg(angC).toFixed(2)}^\\circ, \\quad R = ${R.toFixed(1)}$<br>` +
+    `$a = ${a.toFixed(1)}, \\quad b = ${b.toFixed(1)}, \\quad c = ${c.toFixed(1)}$<br>` +
+    `$\\sin A = ${sinA.toFixed(4)}, \\quad \\sin B = ${sinB.toFixed(4)}, \\quad \\sin C = ${sinC.toFixed(4)}$<br><br>` +
+    `$\\dfrac{a}{\\sin A} = ${ratioA.toFixed(2)}, \\quad ` +
+    `\\dfrac{b}{\\sin B} = ${ratioB.toFixed(2)}, \\quad ` +
+    `\\dfrac{c}{\\sin C} = ${ratioC.toFixed(2)}, \\quad ` +
+    `2R = ${twoR.toFixed(2)}$`;
+
+  if (window.MathJax && MathJax.typeset) {
+    MathJax.typeset([info]);
+  }
+}
+
+function presetEquilateral() {
+  const cx = W / 2, cy = H / 2 + 30;
+  const r = 160;
+  // Vertices of equilateral triangle inscribed in circle, base horizontal
+  verts[0] = { x: cx - r * Math.cos(Math.PI / 6), y: cy + r * Math.sin(Math.PI / 6), label: 'A' };
+  verts[1] = { x: cx + r * Math.cos(Math.PI / 6), y: cy + r * Math.sin(Math.PI / 6), label: 'B' };
+  verts[2] = { x: cx, y: cy - r, label: 'C' };
+  draw();
+}
+
+function presetRight() {
+  // Right triangle with C = 90°: legs CA (vertical) and CB (horizontal)
+  verts[0] = { x: 150, y: 130, label: 'A' };
+  verts[1] = { x: 450, y: 400, label: 'B' };
+  verts[2] = { x: 150, y: 400, label: 'C' };
+  draw();
+}
+
+function toggleCircumcircle() {
+  showCircumcircle = !showCircumcircle;
+  draw();
+}
+
+// --- Interaction ---
+function getMousePos(e) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * (W / rect.width),
+    y: (e.clientY - rect.top) * (H / rect.height)
+  };
+}
+
+function getTouchPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const t = e.touches[0];
+  return {
+    x: (t.clientX - rect.left) * (W / rect.width),
+    y: (t.clientY - rect.top) * (H / rect.height)
+  };
+}
+
+function findVertex(pos) {
+  for (let i = 0; i < 3; i++) {
+    if (dist(pos, verts[i]) < 18) return i;
+  }
+  return null;
+}
+
+canvas.addEventListener('mousedown', e => {
+  const pos = getMousePos(e);
+  dragging = findVertex(pos);
+  if (dragging !== null) canvas.style.cursor = 'grabbing';
+});
+
+canvas.addEventListener('mousemove', e => {
+  const pos = getMousePos(e);
+  if (dragging !== null) {
+    verts[dragging].x = Math.max(10, Math.min(W - 10, pos.x));
+    verts[dragging].y = Math.max(10, Math.min(H - 10, pos.y));
+    draw();
+  } else {
+    canvas.style.cursor = findVertex(pos) !== null ? 'grab' : 'default';
+  }
+});
+
+canvas.addEventListener('mouseup', () => {
+  dragging = null;
+  canvas.style.cursor = 'default';
+});
+
+canvas.addEventListener('mouseleave', () => {
+  dragging = null;
+  canvas.style.cursor = 'default';
+});
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const pos = getTouchPos(e);
+  dragging = findVertex(pos);
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (dragging !== null) {
+    const pos = getTouchPos(e);
+    verts[dragging].x = Math.max(10, Math.min(W - 10, pos.x));
+    verts[dragging].y = Math.max(10, Math.min(H - 10, pos.y));
+    draw();
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  dragging = null;
+}, { passive: false });
+
+// Initial draw
+draw();
+</script>
+
+</body>
+</html>

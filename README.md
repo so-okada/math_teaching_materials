@@ -22,6 +22,8 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 | [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
+| [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html) | Trigonometry | Triangle geometry, cosine rule |
+| [Law of Sines](https://so-okada.github.io/math_teaching_materials/sine_theorem.html) | Trigonometry | Sine rule, circumscribed circle |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
 | [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html) | Numerical Analysis | Root finding, tangent line iteration |
@@ -407,6 +409,43 @@ The parameters scale across layers:
 
 ---
 
+### [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html)
+**File:** `cosine_theorem.html`
+
+Interactive visualization of the Law of Cosines with draggable triangle vertices.
+
+**Mathematical Background:**
+The Law of Cosines relates the sides and angles of any triangle:
+$$c^2 = a^2 + b^2 - 2ab\cos C$$
+
+This generalizes the Pythagorean theorem; when $C = 90°$, the formula reduces to $c^2 = a^2 + b^2$.
+
+**Controls:**
+- **Drag vertices A, B, C**: Reshape the triangle interactively
+- **Preset buttons**: Equilateral triangle, Right triangle ($C = 90°$)
+- Live display of sides, angles, and verification of the formula
+
+---
+
+### [Law of Sines](https://so-okada.github.io/math_teaching_materials/sine_theorem.html)
+**File:** `sine_theorem.html`
+
+Interactive visualization of the Law of Sines with circumscribed circle display.
+
+**Mathematical Background:**
+The Law of Sines states that in any triangle:
+$$\frac{a}{\sin A} = \frac{b}{\sin B} = \frac{c}{\sin C} = 2R$$
+
+where $R$ is the circumradius (radius of the circumscribed circle).
+
+**Controls:**
+- **Drag vertices A, B, C**: Reshape the triangle interactively
+- **Show/Hide Circumscribed Circle**: Toggle the circumcircle and radius $R$
+- **Preset buttons**: Equilateral triangle, Right triangle ($C = 90°$)
+- Live display of angles, sides, sine values, and ratios
+
+---
+
 ## Calculus
 
 ### [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html)
@@ -597,6 +636,8 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `vibration_demo.html`: Uses MathJax (CDN)
 - `newton_method.html`: Uses MathJax (CDN)
 - `napier_number.html`: Uses MathJax (CDN)
+- `cosine_theorem.html`: Uses MathJax (CDN)
+- `sine_theorem.html`: Uses MathJax (CDN)
 
 ---
 
