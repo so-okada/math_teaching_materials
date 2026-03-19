@@ -16,6 +16,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
 | [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
 | [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
+| [Arrow's Impossibility Theorem](https://so-okada.github.io/math_teaching_materials/arrows_impossibility_theorem.html) | Social Choice Theory | Voting systems, impossibility results |
 | [Maxwell's Equations FDTD](https://so-okada.github.io/math_teaching_materials/maxwell.html) | Electromagnetism | Wave propagation, finite-difference methods |
 | [Binomial to Gaussian](https://so-okada.github.io/math_teaching_materials/binomialtogaussian.html) | Probability & Statistics | Central limit theorem, de Moivre-Laplace |
 | [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html) | Probability & Statistics | Normal distribution, random walks |
@@ -252,7 +253,33 @@ This is equivalent to finding the principal eigenvector of the modified adjacenc
 - **Auto Run**: Continuously iterate until convergence
 - **Reset**: Generate a new random graph
 - **Drag nodes**: Rearrange the force-directed layout
+- **Matrix tabs**: View adjacency matrix, transition matrix, or eigenvector
 - Node size reflects current PageRank value
+
+---
+
+## Social Choice Theory
+
+### [Arrow's Impossibility Theorem](https://so-okada.github.io/math_teaching_materials/arrows_impossibility_theorem.html)
+**File:** `arrows_impossibility_theorem.html`
+
+Interactive demonstration of Arrow's Impossibility Theorem, a fundamental result in social choice theory.
+
+**Mathematical Background:**
+Arrow's theorem (1951) states that no voting system with three or more candidates can simultaneously satisfy all of:
+
+1. **Unrestricted Domain (U)**: All voter preference orderings are allowed
+2. **Non-Imposition (N)**: Every social ordering is achievable by some profile
+3. **Independence of Irrelevant Alternatives (IIA)**: The social ranking of $A$ vs $B$ depends only on individual rankings of $A$ vs $B$
+4. **Non-Dictatorship (D)**: No single voter determines the outcome
+
+**Features:**
+- **Drag-and-drop voter preferences**: Set rankings for multiple voters
+- **Preset profiles**: Condorcet cycle, unanimous agreement, etc.
+- **Voting methods**: Plurality, Borda count, Pairwise majority, Dictatorship
+- **Condition checker**: See which conditions each method satisfies/violates
+- **IIA violation demo**: Concrete example of how Borda count violates IIA
+- **Condorcet cycle detection**: Visualize when pairwise majority produces intransitive results
 
 ---
 
@@ -638,6 +665,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `napier_number.html`: Uses MathJax (CDN)
 - `cosine_theorem.html`: Uses MathJax (CDN)
 - `sine_theorem.html`: Uses MathJax (CDN)
+- `arrows_impossibility_theorem.html`: Uses MathJax (CDN)
 
 ---
 
