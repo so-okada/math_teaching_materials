@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arrow's Impossibility Theorem</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$']] },
+  startup: { pageReady: () => MathJax.startup.defaultPageReady() }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<style>
+  :root {
+    --bg: #fafaf8;
+    --fg: #1a1a1a;
+    --accent: #2255aa;
+    --accent2: #c0392b;
+    --accent3: #27864a;
+    --border: #d0d0cc;
+    --card-bg: #ffffff;
+    --highlight: #fff3cd;
+    --pass: #d4edda;
+    --fail: #f8d7da;
+    --muted: #6b6b6b;
+    --font-body: 'Georgia', 'Times New Roman', serif;
+    --font-ui: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.6;
+    padding: 0;
+  }
+
+  header {
+    text-align: center;
+    padding: 36px 20px 24px;
+    border-bottom: 2px solid var(--fg);
+    margin-bottom: 0;
+  }
+
+  header h1 {
+    font-size: 1.8em;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  header p.subtitle {
+    font-size: 0.95em;
+    color: var(--muted);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 20px 60px;
+  }
+
+  section {
+    margin-bottom: 32px;
+  }
+
+  h2 {
+    font-size: 1.15em;
+    font-weight: 700;
+    margin-bottom: 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .conditions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .cond-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    font-size: 0.9em;
+  }
+
+  .cond-card strong {
+    display: block;
+    font-family: var(--font-ui);
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+
+  .theorem-box {
+    background: var(--highlight);
+    border-left: 4px solid #d4a017;
+    padding: 16px 18px;
+    margin: 16px 0;
+    font-size: 0.95em;
+  }
+
+  .theorem-box .label {
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+  }
+
+  /* Voter Preference Panel */
+  .voter-panel {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .voter-col {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 14px;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  .voter-col h3 {
+    font-family: var(--font-ui);
+    font-size: 0.85em;
+    font-weight: 600;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .rank-list {
+    list-style: none;
+    min-height: 120px;
+  }
+
+  .rank-item {
+    background: #f0f0ec;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    cursor: grab;
+    font-family: var(--font-ui);
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    user-select: none;
+    transition: background 0.15s, transform 0.15s;
+  }
+
+  .rank-item:active { cursor: grabbing; }
+  .rank-item.dragging { opacity: 0.4; transform: scale(0.95); }
+  .rank-item .rank-num {
+    font-weight: 700;
+    color: var(--muted);
+    font-size: 0.8em;
+    min-width: 16px;
+  }
+
+  .rank-item .cand-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-A { background: var(--accent); }
+  .dot-B { background: var(--accent2); }
+  .dot-C { background: var(--accent3); }
+
+  .preset-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+
+  button {
+    font-family: var(--font-ui);
+    font-size: 0.82em;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--card-bg);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  button:hover { background: #eee; }
+  button.active { background: var(--fg); color: #fff; border-color: var(--fg); }
+
+  /* Results */
+  .methods-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+    margin-bottom: 16px;
+  }
+
+  .methods-table th, .methods-table td {
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+    text-align: center;
+    font-family: var(--font-ui);
+  }
+
+  .methods-table th {
+    background: #f0f0ec;
+    font-weight: 600;
+    font-size: 0.82em;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .methods-table td.method-name {
+    text-align: left;
+    font-weight: 600;
+  }
+
+  td.pass { background: var(--pass); }
+  td.fail { background: var(--fail); }
+
+  .badge {
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 2px;
+  }
+  .badge.ok { background: #27864a; color: #fff; }
+  .badge.no { background: var(--accent2); color: #fff; }
+
+  /* Pairwise detail */
+  .detail-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+
+  .detail-section h3 {
+    font-family: var(--font-ui);
+    font-size: 0.9em;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .pairwise-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .pair-card {
+    background: #f9f9f7;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 10px;
+    font-family: var(--font-ui);
+    font-size: 0.85em;
+    text-align: center;
+  }
+
+  .pair-card .vs { font-weight: 700; margin-bottom: 4px; }
+  .pair-card .result { color: var(--accent); font-weight: 600; }
+
+  .cycle-alert {
+    background: var(--fail);
+    border-left: 4px solid var(--accent2);
+    padding: 12px 16px;
+    font-size: 0.9em;
+    margin-top: 12px;
+  }
+
+  .cycle-alert strong { color: var(--accent2); }
+
+  .no-cycle {
+    background: var(--pass);
+    border-left: 4px solid var(--accent3);
+    padding: 12px 16px;
+    font-size: 0.9em;
+    margin-top: 12px;
+  }
+
+  .explanation {
+    font-size: 0.9em;
+    margin-top: 12px;
+    line-height: 1.65;
+    color: #333;
+  }
+
+  .explanation p { margin-bottom: 8px; }
+
+  /* IIA violation demo */
+  .iia-demo {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    margin-top: 12px;
+  }
+
+  .iia-compare {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 12px;
+    align-items: start;
+    margin: 12px 0;
+  }
+
+  .iia-col {
+    font-family: var(--font-ui);
+    font-size: 0.85em;
+  }
+
+  .iia-col h4 {
+    font-size: 0.82em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  .iia-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5em;
+    color: var(--muted);
+    padding-top: 30px;
+  }
+
+  .mini-ranking {
+    font-size: 0.85em;
+    line-height: 1.8;
+    text-align: center;
+  }
+
+  .mini-ranking div {
+    padding: 3px 8px;
+    margin: 2px 0;
+    border-radius: 2px;
+    background: #f0f0ec;
+  }
+
+  .mini-ranking div.highlight-pair {
+    background: #fff3cd;
+    font-weight: 600;
+  }
+
+  @media (max-width: 600px) {
+    .conditions-grid { grid-template-columns: 1fr; }
+    .voter-panel { flex-direction: column; }
+    .iia-compare { grid-template-columns: 1fr; }
+    .iia-arrow { transform: rotate(90deg); padding: 0; }
+    header h1 { font-size: 1.4em; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Arrow's Impossibility Theorem</h1>
+  <p class="subtitle">An interactive demonstration that no social welfare function on three or more alternatives can satisfy unrestricted domain, non-dictatorship, non-imposition, and independence of irrelevant alternatives simultaneously.</p>
+</header>
+
+<div class="container">
+
+  <!-- Conditions -->
+  <section>
+    <h2>Basic Assumptions</h2>
+    <p style="font-size:0.9em; margin-bottom:12px;">
+      Let $N = \{1, \dots, n\}$ be a set of voters and $A = \{a_1, \dots, a_m\}$ with $m \ge 3$ a set of alternatives.
+      A <em>social welfare function</em> $F$ maps each profile of individual preference orderings $(\succeq_1, \dots, \succeq_n)$ to a social ordering $\succeq$ on $A$.
+      Arrow's theorem assumes as background that any non-degenerate social welfare function will satisfy:
+    </p>
+    <div class="conditions-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+      <div class="cond-card">
+        <strong>U — Unrestricted Domain</strong>
+        $F$ is defined for every logically possible profile of strict orderings on $A$.
+        The system must always produce a ranking; it cannot "give up" when voters have unusual preferences.
+      </div>
+      <div class="cond-card">
+        <strong>D — Non-Dictatorship</strong>
+        The system does not depend on only one voter's ballot.
+        There is no voter $i$ such that $a \succ_i b \Rightarrow a \succ b$ for all $a, b$ and all profiles.
+      </div>
+      <div class="cond-card">
+        <strong>N — Non-Imposition</strong>
+        For every pair $a, b \in A$, there exists some profile under which $a \succ b$ in the social ordering.
+        That is, no social ranking between two candidates is imposed regardless of votes.
+      </div>
+    </div>
+    <p style="font-size:0.88em; color:var(--muted); margin: 8px 0 4px;">
+      <em>Note:</em> Non-imposition is often replaced with the stronger
+      <strong>Pareto efficiency</strong> (if $a \succ_i b$ for all $i$, then $a \succ b$),
+      which implies non-imposition. The weaker condition is sufficient for the theorem.
+    </p>
+
+    <h2 style="margin-top:24px;">Arrow's Theorem</h2>
+    <div class="theorem-box">
+      <div class="label">Theorem (Arrow, 1951)</div>
+      If $|A| \ge 3$ and $|N| \ge 2$, no social welfare function satisfying
+      <strong>U</strong>, <strong>D</strong>, and <strong>N</strong> can also satisfy:
+    </div>
+    <div class="cond-card" style="border-left: 4px solid var(--accent2); margin-top: 12px;">
+      <strong>IIA — Independence of Irrelevant Alternatives</strong>
+      The social ranking of $a$ vs. $b$ depends only on individual rankings of $a$ vs. $b$.
+      If every voter's relative preference between $a$ and $b$ is unchanged, the social ranking of $a$ vs. $b$ must also be unchanged — regardless of how preferences over other candidates shift.
+    </div>
+    <p style="font-size:0.9em; margin-top:12px;">
+      Equivalently: any social welfare function on $\ge 3$ alternatives satisfying <strong>U</strong>, <strong>N</strong>, and <strong>IIA</strong> must be a dictatorship.
+    </p>
+  </section>
+
+  <!-- Interactive Voting -->
+  <section>
+    <h2>Interactive Exploration</h2>
+    <p style="font-size:0.9em; margin-bottom:12px;">
+      Drag candidates to reorder each voter's preference ranking (top = most preferred).
+      Then observe how common aggregation methods each violate at least one of Arrow's conditions.
+    </p>
+
+    <div style="font-family: var(--font-ui); font-size: 0.82em; font-weight:600; text-transform:uppercase; letter-spacing:0.03em; margin-bottom:8px;">Preset Profiles</div>
+    <div class="preset-buttons">
+      <button onclick="loadPreset('condorcet')">Condorcet Cycle</button>
+      <button onclick="loadPreset('consensus')">Unanimous</button>
+    </div>
+
+    <div id="voterPanel" class="voter-panel"></div>
+
+    <div style="text-align:right; margin-bottom:4px;">
+      <button onclick="addVoter()" style="margin-right:4px;">+ Add Voter</button>
+      <button onclick="removeVoter()">− Remove Voter</button>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section>
+    <h2>Aggregation Methods &amp; Arrow's Conditions</h2>
+    <p style="font-size:0.9em; margin-bottom:12px;">
+      Each column reflects a <strong>method-level</strong> property (whether the method satisfies the condition across <em>all possible</em> profiles),
+      not just the current profile. All four methods satisfy U (unrestricted domain) trivially.
+      The "T" column indicates whether the method always produces a transitive social ordering (required for a valid SWF under U).
+    </p>
+    <div style="font-family: var(--font-ui); font-size:0.88em; margin-bottom:12px;">
+      Dictator: <select id="dictatorSelect" onchange="computeAndRender()" style="font-family:var(--font-ui); font-size:1em; padding:3px 8px; border:1px solid var(--border); border-radius:3px;"></select>
+      <span style="color:var(--muted); font-size:0.9em; margin-left:6px;">— the social ordering is simply this voter's ranking</span>
+    </div>
+    <table class="methods-table" id="resultsTable">
+      <thead>
+        <tr>
+          <th>Method</th>
+          <th>Result</th>
+          <th>T (Transitive)</th>
+          <th>N (Non-Impos.)</th>
+          <th>IIA</th>
+          <th>D (Non-Dict.)</th>
+        </tr>
+      </thead>
+      <tbody id="resultsBody"></tbody>
+    </table>
+    <p class="explanation" id="summaryText"></p>
+  </section>
+
+  <!-- Pairwise Majority -->
+  <section>
+    <h2>Pairwise Majority Detail</h2>
+    <div class="detail-section">
+      <h3>Head-to-Head Contests</h3>
+      <div id="pairwiseGrid" class="pairwise-grid"></div>
+      <div id="cycleAlert"></div>
+    </div>
+  </section>
+
+  <!-- IIA Violation Demo -->
+  <section>
+    <h2>Demonstrating IIA Violation (Borda Count)</h2>
+    <div class="iia-demo" id="iiaDemo">
+      <p style="font-size:0.9em; margin-bottom:12px;">
+        The Borda count violates IIA: the social ranking between two candidates can change
+        when a third candidate's position shifts, even if no voter changes their relative
+        preference between the two.
+      </p>
+      <div id="iiaContent"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+const CANDIDATES = ['A', 'B', 'C'];
+const COLORS = { A: '#2255aa', B: '#c0392b', C: '#27864a' };
+
+let voters = [];
+
+function initVoters(profiles) {
+  voters = profiles.map(p => [...p]);
+  renderAll();
+}
+
+const PRESETS = {
+  condorcet: [['A','B','C'], ['B','C','A'], ['C','A','B']],
+  consensus: [['A','B','C'], ['A','B','C'], ['A','C','B']]
+};
+
+function loadPreset(key) {
+  initVoters(PRESETS[key]);
+}
+
+function addVoter() {
+  if (voters.length >= 9) return;
+  voters.push(['A','B','C']);
+  renderAll();
+}
+
+function removeVoter() {
+  if (voters.length <= 2) return;
+  voters.pop();
+  renderAll();
+}
+
+/* ---- Render voter panels with drag & drop ---- */
+function renderVoters() {
+  const panel = document.getElementById('voterPanel');
+  panel.innerHTML = '';
+  voters.forEach((prefs, vi) => {
+    const col = document.createElement('div');
+    col.className = 'voter-col';
+    col.innerHTML = `<h3>Voter ${vi + 1}</h3>`;
+    const ul = document.createElement('ul');
+    ul.className = 'rank-list';
+    ul.dataset.voter = vi;
+
+    prefs.forEach((c, ri) => {
+      const li = document.createElement('li');
+      li.className = 'rank-item';
+      li.draggable = true;
+      li.dataset.cand = c;
+      li.innerHTML = `<span class="rank-num">${ri+1}.</span><span class="cand-dot dot-${c}"></span>${c}`;
+      ul.appendChild(li);
+    });
+
+    // Drag & drop
+    let dragItem = null;
+    ul.addEventListener('dragstart', e => {
+      dragItem = e.target.closest('.rank-item');
+      if (dragItem) dragItem.classList.add('dragging');
+    });
+    ul.addEventListener('dragend', e => {
+      if (dragItem) dragItem.classList.remove('dragging');
+      dragItem = null;
+    });
+    ul.addEventListener('dragover', e => {
+      e.preventDefault();
+      const after = getDragAfterElement(ul, e.clientY);
+      if (dragItem) {
+        if (after == null) ul.appendChild(dragItem);
+        else ul.insertBefore(dragItem, after);
+      }
+    });
+    ul.addEventListener('drop', e => {
+      e.preventDefault();
+      // Update voter data
+      const items = ul.querySelectorAll('.rank-item');
+      const newOrder = Array.from(items).map(it => it.dataset.cand);
+      voters[vi] = newOrder;
+      // Update rank numbers
+      items.forEach((it, i) => it.querySelector('.rank-num').textContent = (i+1) + '.');
+      computeAndRender();
+    });
+
+    // Touch support
+    let touchItem = null;
+    let touchClone = null;
+    let touchStartY = 0;
+
+    ul.addEventListener('touchstart', e => {
+      const item = e.target.closest('.rank-item');
+      if (!item) return;
+      touchItem = item;
+      touchStartY = e.touches[0].clientY;
+      touchItem.classList.add('dragging');
+    }, { passive: true });
+
+    ul.addEventListener('touchmove', e => {
+      if (!touchItem) return;
+      e.preventDefault();
+      const y = e.touches[0].clientY;
+      const after = getDragAfterElement(ul, y);
+      if (after == null) ul.appendChild(touchItem);
+      else ul.insertBefore(touchItem, after);
+    }, { passive: false });
+
+    ul.addEventListener('touchend', e => {
+      if (!touchItem) return;
+      touchItem.classList.remove('dragging');
+      const items = ul.querySelectorAll('.rank-item');
+      const newOrder = Array.from(items).map(it => it.dataset.cand);
+      voters[vi] = newOrder;
+      items.forEach((it, i) => it.querySelector('.rank-num').textContent = (i+1) + '.');
+      touchItem = null;
+      computeAndRender();
+    });
+
+    col.appendChild(ul);
+    panel.appendChild(col);
+  });
+}
+
+function getDragAfterElement(container, y) {
+  const elements = [...container.querySelectorAll('.rank-item:not(.dragging)')];
+  return elements.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) {
+      return { offset, element: child };
+    }
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+/* ---- Aggregation methods ---- */
+function pairwiseMajority(profs) {
+  const result = {};
+  for (let i = 0; i < CANDIDATES.length; i++) {
+    for (let j = i+1; j < CANDIDATES.length; j++) {
+      const a = CANDIDATES[i], b = CANDIDATES[j];
+      let countA = 0, countB = 0;
+      profs.forEach(p => {
+        if (p.indexOf(a) < p.indexOf(b)) countA++;
+        else countB++;
+      });
+      result[a + b] = { a, b, countA, countB, winner: countA > countB ? a : (countB > countA ? b : 'tie') };
+    }
+  }
+  return result;
+}
+
+function hasCycle(pw) {
+  // Check for A>B>C>A or similar cycle
+  const wins = {};
+  CANDIDATES.forEach(c => wins[c] = new Set());
+  Object.values(pw).forEach(({a, b, winner}) => {
+    if (winner === a) wins[a].add(b);
+    else if (winner === b) wins[b].add(a);
+  });
+  // Check all permutations for a 3-cycle
+  for (let i = 0; i < CANDIDATES.length; i++) {
+    for (let j = 0; j < CANDIDATES.length; j++) {
+      if (i === j) continue;
+      for (let k = 0; k < CANDIDATES.length; k++) {
+        if (k === i || k === j) continue;
+        const ci = CANDIDATES[i], cj = CANDIDATES[j], ck = CANDIDATES[k];
+        if (wins[ci].has(cj) && wins[cj].has(ck) && wins[ck].has(ci)) {
+          return [ci, cj, ck];
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function bordaCount(profs) {
+  const scores = {};
+  CANDIDATES.forEach(c => scores[c] = 0);
+  const m = CANDIDATES.length;
+  profs.forEach(p => {
+    p.forEach((c, rank) => {
+      scores[c] += (m - 1 - rank);
+    });
+  });
+  const sorted = CANDIDATES.slice().sort((a, b) => scores[b] - scores[a]);
+  return { ranking: sorted, scores };
+}
+
+function plurality(profs) {
+  const scores = {};
+  CANDIDATES.forEach(c => scores[c] = 0);
+  profs.forEach(p => scores[p[0]]++);
+  const sorted = CANDIDATES.slice().sort((a, b) => scores[b] - scores[a]);
+  return { ranking: sorted, scores };
+}
+
+function dictator(profs, dictIdx) {
+  return { ranking: [...profs[dictIdx]], dictator: dictIdx };
+}
+
+/* ---- Check Arrow conditions ---- */
+function checkPareto(ranking, profs) {
+  // Check if the ranking violates unanimity
+  for (let i = 0; i < CANDIDATES.length; i++) {
+    for (let j = i+1; j < CANDIDATES.length; j++) {
+      const a = CANDIDATES[i], b = CANDIDATES[j];
+      const allPreferA = profs.every(p => p.indexOf(a) < p.indexOf(b));
+      const allPreferB = profs.every(p => p.indexOf(b) < p.indexOf(a));
+      if (allPreferA && ranking.indexOf(a) > ranking.indexOf(b)) return false;
+      if (allPreferB && ranking.indexOf(b) > ranking.indexOf(a)) return false;
+    }
+  }
+  return true;
+}
+
+function checkIIA_borda(profs) {
+  // Try to find IIA violation for Borda:
+  // Swap a non-top candidate in one voter and see if the social ranking of an unrelated pair changes
+  const orig = bordaCount(profs);
+  for (let vi = 0; vi < profs.length; vi++) {
+    for (let ri = 0; ri < CANDIDATES.length; ri++) {
+      for (let rj = ri + 1; rj < CANDIDATES.length; rj++) {
+        const modified = profs.map(p => [...p]);
+        // Swap positions ri and rj in voter vi
+        [modified[vi][ri], modified[vi][rj]] = [modified[vi][rj], modified[vi][ri]];
+        const newResult = bordaCount(modified);
+        // Check: for any pair (a,b) not involving the swapped candidates,
+        // did the relative order change?
+        const swapped = new Set([profs[vi][ri], profs[vi][rj]]);
+        for (let x = 0; x < CANDIDATES.length; x++) {
+          for (let y = x + 1; y < CANDIDATES.length; y++) {
+            const a = CANDIDATES[x], b = CANDIDATES[y];
+            // Check if relative preference of a vs b changed for any voter
+            const relSame = profs.every((p, pi) => {
+              const o = p.indexOf(a) < p.indexOf(b);
+              const n = modified[pi].indexOf(a) < modified[pi].indexOf(b);
+              return o === n;
+            });
+            if (relSame) {
+              // All voters rank a vs b the same, but did social ranking change?
+              const origRel = orig.ranking.indexOf(a) - orig.ranking.indexOf(b);
+              const newRel = newResult.ranking.indexOf(a) - newResult.ranking.indexOf(b);
+              if ((origRel < 0) !== (newRel < 0)) {
+                return {
+                  violated: true,
+                  pair: [a, b],
+                  voter: vi,
+                  origProfile: profs.map(p => [...p]),
+                  modProfile: modified,
+                  origRanking: orig.ranking,
+                  newRanking: newResult.ranking,
+                  origScores: orig.scores,
+                  newScores: newResult.scores
+                };
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return { violated: false };
+}
+
+function checkIIA_plurality(profs) {
+  // Similar check for plurality
+  const orig = plurality(profs);
+  for (let vi = 0; vi < profs.length; vi++) {
+    for (let ri = 0; ri < CANDIDATES.length; ri++) {
+      for (let rj = ri + 1; rj < CANDIDATES.length; rj++) {
+        const modified = profs.map(p => [...p]);
+        [modified[vi][ri], modified[vi][rj]] = [modified[vi][rj], modified[vi][ri]];
+        const newResult = plurality(modified);
+        for (let x = 0; x < CANDIDATES.length; x++) {
+          for (let y = x + 1; y < CANDIDATES.length; y++) {
+            const a = CANDIDATES[x], b = CANDIDATES[y];
+            const relSame = profs.every((p, pi) => {
+              return (p.indexOf(a) < p.indexOf(b)) === (modified[pi].indexOf(a) < modified[pi].indexOf(b));
+            });
+            if (relSame) {
+              const origRel = orig.ranking.indexOf(a) - orig.ranking.indexOf(b);
+              const newRel = newResult.ranking.indexOf(a) - newResult.ranking.indexOf(b);
+              if ((origRel < 0) !== (newRel < 0)) {
+                return { violated: true, pair: [a, b], voter: vi, origRanking: orig.ranking, newRanking: newResult.ranking };
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  return { violated: false };
+}
+
+/* ---- Render results ---- */
+function computeAndRender() {
+  const pw = pairwiseMajority(voters);
+  const cycle = hasCycle(pw);
+  const borda = bordaCount(voters);
+  const plur = plurality(voters);
+
+  // Update dictator selector
+  const dictSelect = document.getElementById('dictatorSelect');
+  const prevVal = parseInt(dictSelect.value) || 0;
+  dictSelect.innerHTML = '';
+  voters.forEach((_, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = `Voter ${i + 1}`;
+    if (i === prevVal) opt.selected = true;
+    dictSelect.appendChild(opt);
+  });
+  const dictIdx = Math.min(parseInt(dictSelect.value) || 0, voters.length - 1);
+  dictSelect.value = dictIdx;
+  const dict0 = dictator(voters, dictIdx);
+
+  // Condorcet winner
+  let condorcetWinner = null;
+  CANDIDATES.forEach(c => {
+    const beatsAll = CANDIDATES.every(other => {
+      if (other === c) return true;
+      const key = c < other ? c + other : other + c;
+      const r = pw[key];
+      return (r.a === c ? r.countA > r.countB : r.countB > r.countA);
+    });
+    if (beatsAll) condorcetWinner = c;
+  });
+
+  // bordaIIA: used for the IIA violation demo section below
+  const bordaIIA = checkIIA_borda(voters);
+
+  // Pairwise majority: always satisfies Pareto and IIA, may produce cycle (incomplete)
+  const pwRanking = condorcetWinner ? 
+    [condorcetWinner, ...CANDIDATES.filter(c => c !== condorcetWinner)] : 
+    (cycle ? null : CANDIDATES);
+
+  // Build table
+  const tbody = document.getElementById('resultsBody');
+  tbody.innerHTML = '';
+
+  function badge(pass) {
+    return pass ? '<span class="badge ok">✓</span>' : '<span class="badge no">✗</span>';
+  }
+
+  function addRow(name, result, transitive, pareto, iia, nondict, note) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="method-name">${name}</td>
+      <td>${result}</td>
+      <td class="${transitive ? 'pass' : 'fail'}">${badge(transitive)}</td>
+      <td class="${pareto ? 'pass' : 'fail'}">${badge(pareto)}</td>
+      <td class="${iia ? 'pass' : 'fail'}">${badge(iia)}</td>
+      <td class="${nondict ? 'pass' : 'fail'}">${badge(nondict)}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  const rankStr = r => r ? r.join(' ≻ ') : '(cycle — no ranking)';
+  const scoresStr = s => CANDIDATES.map(c => `${c}:${s[c]}`).join(' ');
+
+  // Method-level properties (not profile-dependent):
+  // Plurality:  T=✓  N=✓  I=✗  D=✓
+  // Borda:      T=✓  N=✓  I=✗  D=✓
+  // Pairwise:   T=✗  N=✓  I=✓  D=✓   (can produce cycles)
+  // Dictator:   T=✓  N=✓  I=✓  D=✗
+
+  addRow('Plurality', `${rankStr(plur.ranking)}<br><small>${scoresStr(plur.scores)}</small>`,
+    true, true, false, true);
+
+  addRow('Borda Count', `${rankStr(borda.ranking)}<br><small>${scoresStr(borda.scores)}</small>`,
+    true, true, false, true);
+
+  addRow('Pairwise Majority',
+    cycle ? `<span style="color:var(--accent2)">Cycle: ${cycle[0]} ≻ ${cycle[1]} ≻ ${cycle[2]} ≻ ${cycle[0]}</span>` :
+    (condorcetWinner ? `Winner: ${condorcetWinner}` : rankStr(pwRanking)),
+    false, true, true, true);
+
+  addRow(`Dictator (Voter ${dictIdx + 1})`, rankStr(dict0.ranking),
+    true, true, true, false);
+
+  // Summary
+  const summary = document.getElementById('summaryText');
+  let summaryHtml = `<p>Every row has at least one <span class="badge no">✗</span> — these are <strong>method-level</strong> properties, not dependent on the current profile. ` +
+    `All four methods satisfy N (non-imposition). ` +
+    `Plurality and Borda always produce transitive orderings and satisfy D, but violate IIA. ` +
+    `Pairwise majority satisfies N, IIA, and D, but can produce intransitive cycles (failing to be a valid SWF under unrestricted domain). ` +
+    `Dictatorship satisfies T, N, and IIA, but trivially fails D. ` +
+    `<strong>No method satisfies all conditions</strong> — exactly as Arrow's theorem guarantees.</p>`;
+
+  summary.innerHTML = summaryHtml;
+
+  // Pairwise grid
+  const pgrid = document.getElementById('pairwiseGrid');
+  pgrid.innerHTML = '';
+  Object.values(pw).forEach(({a, b, countA, countB, winner}) => {
+    const card = document.createElement('div');
+    card.className = 'pair-card';
+    card.innerHTML = `<div class="vs">${a} vs ${b}</div>` +
+      `<div>${a}: ${countA} &nbsp;|&nbsp; ${b}: ${countB}</div>` +
+      `<div class="result">${winner === 'tie' ? 'Tie' : winner + ' wins'}</div>`;
+    pgrid.appendChild(card);
+  });
+
+  const alertDiv = document.getElementById('cycleAlert');
+  if (cycle) {
+    alertDiv.innerHTML = `<div class="cycle-alert"><strong>Condorcet Cycle Detected!</strong> ` +
+      `${cycle[0]} ≻ ${cycle[1]} ≻ ${cycle[2]} ≻ ${cycle[0]}. ` +
+      `Pairwise majority fails to produce a transitive social ordering.</div>`;
+  } else {
+    alertDiv.innerHTML = `<div class="no-cycle">No cycle. ` +
+      (condorcetWinner ? `<strong>${condorcetWinner}</strong> is the Condorcet winner (beats all others head-to-head).` :
+        'Pairwise majority produces a consistent ordering.') + '</div>';
+  }
+
+  // IIA Demo for Borda
+  renderIIAdemo(bordaIIA);
+
+  // Re-typeset MathJax if loaded
+  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+}
+
+function renderIIAdemo(iiaResult) {
+  const container = document.getElementById('iiaContent');
+  if (!iiaResult.violated) {
+    container.innerHTML = '<p style="font-size:0.9em; color:var(--muted);">Borda count violates IIA in general, but no single-swap violation was found for the current profile. Try the <strong>Condorcet Cycle</strong> preset to see a concrete example.</p>';
+    return;
+  }
+
+  const { pair, voter, origProfile, modProfile, origRanking, newRanking, origScores, newScores } = iiaResult;
+  const [a, b] = pair;
+
+  let html = `<p style="font-size:0.9em; margin-bottom:8px;">
+    Swapping candidates in <strong>Voter ${voter + 1}</strong>'s ranking changes the social ordering of
+    <strong style="color:${COLORS[a]}">${a}</strong> vs <strong style="color:${COLORS[b]}">${b}</strong>,
+    even though <em>every voter's relative preference</em> between ${a} and ${b} stays the same.
+  </p>`;
+
+  html += '<div class="iia-compare">';
+
+  // Original
+  html += '<div class="iia-col"><h4>Original Profile</h4>';
+  origProfile.forEach((p, vi) => {
+    html += `<div class="mini-ranking" style="margin-bottom:6px;"><small>V${vi+1}:</small> `;
+    p.forEach(c => {
+      const hl = (c === a || c === b) ? ' highlight-pair' : '';
+      html += `<div class="${hl}" style="display:inline-block;margin:0 2px;padding:2px 6px;">${c}</div>`;
+    });
+    html += '</div>';
+  });
+  html += `<div style="margin-top:8px;font-weight:600;text-align:center;">Borda: ${origRanking.join(' ≻ ')}</div>`;
+  html += `<div style="text-align:center;font-size:0.8em;color:var(--muted);">${CANDIDATES.map(c=>`${c}:${origScores[c]}`).join(' ')}</div>`;
+  html += '</div>';
+
+  html += '<div class="iia-arrow">→</div>';
+
+  // Modified
+  html += '<div class="iia-col"><h4>Modified Profile</h4>';
+  modProfile.forEach((p, vi) => {
+    const changed = vi === voter;
+    html += `<div class="mini-ranking" style="margin-bottom:6px;${changed?'border:2px solid var(--accent2);border-radius:4px;padding:4px;':''}"><small>V${vi+1}:</small> `;
+    p.forEach(c => {
+      const hl = (c === a || c === b) ? ' highlight-pair' : '';
+      html += `<div class="${hl}" style="display:inline-block;margin:0 2px;padding:2px 6px;">${c}</div>`;
+    });
+    html += '</div>';
+  });
+  html += `<div style="margin-top:8px;font-weight:600;text-align:center;">Borda: ${newRanking.join(' ≻ ')}</div>`;
+  html += `<div style="text-align:center;font-size:0.8em;color:var(--muted);">${CANDIDATES.map(c=>`${c}:${newScores[c]}`).join(' ')}</div>`;
+  html += '</div>';
+
+  html += '</div>';
+
+  html += `<div class="cycle-alert" style="margin-top:8px;">
+    <strong>IIA Violated:</strong> Every voter ranks ${a} vs ${b} identically in both profiles,
+    yet the Borda social ranking of ${a} vs ${b} reversed.
+    A third candidate's repositioning changed the outcome — exactly what IIA forbids.
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function renderAll() {
+  renderVoters();
+  computeAndRender();
+}
+
+// Initialize with Condorcet cycle
+loadPreset('condorcet');
+</script>
+
+</body>
+</html>

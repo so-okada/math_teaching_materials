@@ -4,57 +4,156 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google PageRank Visualizer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        * { box-sizing: border-box; }
+        body { margin: 0; overflow: hidden; font-family: 'Inter', system-ui, sans-serif; background-color: #f3f4f6; color: #1e293b; }
         canvas { display: block; }
         .panel {
             backdrop-filter: blur(12px);
             background-color: rgba(255, 255, 255, 0.9);
         }
+        button { cursor: pointer; border: none; font-family: inherit; }
+        button:hover { filter: brightness(0.93); }
+        #matrixPanel {
+            max-height: calc(100vh - 32px);
+            overflow-y: auto;
+        }
+        #matrixPanel table {
+            border-collapse: collapse;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+        }
+        #matrixPanel th, #matrixPanel td {
+            width: 28px; height: 24px;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            padding: 2px;
+        }
+        #matrixPanel th {
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 700;
+            font-size: 10px;
+            position: sticky;
+        }
+        #matrixPanel td.cell-one {
+            background: #e0e7ff; color: #3730a3; font-weight: 700;
+        }
+        #matrixPanel td.cell-zero {
+            color: #cbd5e1;
+        }
+        #matrixPanel td.cell-frac {
+            background: #ede9fe; color: #5b21b6; font-size: 10px;
+        }
+        .matrix-tab {
+            cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; transition: all 0.15s;
+        }
+        .matrix-tab.active {
+            background: #4f46e5; color: #fff;
+        }
+        .matrix-tab:not(.active) {
+            background: #f1f5f9; color: #64748b;
+        }
+        .matrix-tab:not(.active):hover {
+            background: #e2e8f0;
+        }
+        #eigenContent table {
+            border-collapse: collapse;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            width: 100%;
+        }
+        #eigenContent th, #eigenContent td {
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            padding: 4px 3px;
+            white-space: nowrap;
+        }
+        #eigenContent th {
+            background: #f1f5f9;
+            color: #475569;
+            font-weight: 700;
+            font-size: 10px;
+        }
+        #eigenContent td {
+            color: #334155;
+        }
+        .btn { width: 100%; font-weight: 500; padding: 8px 16px; border-radius: 6px; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; }
+        .stat-box { background: #f8fafc; padding: 8px; border-radius: 6px; border: 1px solid #f1f5f9; }
+        .stat-label { font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 700; }
+        .stat-val { font-size: 20px; font-family: monospace; }
     </style>
 </head>
-<body class="text-slate-800">
+<body>
 
     <!-- UI Overlay -->
-    <div class="panel absolute top-4 left-4 p-6 rounded-xl shadow-lg border border-slate-200 max-w-sm z-10 transition-all">
-        <h1 class="text-2xl font-bold mb-2 text-indigo-600">PageRank Sim</h1>
-        <p class="text-sm text-slate-600 mb-4">
-            Visualize how Google's original algorithm calculates page authority. 
-            <br><span class="text-xs text-slate-400">Drag nodes to rearrange.</span>
+    <div class="panel" style="position:absolute;top:16px;left:16px;padding:24px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);border:1px solid #e2e8f0;max-width:360px;z-index:10;">
+        <h1 style="font-size:24px;font-weight:700;margin:0 0 8px;color:#4f46e5;">PageRank Simulator</h1>
+        <p style="font-size:14px;color:#475569;margin:0 0 16px;">
+            Visualize how Google's original algorithm calculates page authority.
+            <br><span style="font-size:12px;color:#94a3b8;">Drag nodes to rearrange.</span>
         </p>
 
-        <div class="grid grid-cols-2 gap-2 mb-4">
-            <div class="bg-slate-50 p-2 rounded border border-slate-100">
-                <div class="text-xs text-slate-400 uppercase font-bold">Iterations</div>
-                <div class="text-xl font-mono" id="iterVal">0</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">
+            <div class="stat-box">
+                <div class="stat-label">Iterations</div>
+                <div class="stat-val" id="iterVal">0</div>
             </div>
-            <div class="bg-slate-50 p-2 rounded border border-slate-100">
-                <div class="text-xs text-slate-400 uppercase font-bold">Total Nodes</div>
-                <div class="text-xl font-mono" id="nodeCountVal">0</div>
+            <div class="stat-box">
+                <div class="stat-label">Total Nodes</div>
+                <div class="stat-val" id="nodeCountVal">0</div>
             </div>
         </div>
 
-        <div class="flex flex-col gap-2">
-            <button onclick="step()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded transition flex items-center justify-center gap-2">
+        <div style="display:flex;flex-direction:column;gap:8px;">
+            <button onclick="step()" class="btn" style="background:#4f46e5;color:#fff;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                 Step (+1)
             </button>
-            
-            <button onclick="toggleAuto()" id="btnAuto" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded transition flex items-center justify-center gap-2">
+
+            <button onclick="toggleAuto()" id="btnAuto" class="btn" style="background:#059669;color:#fff;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 Auto Run
             </button>
 
-            <button onclick="resetGraph()" class="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-medium py-2 px-4 rounded transition flex items-center justify-center gap-2">
+            <button onclick="resetGraph()" class="btn" style="background:#fff;color:#475569;border:1px solid #cbd5e1;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/></svg>
                 Reset / New Graph
             </button>
         </div>
 
-        <div class="mt-4 pt-4 border-t border-slate-200 text-xs text-slate-500">
-            <strong>Damping Factor:</strong> 0.85<br>
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:12px;color:#64748b;">
             Larger Node = Higher Rank
+        </div>
+
+        <button onclick="toggleMatrix()" id="btnMatrix" class="btn" style="margin-top:12px;background:#7c3aed;color:#fff;font-size:13px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Show Matrix
+        </button>
+    </div>
+
+    <!-- Matrix Panel -->
+    <div id="matrixPanel" class="panel" style="position:absolute;top:16px;right:16px;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.1);border:1px solid #e2e8f0;z-index:10;display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <h2 style="font-size:16px;font-weight:700;color:#7c3aed;margin:0;">Network Matrix</h2>
+            <button onclick="toggleMatrix()" style="color:#94a3b8;background:none;padding:0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:12px;">
+            <span class="matrix-tab active" id="tabAdj" onclick="switchMatrixTab('adj')">Adjacency</span>
+            <span class="matrix-tab" id="tabTrans" onclick="switchMatrixTab('trans')">Transition</span>
+        </div>
+        <div style="font-size:12px;color:#64748b;margin-bottom:8px;" id="matrixCaption">
+            A<sub>ij</sub> = 1 if node i links to node j
+        </div>
+        <div id="matrixContent"></div>
+        <div id="eigenSection" style="display:none;">
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
+                <h3 style="font-size:10px;font-weight:700;color:#8b5cf6;text-transform:uppercase;margin:0 0 4px;">Eigenvector for λ = 1</h3>
+                <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">Stationary distribution: Hv* = v*, Σv<sub>i</sub> = 1.</div>
+                <div id="eigenContent" style="font-family:monospace;font-size:12px;overflow-x:auto;"></div>
+            </div>
         </div>
     </div>
 
@@ -77,7 +176,6 @@
     // Config
     const NODE_COUNT = 10;
     const LINK_PROBABILITY = 0.3;
-    const DAMPING = 0.85;
     const MIN_RADIUS = 20;
     const MAX_RADIUS = 60;
 
@@ -194,40 +292,38 @@
                 }
             }
         }
+
+        if (matrixVisible) renderMatrix();
     }
 
     function step() {
-        // PageRank Algorithm Implementation
-        
-        // 1. Initialize next ranks with the random jump probability
-        // The probability that a user randomly types in the URL instead of clicking a link
-        const baseRank = (1 - DAMPING) / NODE_COUNT;
-        nodes.forEach(n => n.nextRank = baseRank);
+        // Power iteration: v <- H * v (column-stochastic)
 
-        // 2. Distribute Ranks via Links
+        // 1. Initialize
+        nodes.forEach(n => n.nextRank = 0);
+
+        // 2. Distribute ranks via links
         nodes.forEach(source => {
-            // Find all links originating from this source
             const outgoing = links.filter(l => l.source === source);
             const outCount = outgoing.length;
 
             if (outCount > 0) {
-                // Distribute share of rank to targets
-                const share = (source.rank * DAMPING) / outCount;
+                const share = source.rank / outCount;
                 outgoing.forEach(link => {
                     link.target.nextRank += share;
                 });
             } else {
-                // Sink Node (Dangling Node) logic:
-                // If a user hits a page with no links, they jump to a random page.
-                // Distribute rank equally to ALL nodes.
-                const sinkShare = (source.rank * DAMPING) / NODE_COUNT;
-                nodes.forEach(n => n.nextRank += sinkShare);
+                // Dangling node: distribute rank equally to all nodes
+                const share = source.rank / NODE_COUNT;
+                nodes.forEach(n => n.nextRank += share);
             }
         });
 
-        // 3. Commit new ranks
+        // 3. Normalize to sum 1 and commit
+        let s = 0;
+        nodes.forEach(n => s += n.nextRank);
         nodes.forEach(n => {
-            n.rank = n.nextRank;
+            n.rank = s > 0 ? n.nextRank / s : 1 / NODE_COUNT;
             n.updateColor();
         });
 
@@ -249,8 +345,7 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
                 Pause
             `;
-            btnAuto.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
-            btnAuto.classList.add('bg-amber-500', 'hover:bg-amber-600');
+            btnAuto.style.background = '#d97706';
         }
     }
 
@@ -261,8 +356,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             Auto Run
         `;
-        btnAuto.classList.remove('bg-amber-500', 'hover:bg-amber-600');
-        btnAuto.classList.add('bg-emerald-600', 'hover:bg-emerald-700');
+        btnAuto.style.background = '#059669';
     }
 
     // --- Physics & Drawing Loop ---
@@ -453,6 +547,148 @@
              e.preventDefault(); 
              onMouseMove(e);
         }
+    }
+
+    // --- Matrix Display ---
+
+    let matrixVisible = false;
+    let currentMatrixTab = 'adj'; // 'adj' or 'trans'
+
+    function toggleMatrix() {
+        matrixVisible = !matrixVisible;
+        const panel = document.getElementById('matrixPanel');
+        const btn = document.getElementById('btnMatrix');
+        panel.style.display = matrixVisible ? 'block' : 'none';
+        btn.innerHTML = matrixVisible
+            ? '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Hide Matrix'
+            : '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg> Show Matrix';
+        if (matrixVisible) renderMatrix();
+    }
+
+    function switchMatrixTab(tab) {
+        currentMatrixTab = tab;
+        document.getElementById('tabAdj').className = 'matrix-tab' + (tab === 'adj' ? ' active' : '');
+        document.getElementById('tabTrans').className = 'matrix-tab' + (tab === 'trans' ? ' active' : '');
+        const caption = document.getElementById('matrixCaption');
+        if (tab === 'adj') {
+            caption.innerHTML = 'A<sub>ij</sub> = 1 if node i links to node j';
+        } else {
+            caption.innerHTML = 'H<sub>ij</sub> = 1/L(j) if node j links to node i (column-stochastic)';
+        }
+        renderMatrix();
+    }
+
+    function buildAdjacencyMatrix() {
+        const n = nodes.length;
+        const A = Array.from({length: n}, () => Array(n).fill(0));
+        links.forEach(l => { A[l.source.id][l.target.id] = 1; });
+        return A;
+    }
+
+    function buildTransitionMatrix() {
+        const n = nodes.length;
+        const A = buildAdjacencyMatrix();
+        const HT = Array.from({length: n}, () => Array(n).fill(0));
+        for (let j = 0; j < n; j++) {
+            const outDeg = A[j].reduce((s, v) => s + v, 0);
+            if (outDeg > 0) {
+                for (let i = 0; i < n; i++) {
+                    if (A[j][i] === 1) HT[i][j] = 1 / outDeg;
+                }
+            }
+        }
+        return HT;
+    }
+
+    function frac(val) {
+        // Display common fractions nicely
+        if (val === 0) return '0';
+        if (val === 1) return '1';
+        // Check 1/k for k=1..NODE_COUNT
+        for (let k = 2; k <= NODE_COUNT; k++) {
+            if (Math.abs(val - 1/k) < 1e-9) return '1/' + k;
+        }
+        return val.toFixed(2);
+    }
+
+    function renderMatrix() {
+        const container = document.getElementById('matrixContent');
+        const eigenSection = document.getElementById('eigenSection');
+        const n = nodes.length;
+        const M = currentMatrixTab === 'adj' ? buildAdjacencyMatrix() : buildTransitionMatrix();
+        const isAdj = currentMatrixTab === 'adj';
+
+        let html = '<table><tr><th></th>';
+        for (let j = 0; j < n; j++) html += '<th>' + j + '</th>';
+        html += '</tr>';
+        for (let i = 0; i < n; i++) {
+            html += '<tr><th>' + i + '</th>';
+            for (let j = 0; j < n; j++) {
+                const v = M[i][j];
+                let cls, txt;
+                if (isAdj) {
+                    cls = v === 1 ? 'cell-one' : 'cell-zero';
+                    txt = v;
+                } else {
+                    cls = v > 0 ? 'cell-frac' : 'cell-zero';
+                    txt = v > 0 ? frac(v) : '0';
+                }
+                html += '<td class="' + cls + '">' + txt + '</td>';
+            }
+            html += '</tr>';
+        }
+        html += '</table>';
+        container.innerHTML = html;
+
+        // Show eigenvalues for transition matrix
+        if (!isAdj) {
+            eigenSection.style.display = 'block';
+            renderEigenvalues(M);
+        } else {
+            eigenSection.style.display = 'none';
+        }
+    }
+
+    // --- Eigenvector for λ = 1 (Power Method) ---
+
+    function computeStationaryVector(HT) {
+        const n = HT.length;
+        let v = new Array(n).fill(1 / n);
+
+        for (let iter = 0; iter < 200; iter++) {
+            const vNew = new Array(n).fill(0);
+            for (let i = 0; i < n; i++)
+                for (let j = 0; j < n; j++) vNew[i] += HT[i][j] * v[j];
+            let s = 0;
+            for (let i = 0; i < n; i++) s += vNew[i];
+            if (s < 1e-15) break;
+            for (let i = 0; i < n; i++) v[i] = vNew[i] / s;
+        }
+        return v;
+    }
+
+    function renderEigenvalues(H) {
+        const container = document.getElementById('eigenContent');
+        const n = H.length;
+        const v = computeStationaryVector(H);
+
+        // Find max for heatmap
+        let maxV = 0;
+        for (let i = 0; i < n; i++) if (v[i] > maxV) maxV = v[i];
+
+        let html = '<table>';
+        for (let j = 0; j < n; j++) {
+            const t = v[j] / maxV; // 0..1
+            const r = Math.round(255 - t * (255 - 79));
+            const g = Math.round(255 - t * (255 - 70));
+            const b = Math.round(255 - t * (255 - 229));
+            const textColor = t > 0.5 ? '#fff' : '#334155';
+            html += '<tr><th>' + j + '</th>';
+            html += '<td style="background:rgb(' + r + ',' + g + ',' + b + ');color:' + textColor + ';min-width:60px;">' + v[j].toFixed(4) + '</td></tr>';
+        }
+        html += '</table>';
+
+        container.innerHTML = html;
     }
 
     // Start
