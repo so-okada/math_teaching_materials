@@ -105,6 +105,12 @@
             </div>
         </div>
 
+        <div style="margin-bottom:12px;">
+            <label style="font-size:12px;color:#64748b;font-weight:600;">Nodes</label>
+            <input type="range" id="nodeSlider" min="3" max="20" value="10" style="width:100%;margin-top:4px;accent-color:#4f46e5;">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;"><span>3</span><span id="nodeSliderVal">10</span><span>20</span></div>
+        </div>
+
         <div style="display:flex;flex-direction:column;gap:8px;">
             <button onclick="step()" class="btn" style="background:#4f46e5;color:#fff;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -174,7 +180,7 @@
     const btnAuto = document.getElementById('btnAuto');
 
     // Config
-    const NODE_COUNT = 10;
+    let NODE_COUNT = 10;
     const LINK_PROBABILITY = 0.3;
     const MIN_RADIUS = 20;
     const MAX_RADIUS = 60;
@@ -244,6 +250,12 @@
         canvas.addEventListener('touchmove', onTouchMove, {passive: false});
         window.addEventListener('touchend', onMouseUp);
 
+        // Node count slider
+        const slider = document.getElementById('nodeSlider');
+        const sliderVal = document.getElementById('nodeSliderVal');
+        slider.addEventListener('input', () => { sliderVal.textContent = slider.value; });
+        slider.addEventListener('change', () => { resetGraph(); });
+
         resetGraph();
         animate();
     }
@@ -255,6 +267,7 @@
 
     function resetGraph() {
         stopAuto();
+        NODE_COUNT = parseInt(document.getElementById('nodeSlider').value);
         nodes = [];
         links = [];
         iteration = 0;
@@ -363,10 +376,16 @@
 
     function updatePhysics() {
         // Simple force-directed layout forces
-        
+        const n = nodes.length;
+        const repStr = 8000 + 5000 / n;      // weaker repulsion for more nodes
+        const tDist = 120 + 2000 / n;         // shorter springs for more nodes
+        const spring = 0.02;
+        const gravity = 0.008;
+        const damp = 0.82;
+
         // Repulsion (Coulomb's Law-ish)
-        for (let i = 0; i < nodes.length; i++) {
-            for (let j = i + 1; j < nodes.length; j++) {
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
                 const a = nodes[i];
                 const b = nodes[j];
                 const dx = b.x - a.x;
@@ -374,8 +393,7 @@
                 const distSq = dx*dx + dy*dy;
                 const dist = Math.sqrt(distSq) || 1;
                 
-                // Repulsion strength
-                const force = 20000 / (distSq + 1); 
+                const force = repStr / (distSq + 1); 
                 const fx = (dx / dist) * force;
                 const fy = (dy / dist) * force;
 
@@ -392,9 +410,7 @@
             const dy = b.y - a.y;
             const dist = Math.sqrt(dx*dx + dy*dy) || 1;
             
-            // Target distance
-            const targetDist = 250; 
-            const force = (dist - targetDist) * 0.05; // Spring constant
+            const force = (dist - tDist) * spring;
 
             const fx = (dx / dist) * force;
             const fy = (dy / dist) * force;
@@ -406,18 +422,22 @@
         // Center Gravity (Keep them on screen)
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        nodes.forEach(n => {
-            if (n === draggedNode) return;
-            n.vx += (centerX - n.x) * 0.005;
-            n.vy += (centerY - n.y) * 0.005;
+        nodes.forEach(nd => {
+            if (nd === draggedNode) return;
+            nd.vx += (centerX - nd.x) * gravity;
+            nd.vy += (centerY - nd.y) * gravity;
 
             // Velocity damping
-            n.vx *= 0.9;
-            n.vy *= 0.9;
+            nd.vx *= damp;
+            nd.vy *= damp;
+
+            // Clamp velocity
+            const speed = Math.sqrt(nd.vx*nd.vx + nd.vy*nd.vy);
+            if (speed > 10) { nd.vx *= 10/speed; nd.vy *= 10/speed; }
 
             // Update pos
-            n.x += n.vx;
-            n.y += n.vy;
+            nd.x += nd.vx;
+            nd.y += nd.vy;
         });
     }
 
