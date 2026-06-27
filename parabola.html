@@ -104,6 +104,9 @@ input[type="range"] { width: 100%; }
 
     <h2>Display</h2>
     <div class="checkbox-group">
+      <label><input type="checkbox" id="chkGrid" checked> Grid</label>
+    </div>
+    <div class="checkbox-group">
       <label><input type="checkbox" id="chkVertex" checked> Vertex</label>
     </div>
     <div class="checkbox-group">
@@ -142,6 +145,7 @@ const valP = document.getElementById('valP');
 const sliderRays = document.getElementById('sliderRays');
 const valRays = document.getElementById('valRays');
 
+const chkGrid = document.getElementById('chkGrid');
 const chkVertex = document.getElementById('chkVertex');
 const chkAxis = document.getElementById('chkAxis');
 const chkFocus = document.getElementById('chkFocus');
@@ -330,7 +334,7 @@ function draw() {
   valP.textContent = p.toFixed(2);
 
   ctx.clearRect(0, 0, W, H);
-  drawGrid();
+  if (chkGrid.checked) drawGrid();
   drawAxes();
 
   if (Math.abs(p) < 1e-9) {
@@ -446,6 +450,7 @@ sliderH.addEventListener('input', draw);
 sliderK.addEventListener('input', draw);
 sliderP.addEventListener('input', draw);
 sliderRays.addEventListener('input', draw);
+chkGrid.addEventListener('change', draw);
 chkVertex.addEventListener('change', draw);
 chkAxis.addEventListener('change', draw);
 chkFocus.addEventListener('change', draw);
@@ -457,6 +462,7 @@ resetBtn.addEventListener('click', function() {
   sliderK.value = 0;
   sliderP.value = 1;
   sliderRays.value = 5;
+  chkGrid.checked = true;
   chkVertex.checked = true;
   chkAxis.checked = true;
   chkFocus.checked = true;
