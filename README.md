@@ -32,6 +32,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Gradient Descent](https://so-okada.github.io/math_teaching_materials/gradient_descent.html) | Numerical Analysis | Steepest descent, learning rate, convergence |
 | [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html) | Analysis | Limit definition, series, compound interest |
 | [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
+| [Catenary Curve](https://so-okada.github.io/math_teaching_materials/catenary.html) | Differential Geometry | Hyperbolic cosine, hanging chain, curvature |
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
 | [Vibration (2nd-Order ODE)](https://so-okada.github.io/math_teaching_materials/vibration_demo.html) | Differential Equations | Damped harmonic oscillator, phase portraits |
 
@@ -639,6 +640,27 @@ The fundamental relation $A^2 = R \cdot L$ connects the parameter $A$, the final
 
 ---
 
+### [Catenary Curve](https://so-okada.github.io/math_teaching_materials/catenary.html)
+**File:** `catenary.html`
+
+Interactive visualization of the catenary curve—the shape formed by a uniform chain hanging under gravity—with comparison to the osculating parabola and a discrete chain simulation.
+
+**Mathematical Background:**
+The catenary is defined by:
+$$y = a\cosh\!\left(\frac{x}{a}\right) = \frac{a}{2}\left(e^{x/a} + e^{-x/a}\right)$$
+
+At the vertex $(0, a)$, the curvature is $\kappa = 1/a$. The parabola $y = \dfrac{x^2}{2a} + a$ shares the same curvature at this point, illustrating why a catenary resembles a parabola near the vertex but diverges further out.
+
+**Controls:**
+- **Parameter $a$** (−5 to 5): Shape parameter; positive values hang downward, negative values arch upward
+- **Parabola**: Toggle the osculating parabola overlay
+- **Chain**: Toggle a discrete chain of linked segments along the catenary
+- **Chain links** (2–40): Number of chain segments
+- **Rotation** (−180° to 180°): Rotate the entire figure
+- Mouse hover: Displays $x$, catenary $y$, and arc length from vertex
+
+---
+
 ## Mechanics
 
 ### [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html)
@@ -705,6 +727,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `ftc_vertical.html`: Uses MathJax (CDN)
 - `quadrature_xn.html`: Uses MathJax (CDN)
 - `clothoid_highway_demo.html`: Uses MathJax (CDN)
+- `catenary.html`: Uses MathJax (CDN)
 - `bottle_flip_edu.html`: Uses MathJax (CDN)
 - `galton_board.html`: Uses MathJax (CDN)
 - `conic_sections.html`: Uses MathJax (CDN)
