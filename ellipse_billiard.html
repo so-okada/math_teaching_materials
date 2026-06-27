@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simplified Ellipse Billiard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
             background-color: #020617;
@@ -14,19 +13,73 @@
             display: flex;
             flex-direction: column;
             height: 100vh;
+            font-family: sans-serif;
         }
         canvas {
             display: block;
             touch-action: none;
         }
+        .info {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .info h1 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0 0 8px 0;
+        }
+        .info p {
+            margin: 4px 0;
+            color: #94a3b8;
+        }
+        .info .hint {
+            color: #60a5fa;
+            font-size: 0.875rem;
+        }
+        .controls {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .controls label {
+            color: #cbd5e1;
+            font-size: 0.875rem;
+        }
+        .controls input[type="range"] {
+            width: 200px;
+            accent-color: #60a5fa;
+            cursor: pointer;
+        }
+        .controls .value {
+            color: #e2e8f0;
+            font-size: 0.875rem;
+            min-width: 40px;
+        }
     </style>
 </head>
 <body>
 
-    <div class="absolute top-6 left-6 z-10 pointer-events-none">
-        <h1 class="text-2xl font-bold text-white mb-2">Focus-to-Focus Demo</h1>
-        <p class="text-slate-400">Move your mouse to aim the ball from the left focus.</p>
-        <p class="text-blue-400 text-sm mt-1">Every bounce will pass through the opposite focus.</p>
+    <div class="info">
+        <h1>Focus-to-Focus Demo</h1>
+        <p>Move your mouse to aim the ball from the left focus.</p>
+        <p class="hint">Every bounce will pass through the opposite focus.</p>
+        <p style="color:#64748b; font-size:0.8rem;">Note: an approximate computation with possible drift.</p>
+    </div>
+
+    <div class="controls">
+        <label for="focalSlider">Focal distance:</label>
+        <input type="range" id="focalSlider" min="0" max="650" value="260" step="1">
     </div>
 
     <canvas id="billiardCanvas"></canvas>
@@ -34,12 +87,13 @@
     <script>
         const canvas = document.getElementById('billiardCanvas');
         const ctx = canvas.getContext('2d');
+        const focalSlider = document.getElementById('focalSlider');
 
         let width, height, centerX, centerY;
         let a = 350; // Semi-major axis
-        let b = 220; // Semi-minor axis
-        let c = Math.sqrt(a * a - b * b); // Focal distance
-        
+        let c = 130; // Half focal distance
+        let b = Math.sqrt(a * a - c * c); // Semi-minor axis
+
         let mouse = { x: 0, y: 0 };
         let ball = {
             x: -c,
@@ -51,6 +105,22 @@
             active: false
         };
 
+        function updateFocalDistance(twoC) {
+            c = twoC / 2;
+            b = Math.sqrt(a * a - c * c);
+            // Reset ball to new focus position
+            ball.active = false;
+            ball.x = -c;
+            ball.y = 0;
+        }
+
+        focalSlider.addEventListener('input', function() {
+            updateFocalDistance(parseInt(this.value));
+        });
+
+        // Initialize from slider
+        updateFocalDistance(parseInt(focalSlider.value));
+
         function resize() {
             width = window.innerWidth;
             height = window.innerHeight;
@@ -60,43 +130,74 @@
             centerY = height / 2;
         }
 
-        function reflectBall() {
-            // Ellipse: (x/a)^2 + (y/b)^2 = 1
-            // Normal at (x, y) is (x/a^2, y/b^2)
-            let nx = ball.x / (a * a);
-            let ny = ball.y / (b * b);
-            const nlen = Math.sqrt(nx * nx + ny * ny);
-            nx /= nlen;
-            ny /= nlen;
+        function ellipseVal(x, y) {
+            return (x * x) / (a * a) + (y * y) / (b * b);
+        }
 
-            // Reflection formula: R = D - 2(D·N)N
-            const dot = ball.dx * nx + ball.dy * ny;
-            ball.dx = ball.dx - 2 * dot * nx;
-            ball.dy = ball.dy - 2 * dot * ny;
+        // Advance the ball by one frame's worth of displacement, resolving
+        // any boundary collisions exactly (solve for the intersection of the
+        // trajectory with the ellipse, reflect there, carry the remainder).
+        function stepBall() {
+            let remaining = 1.0; // fraction of this frame's displacement left
+            let guard = 0;
+            while (remaining > 1e-9 && guard < 10) {
+                guard++;
+                const x0 = ball.x, y0 = ball.y;
+                const mvx = ball.dx * remaining;
+                const mvy = ball.dy * remaining;
+                const x1 = x0 + mvx, y1 = y0 + mvy;
 
-            // Push ball slightly away from boundary to prevent sticking
-            ball.x += ball.dx * 0.1;
-            ball.y += ball.dy * 0.1;
+                // If the full move stays inside, take it and stop.
+                if (ellipseVal(x1, y1) < 1) {
+                    ball.x = x1;
+                    ball.y = y1;
+                    break;
+                }
+
+                // Solve A t^2 + B t + C = 0 for the crossing fraction t in (0,1].
+                const A = (mvx * mvx) / (a * a) + (mvy * mvy) / (b * b);
+                const B = 2 * ((x0 * mvx) / (a * a) + (y0 * mvy) / (b * b));
+                const C = ellipseVal(x0, y0) - 1;
+                const disc = B * B - 4 * A * C;
+                if (A === 0 || disc < 0) {
+                    ball.x = x1;
+                    ball.y = y1;
+                    break;
+                }
+                const sq = Math.sqrt(disc);
+                let t = (-B - sq) / (2 * A);
+                if (t < 0 || t > 1) t = (-B + sq) / (2 * A);
+                t = Math.max(0, Math.min(1, t));
+
+                // Exact hit point.
+                const hx = x0 + mvx * t;
+                const hy = y0 + mvy * t;
+                ball.x = hx;
+                ball.y = hy;
+
+                // Reflect velocity about the unit outward normal (x/a^2, y/b^2).
+                let nx = hx / (a * a), ny = hy / (b * b);
+                const nl = Math.hypot(nx, ny);
+                nx /= nl;
+                ny /= nl;
+                const dot = ball.dx * nx + ball.dy * ny;
+                ball.dx -= 2 * dot * nx;
+                ball.dy -= 2 * dot * ny;
+
+                // Continue with the leftover portion of the frame.
+                remaining *= (1 - t);
+            }
         }
 
         function update() {
             if (!ball.active) {
-                // Aim logic: point from left focus to mouse
                 const targetX = mouse.x - centerX;
                 const targetY = mouse.y - centerY;
                 const angle = Math.atan2(targetY - 0, targetX - (-c));
                 ball.dx = Math.cos(angle) * ball.speed;
                 ball.dy = Math.sin(angle) * ball.speed;
             } else {
-                // Move ball
-                ball.x += ball.dx;
-                ball.y += ball.dy;
-
-                // Check collision with ellipse boundary
-                // (x/a)^2 + (y/b)^2 >= 1
-                if ((ball.x * ball.x) / (a * a) + (ball.y * ball.y) / (b * b) >= 0.98) {
-                    reflectBall();
-                }
+                stepBall();
             }
         }
 
@@ -107,7 +208,7 @@
             ctx.save();
             ctx.translate(centerX, centerY);
 
-            // 1. Draw Ellipse
+            // Ellipse
             ctx.beginPath();
             ctx.ellipse(0, 0, a, b, 0, 0, Math.PI * 2);
             ctx.strokeStyle = '#334155';
@@ -117,19 +218,19 @@
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // 2. Draw Foci
+            // Foci
             ctx.fillStyle = '#ef4444';
             ctx.beginPath();
-            ctx.arc(-c, 0, 5, 0, Math.PI * 2);
-            ctx.arc(c, 0, 5, 0, Math.PI * 2);
+            ctx.arc(-c, 0, 8, 0, Math.PI * 2);
+            ctx.arc(c, 0, 8, 0, Math.PI * 2);
             ctx.fill();
-            
-            ctx.font = '12px Inter, sans-serif';
+
+            ctx.font = '12px sans-serif';
             ctx.fillStyle = '#94a3b8';
             ctx.fillText('F1', -c - 8, 20);
             ctx.fillText('F2', c - 8, 20);
 
-            // 3. Draw Aim Line (only if not active)
+            // Aim line
             if (!ball.active) {
                 ctx.setLineDash([5, 5]);
                 ctx.beginPath();
@@ -140,7 +241,7 @@
                 ctx.setLineDash([]);
             }
 
-            // 4. Draw Ball
+            // Ball
             ctx.shadowBlur = 15;
             ctx.shadowColor = '#60a5fa';
             ctx.fillStyle = '#60a5fa';
@@ -155,25 +256,23 @@
         }
 
         window.addEventListener('resize', resize);
-        
-        window.addEventListener('mousemove', e => {
+
+        canvas.addEventListener('mousemove', e => {
             mouse.x = e.clientX;
             mouse.y = e.clientY;
         });
 
-        window.addEventListener('mousedown', () => {
+        canvas.addEventListener('mousedown', () => {
             if (!ball.active) {
                 ball.active = true;
             } else {
-                // Reset ball to left focus
                 ball.active = false;
                 ball.x = -c;
                 ball.y = 0;
             }
         });
 
-        // Touch support
-        window.addEventListener('touchstart', e => {
+        canvas.addEventListener('touchstart', e => {
             mouse.x = e.touches[0].clientX;
             mouse.y = e.touches[0].clientY;
             if (!ball.active) ball.active = true;
