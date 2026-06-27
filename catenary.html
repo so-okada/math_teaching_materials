@@ -61,6 +61,14 @@ canvas {
 .legend-swatch {
   width: 24px; height: 4px; border-radius: 2px;
 }
+.notes {
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+  color: #333;
+}
+.notes ul { padding-left: 1.2em; }
+.notes li { margin: 4px 0; }
 </style>
 </head>
 <body>
@@ -82,8 +90,8 @@ canvas {
     <input type="checkbox" id="chkChain" checked> Chain
   </label>
   <label>
-    Chain links: <input type="range" id="sliderN" min="2" max="40" step="1" value="15">
-    <span class="val" id="valN">15</span>
+    Chain length: <input type="range" id="sliderH" min="0.05" max="1" step="0.01" value="0.9">
+    <span class="val" id="valH">0.90</span>
   </label>
   <label>
     Rotation: <input type="range" id="sliderR" min="-180" max="180" step="1" value="0">
@@ -101,15 +109,18 @@ canvas {
 
 <div class="info" id="info"></div>
 
-<div class="math-block" style="font-size:0.95em; margin-top:15px;">
+<div class="notes" style="font-size:0.95em; margin-top:15px;">
   The catenary is the curve formed by a uniform chain hanging under gravity.
-  At the vertex $(0,a)$, the curvature is $\kappa = 1/a$.
-  The matching parabola $y = \dfrac{x^2}{2a} + a$ shares this curvature at the vertex.
+  <ul>
+    <li>At the vertex $(0,a)$, the curvature is $\kappa = 1/a$.</li>
+    <li>The matching parabola $y = \dfrac{x^2}{2a} + a$ shares this curvature at the vertex.</li>
+    <li>Chain length from $-L$ to $L$: $\;\; S = \displaystyle\int_{-L}^{L}\!\sqrt{1 + (y')^2}\,dx = 2\,|a|\,\sinh\!\left(\dfrac{L}{|a|}\right)$</li>
+  </ul>
 </div>
 
 <script>
 var canvas, ctx, W, H;
-var sliderA, sliderN, sliderR, chkParabola, chkChain;
+var sliderA, sliderH, sliderR, chkParabola, chkChain;
 
 function init() {
   canvas = document.getElementById('canvas');
@@ -117,13 +128,13 @@ function init() {
   W = canvas.width;
   H = canvas.height;
   sliderA = document.getElementById('sliderA');
-  sliderN = document.getElementById('sliderN');
+  sliderH = document.getElementById('sliderH');
   sliderR = document.getElementById('sliderR');
   chkParabola = document.getElementById('chkParabola');
   chkChain = document.getElementById('chkChain');
 
   sliderA.addEventListener('input', update);
-  sliderN.addEventListener('input', update);
+  sliderH.addEventListener('input', update);
   sliderR.addEventListener('input', update);
   chkParabola.addEventListener('change', update);
   chkChain.addEventListener('change', update);
@@ -172,11 +183,9 @@ function toWorld(sx, sy) {
 function update() {
   var a = parseFloat(sliderA.value);
   if (Math.abs(a) < 0.5) a = (a < 0 ? -0.5 : 0.5);
-  var N = parseInt(sliderN.value);
   var deg = parseInt(sliderR.value);
   theta = deg * Math.PI / 180;
   document.getElementById('valA').textContent = a.toFixed(1);
-  document.getElementById('valN').textContent = N;
   document.getElementById('valR').innerHTML = deg + '&deg;';
 
   setupCoords();
@@ -198,7 +207,7 @@ function update() {
 
   // Draw chain
   if (showChain) {
-    drawChain(a, N);
+    drawChain(a);
   }
 
   // Draw vertex
@@ -276,50 +285,53 @@ function drawCurve(f, color, lw, dash) {
   ctx.setLineDash([]);
 }
 
-function drawChain(a, N) {
-  // Hanging chain: N+1 nodes on catenary from x = -L to x = L
-  // Works for a>0 (hangs down) and a<0 (arches up); cosh is even.
+function drawChain(a) {
+  // Two knots connected by the catenary arc.
+  // The Chain length slider sets the total arc length S between the supports.
+  // For a catenary y = a cosh(x/a), the arc length from -L to L is
+  //   S = 2|a| sinh(L/|a|).
+  // We map the slider fraction to S (up to the largest length that fits),
+  // then solve L = |a| asinh( S / (2|a|) ). Works for a>0 and a<0.
   var aa = Math.abs(a);
-  var bound = (a > 0 ? yHi : -yLo) * 0.92; // available vertical room (magnitude)
-  var Lmax = aa * Math.acosh(bound / aa);   // x where |y| reaches the bound
-  var L = Math.min(xRange - 0.3, Lmax * 0.95);
-  if (!isFinite(L) || L <= 0) L = xRange - 0.3;
+  var bound = (a > 0 ? yHi : -yLo) * 0.92;           // available vertical room
+  var Lfit = Math.min(xRange - 0.3, aa * Math.acosh(bound / aa));
+  var Smax = 2 * aa * Math.sinh(Lfit / aa);          // longest chain that fits
+  var frac = parseFloat(sliderH.value);
+  var S = Smax * frac;                               // chosen arc length
+  var L = aa * Math.asinh(S / (2 * aa));             // half-span for this length
+  if (!isFinite(L) || L <= 0) L = 0.01;
 
-  var pts = [];
-  for (var i = 0; i <= N; i++) {
-    var x = -L + 2 * L * i / N;
-    var y = a * Math.cosh(x / a);
-    pts.push(toScreen(x, y));
-  }
+  document.getElementById('valH').textContent = S.toFixed(2);
 
-  // Draw links
+  // Endpoints (the two knots)
+  var pEnds = [
+    toScreen(-L, a * Math.cosh(-L / a)),
+    toScreen( L, a * Math.cosh( L / a))
+  ];
+
+  // Draw the catenary arc connecting the two knots
   ctx.strokeStyle = '#777';
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 11;
   ctx.beginPath();
-  for (var i = 0; i < pts.length - 1; i++) {
-    ctx.moveTo(pts[i][0], pts[i][1]);
-    ctx.lineTo(pts[i + 1][0], pts[i + 1][1]);
+  var steps = 200;
+  for (var i = 0; i <= steps; i++) {
+    var x = -L + 2 * L * i / steps;
+    var y = a * Math.cosh(x / a);
+    var s = toScreen(x, y);
+    if (i === 0) ctx.moveTo(s[0], s[1]); else ctx.lineTo(s[0], s[1]);
   }
   ctx.stroke();
 
-  // Draw nodes
-  for (var i = 0; i < pts.length; i++) {
+  // Draw the two support knots
+  for (var idx = 0; idx < 2; idx++) {
+    var px = pEnds[idx][0], py = pEnds[idx][1];
     ctx.beginPath();
-    ctx.arc(pts[i][0], pts[i][1], 5.5, 0, 2 * Math.PI);
-    ctx.fillStyle = '#555';
-    ctx.fill();
-  }
-
-  // Draw support points
-  for (var idx of [0, pts.length - 1]) {
-    ctx.beginPath();
-    ctx.arc(pts[idx][0], pts[idx][1], 7, 0, 2 * Math.PI);
+    ctx.arc(px, py, 7, 0, 2 * Math.PI);
     ctx.fillStyle = '#333';
     ctx.fill();
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
     // Small triangle support (points inward toward the curve)
-    var px = pts[idx][0], py = pts[idx][1];
     var dir = (a > 0 ? -1 : 1); // a>0: chain below supports; a<0: arch above
     ctx.beginPath();
     ctx.moveTo(px - 7, py + 8 * dir);

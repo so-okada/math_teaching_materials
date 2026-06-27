@@ -643,7 +643,7 @@ The fundamental relation $A^2 = R \cdot L$ connects the parameter $A$, the final
 ### [Catenary Curve](https://so-okada.github.io/math_teaching_materials/catenary.html)
 **File:** `catenary.html`
 
-Interactive visualization of the catenary curve—the shape formed by a uniform chain hanging under gravity—with comparison to the osculating parabola and a discrete chain simulation.
+Interactive visualization of the catenary curve—the shape formed by a uniform chain hanging under gravity—with comparison to the osculating parabola and a hanging chain suspended between two supports.
 
 **Mathematical Background:**
 The catenary is defined by:
@@ -651,12 +651,17 @@ $$y = a\cosh\!\left(\frac{x}{a}\right) = \frac{a}{2}\left(e^{x/a} + e^{-x/a}\rig
 
 At the vertex $(0, a)$, the curvature is $\kappa = 1/a$. The parabola $y = \dfrac{x^2}{2a} + a$ shares the same curvature at this point, illustrating why a catenary resembles a parabola near the vertex but diverges further out.
 
+The arc length of the chain between the two supports at $x = \pm L$ follows from $y' = \sinh(x/a)$, so $1 + (y')^2 = \cosh^2(x/a)$:
+$$S = \int_{-L}^{L}\sqrt{1 + (y')^2}\,dx = 2\,|a|\,\sinh\!\left(\frac{L}{|a|}\right)$$
+
+The chain is drawn along the exact catenary arc between two knots, with the half-span $L$ recovered from the chosen length via $L = |a|\,\operatorname{asinh}\!\left(\dfrac{S}{2|a|}\right)$.
+
 **Controls:**
-- **Parameter $a$** (−5 to 5): Shape parameter; positive values hang downward, negative values arch upward
+- **Parameter $a$** (−5 to 5): Shape parameter; positive values hang downward, negative values arch upward (inverted catenary)
 - **Parabola**: Toggle the osculating parabola overlay
-- **Chain**: Toggle a discrete chain of linked segments along the catenary
-- **Chain links** (2–40): Number of chain segments
-- **Rotation** (−180° to 180°): Rotate the entire figure
+- **Chain**: Toggle the hanging chain with two supports
+- **Chain length**: Total arc length $S$ of the chain between the two knots
+- **Rotation** (−180° to 180°): Rotate the entire figure about the origin
 - Mouse hover: Displays $x$, catenary $y$, and arc length from vertex
 
 ---
