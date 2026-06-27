@@ -12,6 +12,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Brachistochrone](https://so-okada.github.io/math_teaching_materials/brachistochrone.html) | Calculus of Variations | Cycloid, fastest descent, variational problems |
 | [Double Integral Visualizer](https://so-okada.github.io/math_teaching_materials/indefinite_integral.html) | Multivariable Calculus | Improper integrals, convergence criteria |
 | [Ellipse Billiard](https://so-okada.github.io/math_teaching_materials/ellipse_billiard.html) | Conic Sections | Focal properties, reflection law |
+| [Parabola](https://so-okada.github.io/math_teaching_materials/parabola.html) | Conic Sections | Focus, directrix, reflection of parallel rays |
 | [Rule of 72](https://so-okada.github.io/math_teaching_materials/rule_of_72.html) | Financial Mathematics | Compound interest, exponential growth |
 | [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
 | [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
@@ -161,6 +162,32 @@ The defining property—that the sum of distances from any point on the ellipse 
 - Move mouse to aim from the left focus (F₁)
 - Click to launch the ball
 - Click again to reset
+
+---
+
+### [Parabola](https://so-okada.github.io/math_teaching_materials/parabola.html)
+**File:** `parabola.html`
+
+Interactive visualization of the parabola and its focal properties, demonstrating how parallel rays reflect through the focus.
+
+**Mathematical Background:**
+A parabola with vertex $(h, k)$ and focal length $p$ satisfies:
+$$(x - h)^2 = 4p(y - k)$$
+
+equivalently $y = \dfrac{1}{4p}(x - h)^2 + k$. The key elements are:
+
+- **Focus**: $(h,\, k + p)$
+- **Directrix**: $y = k - p$
+- **Axis of symmetry**: $x = h$
+
+When $p > 0$ the parabola opens upward; when $p < 0$ it opens downward. The reflection property states that any ray parallel to the axis of symmetry reflects off the parabola and passes through the focus.
+
+**Controls:**
+- **Vertex $h$, $k$** (−5 to 5): Position of the vertex
+- **Focal length $p$** (−3 to 3): Distance from vertex to focus
+- **Display toggles**: Vertex, axis of symmetry, focus, directrix, parallel rays
+- **Number of rays** (2–12): Incoming parallel rays with reflected paths to the focus
+- Mouse coordinates displayed on hover
 
 ---
 
@@ -659,6 +686,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `bottle_flip_edu.html`: Uses MathJax (CDN)
 - `galton_board.html`: Uses MathJax (CDN)
 - `conic_sections.html`: Uses MathJax (CDN)
+- `parabola.html`: Uses MathJax (CDN)
 - `simple_sea_waves.html`: Uses MathJax (CDN)
 - `vibration_demo.html`: Uses MathJax (CDN)
 - `newton_method.html`: Uses MathJax (CDN)

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parabola</title>
+<script>
+MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f5f5f0;
+  color: #333;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+h1 { font-size: 1.5em; margin-bottom: 10px; }
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  max-width: 1100px;
+  width: 100%;
+}
+canvas {
+  border: 1px solid #ccc;
+  background: #fff;
+  cursor: crosshair;
+}
+.controls {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 16px;
+  min-width: 280px;
+  max-width: 340px;
+}
+.controls h2 { font-size: 1.1em; margin-bottom: 12px; }
+.slider-group { margin-bottom: 14px; }
+.slider-group label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95em;
+  margin-bottom: 4px;
+}
+.slider-group label span { font-weight: bold; }
+input[type="range"] { width: 100%; }
+.checkbox-group { margin-bottom: 8px; }
+.checkbox-group label { font-size: 0.9em; cursor: pointer; }
+.info {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #e0e0e0;
+  font-size: 0.92em;
+  line-height: 1.7;
+}
+.info div { margin-bottom: 4px; }
+.reset-btn {
+  margin-top: 10px;
+  padding: 6px 16px;
+  background: #555;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.reset-btn:hover { background: #333; }
+</style>
+</head>
+<body>
+
+<h1>Parabola: $(x - h)^2 = 4p(y - k)$</h1>
+
+<div class="container">
+  <div>
+    <canvas id="canvas" width="560" height="560"></canvas>
+  </div>
+
+  <div class="controls">
+    <h2>Parameters</h2>
+
+    <div class="slider-group">
+      <label>Vertex $h$: <span id="valH">0.00</span></label>
+      <input type="range" id="sliderH" min="-5" max="5" step="0.1" value="0">
+    </div>
+    <div class="slider-group">
+      <label>Vertex $k$: <span id="valK">0.00</span></label>
+      <input type="range" id="sliderK" min="-5" max="5" step="0.1" value="0">
+    </div>
+    <div class="slider-group">
+      <label>Focal length $p$: <span id="valP">1.00</span></label>
+      <input type="range" id="sliderP" min="-3" max="3" step="0.05" value="1">
+    </div>
+
+    <h2>Display</h2>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chkVertex" checked> Vertex</label>
+    </div>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chkAxis" checked> Axis of symmetry</label>
+    </div>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chkFocus" checked> Focus</label>
+    </div>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chkDirectrix" checked> Directrix</label>
+    </div>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="chkRays" checked> Parallel rays</label>
+    </div>
+    <div class="slider-group">
+      <label>Number of rays: <span id="valRays">5</span></label>
+      <input type="range" id="sliderRays" min="2" max="12" step="1" value="5">
+    </div>
+
+    <div class="info" id="info"></div>
+
+    <button class="reset-btn" id="resetBtn">Reset</button>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+const sliderH = document.getElementById('sliderH');
+const sliderK = document.getElementById('sliderK');
+const sliderP = document.getElementById('sliderP');
+const valH = document.getElementById('valH');
+const valK = document.getElementById('valK');
+const valP = document.getElementById('valP');
+const sliderRays = document.getElementById('sliderRays');
+const valRays = document.getElementById('valRays');
+
+const chkVertex = document.getElementById('chkVertex');
+const chkAxis = document.getElementById('chkAxis');
+const chkFocus = document.getElementById('chkFocus');
+const chkDirectrix = document.getElementById('chkDirectrix');
+const chkRays = document.getElementById('chkRays');
+
+const infoDiv = document.getElementById('info');
+const resetBtn = document.getElementById('resetBtn');
+
+const W = canvas.width;
+const H = canvas.height;
+
+const originX = W / 2;
+const originY = H / 2;
+const scale = 40;
+
+function toCanvasX(x) { return originX + x * scale; }
+function toCanvasY(y) { return originY - y * scale; }
+
+function drawGrid() {
+  ctx.strokeStyle = '#e8e8e8';
+  ctx.lineWidth = 1;
+  const xMin = -originX / scale;
+  const xMax = (W - originX) / scale;
+  const yMin = -(H - originY) / scale;
+  const yMax = originY / scale;
+  for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(x), 0);
+    ctx.lineTo(toCanvasX(x), H);
+    ctx.stroke();
+  }
+  for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+    ctx.beginPath();
+    ctx.moveTo(0, toCanvasY(y));
+    ctx.lineTo(W, toCanvasY(y));
+    ctx.stroke();
+  }
+}
+
+function drawAxes() {
+  ctx.strokeStyle = '#999';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(0, originY);
+  ctx.lineTo(W, originY);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(originX, 0);
+  ctx.lineTo(originX, H);
+  ctx.stroke();
+
+  ctx.fillStyle = '#888';
+  ctx.font = '11px sans-serif';
+  const xMin = -originX / scale;
+  const xMax = (W - originX) / scale;
+  const yMin = -(H - originY) / scale;
+  const yMax = originY / scale;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  for (let x = Math.ceil(xMin); x <= Math.floor(xMax); x++) {
+    if (x === 0) continue;
+    ctx.fillText(x, toCanvasX(x), originY + 4);
+  }
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+  for (let y = Math.ceil(yMin); y <= Math.floor(yMax); y++) {
+    if (y === 0) continue;
+    ctx.fillText(y, originX - 6, toCanvasY(y));
+  }
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  ctx.fillText('O', originX - 5, originY + 4);
+}
+
+function drawParabola(h, k, p) {
+  // (x - h)^2 = 4p(y - k) => y = (x-h)^2/(4p) + k
+  if (Math.abs(p) < 1e-9) return;
+
+  ctx.strokeStyle = '#2266cc';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+
+  const steps = 1000;
+  const xMin = -originX / scale - 1;
+  const xMax = (W - originX) / scale + 1;
+  const dx = (xMax - xMin) / steps;
+
+  let started = false;
+  for (let i = 0; i <= steps; i++) {
+    const x = xMin + i * dx;
+    const y = (x - h) * (x - h) / (4 * p) + k;
+    const cx = toCanvasX(x);
+    const cy = toCanvasY(y);
+    if (cy < -100 || cy > H + 100) {
+      started = false;
+      continue;
+    }
+    if (!started) {
+      ctx.moveTo(cx, cy);
+      started = true;
+    } else {
+      ctx.lineTo(cx, cy);
+    }
+  }
+  ctx.stroke();
+}
+
+function drawPoint(x, y, color, radius) {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(toCanvasX(x), toCanvasY(y), radius || 5, 0, 2 * Math.PI);
+  ctx.fill();
+}
+
+function drawLabel(x, y, text, color, offsetX, offsetY) {
+  ctx.fillStyle = color;
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(text, toCanvasX(x) + (offsetX || 8), toCanvasY(y) + (offsetY || -8));
+}
+
+function drawRays(h, k, p) {
+  if (Math.abs(p) < 1e-9) return;
+
+  const numRays = parseInt(sliderRays.value);
+  valRays.textContent = numRays;
+
+  const fx = h;
+  const fy = k + p;
+
+  // Spread rays symmetrically around axis x = h
+  const xMin = -originX / scale;
+  const xMax = (W - originX) / scale;
+  const halfSpan = Math.min(Math.abs(xMax - h), Math.abs(h - xMin), 5);
+  const step = 2 * halfSpan / (numRays + 1);
+
+  const inColor = 'rgba(230, 120, 0, 0.7)';
+  const outColor = 'rgba(200, 40, 40, 0.7)';
+
+  for (let i = 1; i <= numRays; i++) {
+    const rx = h - halfSpan + i * step;
+    const ry = (rx - h) * (rx - h) / (4 * p) + k;
+
+    const cpx = toCanvasX(rx);
+    const cpy = toCanvasY(ry);
+    if (cpy < 0 || cpy > H) continue;
+
+    // Incoming ray (parallel to axis of symmetry)
+    ctx.strokeStyle = inColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    if (p > 0) {
+      ctx.moveTo(cpx, 0);
+    } else {
+      ctx.moveTo(cpx, H);
+    }
+    ctx.lineTo(cpx, cpy);
+    ctx.stroke();
+
+    // Reflected ray to focus
+    ctx.strokeStyle = outColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cpx, cpy);
+    ctx.lineTo(toCanvasX(fx), toCanvasY(fy));
+    ctx.stroke();
+
+    // Reflection point
+    ctx.fillStyle = inColor;
+    ctx.beginPath();
+    ctx.arc(cpx, cpy, 3, 0, 2 * Math.PI);
+    ctx.fill();
+  }
+}
+
+function draw() {
+  const h = parseFloat(sliderH.value);
+  const k = parseFloat(sliderK.value);
+  const p = parseFloat(sliderP.value);
+
+  valH.textContent = h.toFixed(2);
+  valK.textContent = k.toFixed(2);
+  valP.textContent = p.toFixed(2);
+
+  ctx.clearRect(0, 0, W, H);
+  drawGrid();
+  drawAxes();
+
+  if (Math.abs(p) < 1e-9) {
+    updateInfo(h, k, p);
+    return;
+  }
+
+  drawParabola(h, k, p);
+
+  const fx = h;
+  const fy = k + p;
+  const dirY = k - p;
+
+  if (chkAxis.checked) {
+    ctx.strokeStyle = '#22aa44';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(toCanvasX(h), 0);
+    ctx.lineTo(toCanvasX(h), H);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawLabel(h, originY / scale - 0.5, 'x = ' + fmt(h), '#22aa44', 6, 16);
+  }
+
+  if (chkDirectrix.checked) {
+    ctx.strokeStyle = '#cc6600';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([8, 4]);
+    ctx.beginPath();
+    ctx.moveTo(0, toCanvasY(dirY));
+    ctx.lineTo(W, toCanvasY(dirY));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    drawLabel(-originX / scale + 0.5, dirY, 'y = ' + fmt(dirY), '#cc6600', 0, 16);
+  }
+
+  if (chkFocus.checked) {
+    drawPoint(fx, fy, '#cc3333', 5);
+    drawLabel(fx, fy, 'F(' + fmt(fx) + ', ' + fmt(fy) + ')', '#cc3333');
+  }
+
+  if (chkVertex.checked) {
+    drawPoint(h, k, '#8800aa', 5);
+    drawLabel(h, k, 'V(' + fmt(h) + ', ' + fmt(k) + ')', '#8800aa', 8, 18);
+  }
+
+  if (chkRays.checked) {
+    drawRays(h, k, p);
+  }
+
+  updateInfo(h, k, p);
+}
+
+function updateInfo(h, k, p) {
+  if (Math.abs(p) < 1e-9) {
+    infoDiv.innerHTML = '<div>Degenerate case ($p = 0$)</div>';
+    MathJax.typesetPromise([infoDiv]);
+    return;
+  }
+
+  const fy = k + p;
+  const dirY = k - p;
+
+  // y = 1/(4p) * (x - h)^2 + k
+  const a = 1 / (4 * p);
+
+  // Build y = ... expression
+  let yExpr = 'y = ';
+  // coefficient part
+  if (Math.abs(a - 1) < 1e-9) {
+    yExpr += '';
+  } else if (Math.abs(a + 1) < 1e-9) {
+    yExpr += '-';
+  } else {
+    yExpr += fmt(a);
+  }
+  // (x - h)^2 part
+  if (Math.abs(h) < 1e-9) {
+    yExpr += 'x^2';
+  } else if (h > 0) {
+    yExpr += '(x - ' + fmt(h) + ')^2';
+  } else {
+    yExpr += '(x + ' + fmt(Math.abs(h)) + ')^2';
+  }
+  // + k part
+  if (Math.abs(k) >= 1e-9) {
+    if (k > 0) {
+      yExpr += ' + ' + fmt(k);
+    } else {
+      yExpr += ' - ' + fmt(Math.abs(k));
+    }
+  }
+
+  let html = '';
+  html += '<div>$' + yExpr + '$</div>';
+  html += '<div>Vertex: $(' + fmt(h) + ',\\,' + fmt(k) + ')$</div>';
+  html += '<div>Focus: $(' + fmt(h) + ',\\,' + fmt(fy) + ')$</div>';
+  html += '<div>Directrix: $y = ' + fmt(dirY) + '$</div>';
+  html += '<div>Axis of symmetry: $x = ' + fmt(h) + '$</div>';
+  html += '<div>Opens ' + (p > 0 ? 'upward' : 'downward') + '</div>';
+
+  infoDiv.innerHTML = html;
+  MathJax.typesetPromise([infoDiv]);
+}
+
+function fmt(v) {
+  if (Math.abs(v - Math.round(v)) < 1e-9) return Math.round(v).toString();
+  return v.toFixed(2);
+}
+
+sliderH.addEventListener('input', draw);
+sliderK.addEventListener('input', draw);
+sliderP.addEventListener('input', draw);
+sliderRays.addEventListener('input', draw);
+chkVertex.addEventListener('change', draw);
+chkAxis.addEventListener('change', draw);
+chkFocus.addEventListener('change', draw);
+chkDirectrix.addEventListener('change', draw);
+chkRays.addEventListener('change', draw);
+
+resetBtn.addEventListener('click', function() {
+  sliderH.value = 0;
+  sliderK.value = 0;
+  sliderP.value = 1;
+  sliderRays.value = 5;
+  chkVertex.checked = true;
+  chkAxis.checked = true;
+  chkFocus.checked = true;
+  chkDirectrix.checked = true;
+  chkRays.checked = true;
+  draw();
+});
+
+canvas.addEventListener('mousemove', function(e) {
+  const rect = canvas.getBoundingClientRect();
+  const mx = (e.clientX - rect.left - originX) / scale;
+  const my = -(e.clientY - rect.top - originY) / scale;
+  draw();
+  ctx.fillStyle = '#666';
+  ctx.font = '12px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('(' + mx.toFixed(2) + ', ' + my.toFixed(2) + ')', e.clientX - rect.left + 12, e.clientY - rect.top + 4);
+});
+
+draw();
+</script>
+
+</body>
+</html>
