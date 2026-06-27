@@ -223,7 +223,7 @@ function drawParabola(h, k, p) {
   if (Math.abs(p) < 1e-9) return;
 
   ctx.strokeStyle = '#2266cc';
-  ctx.lineWidth = 5;
+  ctx.lineWidth = 10;
   ctx.beginPath();
 
   const steps = 1000;
@@ -294,7 +294,7 @@ function drawRays(h, k, p) {
 
     // Incoming ray (parallel to axis of symmetry)
     ctx.strokeStyle = inColor;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.beginPath();
     if (p > 0) {
       ctx.moveTo(cpx, 0);
@@ -306,7 +306,7 @@ function drawRays(h, k, p) {
 
     // Reflected ray to focus
     ctx.strokeStyle = outColor;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.beginPath();
     ctx.moveTo(cpx, cpy);
     ctx.lineTo(toCanvasX(fx), toCanvasY(fy));
