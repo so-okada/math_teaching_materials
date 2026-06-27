@@ -29,6 +29,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
 | [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html) | Numerical Analysis | Root finding, tangent line iteration |
+| [Gradient Descent](https://so-okada.github.io/math_teaching_materials/gradient_descent.html) | Numerical Analysis | Steepest descent, learning rate, convergence |
 | [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html) | Analysis | Limit definition, series, compound interest |
 | [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
@@ -159,6 +160,7 @@ For an ellipse with semi-axes $a$ and $b$, the foci are at $(\pm c, 0)$ where $c
 The defining property—that the sum of distances from any point on the ellipse to both foci is constant ($2a$)—implies that the tangent at any point makes equal angles with lines to both foci (reflection law).
 
 **Controls:**
+- **Focal distance**: Slider to set the separation $2c$ between the foci (the ellipse reshapes, keeping the semi-major axis fixed)
 - Move mouse to aim from the left focus (F₁)
 - Click to launch the ball
 - Click again to reset
@@ -568,6 +570,27 @@ Starting from an initial guess $x_0$, each iteration follows the tangent line at
 
 ---
 
+### [Gradient Descent](https://so-okada.github.io/math_teaching_materials/gradient_descent.html)
+**File:** `gradient_descent.html`
+
+Interactive visualization of gradient descent minimizing a function of two variables, tracing the iterate path over a contour heat map together with the negative-gradient direction at each step.
+
+**Mathematical Background:**
+To minimize a differentiable $f:\mathbb{R}^2 \to \mathbb{R}$, gradient descent steps in the direction of steepest decrease, the negative gradient:
+$$\mathbf{x}_{n+1} = \mathbf{x}_n - \eta\,\nabla f(\mathbf{x}_n), \qquad \nabla f = \left(\frac{\partial f}{\partial x},\, \frac{\partial f}{\partial y}\right)$$
+
+The step size $\eta > 0$ (the *learning rate*) controls how far each step travels. For a quadratic with Hessian eigenvalues $\lambda_i$, convergence requires $\eta < 2/\lambda_{\max}$; an ill-conditioned $f$ (large ratio $\kappa = \lambda_{\max}/\lambda_{\min}$) forces the characteristic zig-zag across the valley, while too large an $\eta$ makes the iterates diverge.
+
+**Controls:**
+- **Objective function**: Bowl $x^2 + y^2$, ill-conditioned $x^2 + 10y^2$, Rosenbrock, Himmelblau (four minima), or a custom $f(x,y)$
+- **Custom $f(x,y)$**: Enter any expression with an adjustable view window (gradient computed numerically by central differences)
+- **Learning rate $\eta$**: Log-scaled slider, $10^{-4}$ to $10^0$
+- **Speed**: Iteration steps per animation frame
+- **Initial point**: Click on the contour plot to set $\mathbf{x}_0$
+- **Step/Run/Reset**: Single step, animate, or restart
+
+---
+
 ## Analysis
 
 ### [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html)
@@ -675,7 +698,6 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `brachistochrone.html`: Uses Tailwind CSS (CDN)
 - `stirling_formula.html`: Uses Chart.js and Tailwind CSS (CDN)
 - `indefinite_integral.html`: Uses MathJax and Tailwind CSS (CDN)
-- `ellipse_billiard.html`: Uses Tailwind CSS (CDN)
 - `smallworld.html`: Uses Tailwind CSS (CDN)
 - `pagerank.html`: Uses Tailwind CSS (CDN)
 - `binomialtogaussian.html`: Uses Tailwind CSS (CDN)
@@ -690,6 +712,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `simple_sea_waves.html`: Uses MathJax (CDN)
 - `vibration_demo.html`: Uses MathJax (CDN)
 - `newton_method.html`: Uses MathJax (CDN)
+- `gradient_descent.html`: Uses MathJax (CDN)
 - `napier_number.html`: Uses MathJax (CDN)
 - `cosine_theorem.html`: Uses MathJax (CDN)
 - `sine_theorem.html`: Uses MathJax (CDN)

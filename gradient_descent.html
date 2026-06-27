@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gradient Descent</title>
+<script>
+  MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    margin: 0; padding: 20px; background: #fafafa; color: #1a1a1a; line-height: 1.6;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: #666; font-size: 0.9rem; margin-bottom: 18px; }
+  .layout { display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .canvas-box { flex: 0 0 auto; }
+  canvas { border: 1px solid #ccc; background: #fff; cursor: crosshair; display: block; border-radius: 4px; }
+  .hint { font-size: 0.8rem; color: #888; margin-top: 6px; }
+  .panel {
+    flex: 1 1 300px; min-width: 280px; background: #fff; border: 1px solid #e0e0e0;
+    border-radius: 6px; padding: 16px 18px;
+  }
+  .row { margin-bottom: 14px; }
+  label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; }
+  select, input[type=range] { width: 100%; }
+  select { padding: 6px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 0.9rem; }
+  #customExpr { width: 100%; padding: 7px; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 0.95rem; box-sizing: border-box; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .dom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .dom-grid label { font-weight: 400; font-size: 0.72rem; color: #777; margin-bottom: 2px; }
+  .dom-in { width: 100%; padding: 5px; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 0.85rem; box-sizing: border-box; }
+  .val { font-variant-numeric: tabular-nums; color: #333; font-weight: 400; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  button {
+    flex: 1 1 auto; padding: 8px 10px; border: 1px solid #2c5f8a; background: #2c5f8a;
+    color: #fff; border-radius: 4px; cursor: pointer; font-size: 0.88rem;
+  }
+  button.sec { background: #fff; color: #2c5f8a; }
+  button:hover { opacity: 0.9; }
+  .stats { margin-top: 14px; font-size: 0.88rem; border-top: 1px solid #eee; padding-top: 12px; }
+  .stats div { display: flex; justify-content: space-between; padding: 2px 0; }
+  .stats .k { color: #666; }
+  .stats .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .diverged { color: #c0392b; }
+  .theory {
+    max-width: 980px; margin: 26px auto 0; background: #fff; border: 1px solid #e0e0e0;
+    border-radius: 6px; padding: 18px 22px; font-size: 0.95rem;
+  }
+  .theory h2 { font-size: 1.1rem; margin: 0 0 10px; }
+  code { background: #f0f0f0; padding: 1px 5px; border-radius: 3px; font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Gradient Descent</h1>
+  <div class="sub">Click on the contour plot to set a starting point, then step or run the iteration.</div>
+
+  <div class="layout">
+    <div class="canvas-box">
+      <canvas id="cv" width="520" height="520"></canvas>
+      <div class="hint">Heat map &amp; iso-contours of \(f\). Dots = iterates, arrow = negative gradient \(-\nabla f\).</div>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <label for="func">Objective function \(f(x,y)\)</label>
+        <select id="func">
+          <option value="bowl">Bowl: x² + y²</option>
+          <option value="illbowl">Ill-conditioned: x² + 10y²</option>
+          <option value="rosen">Rosenbrock: (1−x)² + 100(y−x²)²</option>
+          <option value="himmel">Himmelblau (4 minima)</option>
+          <option value="custom">Custom…</option>
+        </select>
+      </div>
+
+      <div class="row" id="customRow" style="display:none;">
+        <label for="customExpr">Custom \(f(x,y)\)</label>
+        <input type="text" id="customExpr" value="(x^2 + y^2)/8 - cos(x)*cos(y)">
+        <div class="dom-grid">
+          <div><label>x min</label><input type="number" class="dom-in" id="dxmin" value="-3" step="0.5"></div>
+          <div><label>x max</label><input type="number" class="dom-in" id="dxmax" value="3" step="0.5"></div>
+          <div><label>y min</label><input type="number" class="dom-in" id="dymin" value="-3" step="0.5"></div>
+          <div><label>y max</label><input type="number" class="dom-in" id="dymax" value="3" step="0.5"></div>
+        </div>
+        <div class="btns" style="margin-top:8px;">
+          <button id="applyCustom">Apply function</button>
+        </div>
+        <div id="customErr" style="color:#c0392b; font-size:0.8rem; margin-top:6px;"></div>
+        <div class="hint" style="margin-top:6px;">
+          Variables <code>x</code>, <code>y</code>. Functions: <code>sin cos tan exp log sqrt abs</code>,
+          constants <code>PI</code>, <code>E</code>. Power written <code>^</code>.
+          Gradient computed numerically (central differences).
+        </div>
+      </div>
+
+      <div class="row">
+        <label for="lr">Learning rate \(\eta\) = <span class="val" id="lrv">0.100</span></label>
+        <input type="range" id="lr" min="-4" max="0" step="0.02" value="-1">
+        <div class="hint">log-scaled slider, \(\eta \in [10^{-4},\,10^{0}]\)</div>
+      </div>
+
+      <div class="row">
+        <label>Speed = <span class="val" id="spv">1×</span> steps/frame</label>
+        <input type="range" id="sp" min="1" max="20" step="1" value="1">
+      </div>
+
+      <div class="row">
+        <div class="btns">
+          <button id="step">Step</button>
+          <button id="run">Run</button>
+          <button id="reset" class="sec">Reset</button>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div><span class="k">iteration \(n\)</span><span class="v" id="iter">0</span></div>
+        <div><span class="k">point \((x_n, y_n)\)</span><span class="v" id="pt">—</span></div>
+        <div><span class="k">\(f(x_n, y_n)\)</span><span class="v" id="fval">—</span></div>
+        <div><span class="k">\(\|\nabla f\|\)</span><span class="v" id="gnorm">—</span></div>
+        <div><span class="k">status</span><span class="v" id="status">idle</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="theory">
+    <h2>The method</h2>
+    <p>To minimize a differentiable function \(f:\mathbb{R}^2\to\mathbb{R}\), gradient descent moves in the
+    direction of steepest decrease, the negative gradient:</p>
+    \[ \mathbf{x}_{n+1} \;=\; \mathbf{x}_n \;-\; \eta\,\nabla f(\mathbf{x}_n), \qquad
+       \nabla f = \left(\frac{\partial f}{\partial x},\, \frac{\partial f}{\partial y}\right). \]
+    <p>The step size \(\eta &gt; 0\) (the <em>learning rate</em>) controls how far each step travels.
+    Things to observe with the demo:</p>
+    <ul>
+      <li><strong>Bowl:</strong> well-conditioned, so iterates head almost straight to the minimum at the origin.</li>
+      <li><strong>Ill-conditioned bowl:</strong> elongated level sets force the path to <em>zig-zag</em> across the valley,
+      because \(-\nabla f\) points mostly across the valley rather than along it.</li>
+      <li><strong>Rosenbrock:</strong> a curved narrow valley with minimum at \((1,1)\); convergence is notoriously slow.</li>
+      <li><strong>Himmelblau:</strong> four local minima — the limit point depends on where you start.</li>
+      <li><strong>Divergence:</strong> if \(\eta\) is too large the iterates overshoot and blow up. For a quadratic
+      \(f\) with Hessian eigenvalues \(\lambda_i\), convergence requires \(\eta &lt; 2/\lambda_{\max}\).</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+// ---------- function definitions ----------
+const FUNCS = {
+  bowl: {
+    f: (x,y) => x*x + y*y,
+    grad: (x,y) => [2*x, 2*y],
+    dom: [-3, 3, -3, 3], start: [-2.4, 2.1],
+  },
+  illbowl: {
+    f: (x,y) => x*x + 10*y*y,
+    grad: (x,y) => [2*x, 20*y],
+    dom: [-3, 3, -1.2, 1.2], start: [-2.6, 0.9],
+  },
+  rosen: {
+    f: (x,y) => (1-x)*(1-x) + 100*(y-x*x)*(y-x*x),
+    grad: (x,y) => [-2*(1-x) - 400*x*(y-x*x), 200*(y-x*x)],
+    dom: [-2, 2, -1, 3], start: [-1.5, 2.3],
+  },
+  himmel: {
+    f: (x,y) => Math.pow(x*x+y-11,2) + Math.pow(x+y*y-7,2),
+    grad: (x,y) => [
+      4*x*(x*x+y-11) + 2*(x+y*y-7),
+      2*(x*x+y-11) + 4*y*(x+y*y-7)
+    ],
+    dom: [-5, 5, -5, 5], start: [-0.5, -0.5],
+  },
+};
+
+// compile a user expression "f(x,y)" into a JS function; throws on bad input
+function makeFunc(expr) {
+  const e = expr.replace(/\^/g, '**');         // allow ^ for power
+  const names = ['sin','cos','tan','asin','acos','atan','atan2','sinh','cosh',
+    'tanh','exp','log','log2','log10','sqrt','cbrt','abs','sign','floor','ceil',
+    'round','min','max','pow','hypot','PI','E'];
+  const f = new Function('x','y', `const {${names.join(',')}} = Math; return (${e});`);
+  if (typeof f(0.37, 0.42) !== 'number') throw new Error('expression is not numeric');
+  return f;
+}
+
+// numerical gradient via central differences
+function numGrad(f, x, y) {
+  const h = 1e-5;
+  return [ (f(x+h,y) - f(x-h,y)) / (2*h),
+           (f(x,y+h) - f(x,y-h)) / (2*h) ];
+}
+
+FUNCS.custom = {
+  f: (x,y) => x*x + y*y,
+  grad: (x,y) => numGrad(FUNCS.custom.f, x, y),
+  dom: [-3, 3, -3, 3], start: [-2.4, 2.1],
+};
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+
+let cur = 'bowl';
+let path = [];          // array of [x,y] in math coords
+let running = false;
+let diverged = false;
+
+// ---------- coordinate mapping ----------
+function dom() { return FUNCS[cur].dom; }
+function toPx(x, y) {
+  const [x0,x1,y0,y1] = dom();
+  return [ (x-x0)/(x1-x0)*W, H - (y-y0)/(y1-y0)*H ];
+}
+function toMath(px, py) {
+  const [x0,x1,y0,y1] = dom();
+  return [ x0 + px/W*(x1-x0), y0 + (1-py/H)*(y1-y0) ];
+}
+
+// ---------- background heat map + contours ----------
+let fieldMin, fieldMax;
+function drawField() {
+  const fn = FUNCS[cur].f;
+  const img = ctx.createImageData(W, H);
+  // precompute field values (log scale for color) and min/max
+  const vals = new Float64Array(W*H);
+  let mn = Infinity, mx = -Infinity;
+  for (let py = 0; py < H; py++) {
+    for (let px = 0; px < W; px++) {
+      const [x,y] = toMath(px+0.5, py+0.5);
+      const v = fn(x,y);
+      vals[py*W+px] = v;
+      if (v < mn) mn = v; if (v > mx) mx = v;
+    }
+  }
+  fieldMin = mn; fieldMax = mx;
+  const tr = v => Math.log1p(v - mn);          // shift so >= 0, then log-compress
+  const lmn = 0, lmx = tr(mx);
+  for (let i = 0; i < W*H; i++) {
+    const t = lmx > 1e-12 ? (tr(vals[i]) - lmn) / (lmx - lmn) : 0.5;
+    // light (low) -> deep blue/teal (high)
+    const r = Math.round(255 - t*210);
+    const g = Math.round(255 - t*150);
+    const b = Math.round(255 - t*55);
+    const k = i*4;
+    img.data[k]=r; img.data[k+1]=g; img.data[k+2]=b; img.data[k+3]=255;
+  }
+  ctx.putImageData(img, 0, 0);
+
+  // iso-contours via simple level sampling (marching squares lite)
+  const fn2 = fn;
+  const N = 130;
+  const [x0,x1,y0,y1] = dom();
+  const levels = [];
+  const L = 12;
+  for (let i = 1; i <= L; i++) {
+    const tt = i/(L+1);
+    levels.push(Math.expm1(lmn + tt*(lmx-lmn)) + mn);  // geometric spacing
+  }
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = 'rgba(40,40,60,0.34)';
+  const gx = (x1-x0)/N, gy = (y1-y0)/N;
+  const grid = [];
+  for (let j=0;j<=N;j++){ grid[j]=[]; for(let i=0;i<=N;i++){ grid[j][i]=fn2(x0+i*gx, y0+j*gy);} }
+  for (const lv of levels) {
+    ctx.beginPath();
+    for (let j=0;j<N;j++){
+      for (let i=0;i<N;i++){
+        const a=grid[j][i], b=grid[j][i+1], c=grid[j+1][i+1], d=grid[j+1][i];
+        let idx=0; if(a>lv)idx|=1; if(b>lv)idx|=2; if(c>lv)idx|=4; if(d>lv)idx|=8;
+        if(idx===0||idx===15) continue;
+        const xL=x0+i*gx, xR=xL+gx, yB=y0+j*gy, yT=yB+gy;
+        const ip=(p,q,vp,vq)=>(lv-vp)/(vq-vp);
+        const pts=[];
+        if(((idx&1)!==0)!==((idx&2)!==0)){ const tt=ip(0,0,a,b); pts.push([xL+tt*gx,yB]); }
+        if(((idx&2)!==0)!==((idx&4)!==0)){ const tt=ip(0,0,b,c); pts.push([xR,yB+tt*gy]); }
+        if(((idx&8)!==0)!==((idx&4)!==0)){ const tt=ip(0,0,d,c); pts.push([xL+tt*gx,yT]); }
+        if(((idx&1)!==0)!==((idx&8)!==0)){ const tt=ip(0,0,a,d); pts.push([xL,yB+tt*gy]); }
+        if(pts.length>=2){
+          const [px0,py0]=toPx(pts[0][0],pts[0][1]);
+          const [px1,py1]=toPx(pts[1][0],pts[1][1]);
+          ctx.moveTo(px0,py0); ctx.lineTo(px1,py1);
+        }
+      }
+    }
+    ctx.stroke();
+  }
+}
+
+// ---------- draw path ----------
+function drawPath() {
+  if (path.length === 0) return;
+  // line
+  ctx.lineWidth = 1.8;
+  ctx.strokeStyle = 'rgba(200,40,40,0.85)';
+  ctx.beginPath();
+  for (let i=0;i<path.length;i++){
+    const [px,py] = toPx(path[i][0], path[i][1]);
+    if(i===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+  }
+  ctx.stroke();
+  // dots
+  for (let i=0;i<path.length;i++){
+    const [px,py] = toPx(path[i][0], path[i][1]);
+    ctx.beginPath();
+    ctx.fillStyle = (i===path.length-1) ? '#c0392b' : 'rgba(200,60,60,0.6)';
+    ctx.arc(px,py, (i===path.length-1)?5:3, 0, 2*Math.PI);
+    ctx.fill();
+  }
+  // gradient arrow at current point
+  const [cx,cy] = path[path.length-1];
+  const g = FUNCS[cur].grad(cx,cy);
+  const gn = Math.hypot(g[0],g[1]);
+  if (gn > 1e-9 && isFinite(gn)) {
+    const [x0,x1] = dom();
+    const scale = 0.18*(x1-x0)/gn;   // visual length, normalized
+    const tx = cx - g[0]*scale, ty = cy - g[1]*scale;
+    const [p0x,p0y] = toPx(cx,cy), [p1x,p1y] = toPx(tx,ty);
+    ctx.strokeStyle = '#16794f'; ctx.fillStyle = '#16794f'; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(p0x,p0y); ctx.lineTo(p1x,p1y); ctx.stroke();
+    const ang = Math.atan2(p1y-p0y, p1x-p0x), ah=8;
+    ctx.beginPath(); ctx.moveTo(p1x,p1y);
+    ctx.lineTo(p1x-ah*Math.cos(ang-0.4), p1y-ah*Math.sin(ang-0.4));
+    ctx.lineTo(p1x-ah*Math.cos(ang+0.4), p1y-ah*Math.sin(ang+0.4));
+    ctx.closePath(); ctx.fill();
+  }
+}
+
+function redraw() { drawField(); drawPath(); }
+
+// ---------- iteration ----------
+function lr() { return Math.pow(10, parseFloat(document.getElementById('lr').value)); }
+
+function stepOnce() {
+  if (path.length === 0 || diverged) return;
+  const [x,y] = path[path.length-1];
+  const g = FUNCS[cur].grad(x,y);
+  const eta = lr();
+  const nx = x - eta*g[0], ny = y - eta*g[1];
+  if (!isFinite(nx) || !isFinite(ny) || Math.abs(nx) > 1e6 || Math.abs(ny) > 1e6) {
+    diverged = true; updateStats(); return;
+  }
+  path.push([nx, ny]);
+  updateStats();
+}
+
+function updateStats() {
+  const fn = FUNCS[cur].f, gr = FUNCS[cur].grad;
+  document.getElementById('iter').textContent = path.length ? path.length-1 : 0;
+  if (path.length) {
+    const [x,y] = path[path.length-1];
+    document.getElementById('pt').textContent = `(${x.toFixed(4)}, ${y.toFixed(4)})`;
+    document.getElementById('fval').textContent = fn(x,y).toExponential(3);
+    const g = gr(x,y);
+    document.getElementById('gnorm').textContent = Math.hypot(g[0],g[1]).toExponential(3);
+  } else {
+    document.getElementById('pt').textContent = '—';
+    document.getElementById('fval').textContent = '—';
+    document.getElementById('gnorm').textContent = '—';
+  }
+  const s = document.getElementById('status');
+  if (diverged) { s.textContent = 'diverged ✗'; s.className = 'v diverged'; }
+  else if (running) { s.textContent = 'running…'; s.className = 'v'; }
+  else if (path.length>1) { s.textContent = 'paused'; s.className = 'v'; }
+  else { s.textContent = 'ready'; s.className = 'v'; }
+}
+
+let raf = null;
+function loop() {
+  if (!running) return;
+  const n = parseInt(document.getElementById('sp').value);
+  for (let i=0;i<n;i++) stepOnce();
+  redraw();
+  if (diverged) { running = false; document.getElementById('run').textContent='Run'; updateStats(); return; }
+  raf = requestAnimationFrame(loop);
+}
+
+// ---------- controls ----------
+function resetTo(start) {
+  diverged = false; running = false;
+  document.getElementById('run').textContent='Run';
+  path = start ? [start.slice()] : [FUNCS[cur].start.slice()];
+  redraw(); updateStats();
+}
+
+function applyCustom() {
+  const err = document.getElementById('customErr');
+  let f;
+  try { f = makeFunc(document.getElementById('customExpr').value); }
+  catch (ex) { err.textContent = 'Invalid expression: ' + ex.message; return; }
+  const xmin = parseFloat(document.getElementById('dxmin').value);
+  const xmax = parseFloat(document.getElementById('dxmax').value);
+  const ymin = parseFloat(document.getElementById('dymin').value);
+  const ymax = parseFloat(document.getElementById('dymax').value);
+  if (!(xmax > xmin) || !(ymax > ymin)) { err.textContent = 'Need min < max in both axes.'; return; }
+  err.textContent = '';
+  FUNCS.custom.f = f;
+  FUNCS.custom.dom = [xmin, xmax, ymin, ymax];
+  FUNCS.custom.start = [xmin + 0.15*(xmax-xmin), ymax - 0.15*(ymax-ymin)];
+  cur = 'custom';
+  resetTo();
+}
+
+document.getElementById('func').addEventListener('change', e => {
+  cur = e.target.value;
+  document.getElementById('customRow').style.display = (cur === 'custom') ? 'block' : 'none';
+  if (cur === 'custom') applyCustom(); else resetTo();
+});
+document.getElementById('applyCustom').addEventListener('click', applyCustom);
+document.getElementById('lr').addEventListener('input', e => {
+  document.getElementById('lrv').textContent = Math.pow(10, parseFloat(e.target.value)).toFixed(4);
+});
+document.getElementById('sp').addEventListener('input', e => {
+  document.getElementById('spv').textContent = e.target.value + '×';
+});
+document.getElementById('step').addEventListener('click', () => { stepOnce(); redraw(); });
+document.getElementById('run').addEventListener('click', () => {
+  if (diverged) return;
+  running = !running;
+  document.getElementById('run').textContent = running ? 'Pause' : 'Run';
+  updateStats();
+  if (running) loop(); else if (raf) cancelAnimationFrame(raf);
+});
+document.getElementById('reset').addEventListener('click', () => resetTo());
+
+cv.addEventListener('click', e => {
+  const r = cv.getBoundingClientRect();
+  const px = (e.clientX - r.left) * W / r.width;
+  const py = (e.clientY - r.top)  * H / r.height;
+  resetTo(toMath(px, py));
+});
+
+// init
+resetTo();
+</script>
+</body>
+</html>
