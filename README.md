@@ -709,4 +709,4 @@ You are free to share and adapt these materials for non-commercial purposes, pro
 
 **So Okada** (so.okada@gmail.com)
 
-These demonstrations were created through AI-assisted development using generative AI tools including **Claude** (Anthropic) and **Gemini** (Google). The development process involved iterative collaboration—describing mathematical concepts and desired interactions in natural language, then refining the AI-generated code through conversation.
+These demonstrations were created through AI-assisted development using generative AI tools including Claude/Gemini/ChatGPT. The development process involved iterative collaboration—describing mathematical concepts and desired interactions in natural language, then refining the AI-generated code through conversation.
