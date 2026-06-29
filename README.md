@@ -421,23 +421,6 @@ Eccentricity is computed as $e = \dfrac{\sin\theta}{\cos\alpha}$.
 
 Interactive side-view ray diagram of a pinhole camera, showing how a single hole maps every scene point to an inverted image, with the similar-triangle geometry, the perspective-projection map, and the finite-aperture blur.
 
-**Mathematical Background:**
-With the pinhole at the origin, an object of height $h_o$ at distance $d_o$ and its image at distance $d_i$ span two similar right triangles sharing the apex at the hole:
-$$\frac{h_i}{h_o} = \frac{d_i}{d_o}, \qquad h_i = h_o\,\frac{d_i}{d_o}.$$
- 
-The image lies on the opposite side of the optical axis, giving the signed magnification $m = -d_i/d_o$. In 3D, a scene point $(X, Y, Z)$ projects onto the image plane at $z = d_i$ as
-$$\big(x', y'\big) = \left(d_i\,\frac{X}{Z},\; d_i\,\frac{Y}{Z}\right),$$
-which in homogeneous coordinates is the linear map
-$$\begin{pmatrix} x' \\ y' \\ 1 \end{pmatrix} \sim
-\begin{pmatrix} d_i & 0 & 0 & 0 \\ 0 & d_i & 0 & 0 \\ 0 & 0 & 1 & 0 \end{pmatrix}
-\begin{pmatrix} X \\ Y \\ Z \\ 1 \end{pmatrix}.$$
-For a real object the screen sits behind the hole, so the projection becomes the point reflection $(X, Y) \mapsto -\tfrac{d_i}{Z}(X, Y)$—a $180^\circ$ rotation about the optical axis (upside-down **and** left–right reversed).
-
-A real aperture of diameter $a > 0$ spreads each point into a *circle of confusion* of diameter
-$$b = a\left(1 + \frac{d_i}{d_o}\right) = a\,(1 + m),$$
-independent of image height. The demo convolves the image with this uniform disc—the exact geometric point-spread of a circular aperture. Geometric optics favors smaller $a$, but diffraction blurs by $\sim \lambda d_i / a$, so the two effects balance at the classical optimal diameter
-$$a_{\mathrm{opt}} \sim \sqrt{\lambda\,\frac{d_o d_i}{d_o + d_i}} \approx 1.9\sqrt{\lambda\, d_i} \quad (d_o \gg d_i).$$
-
 **Controls:**
 - **Object distance $d_o$, Image distance $d_i$, Object height $h_o$**: Scene and camera geometry
 - **Pinhole size $a$**: Aperture diameter, driving the blur disc
