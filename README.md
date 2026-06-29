@@ -683,10 +683,12 @@ $$y = a\cosh\!\left(\frac{x}{a}\right) = \frac{a}{2}\left(e^{x/a} + e^{-x/a}\rig
 
 At the vertex $(0, a)$, the curvature is $\kappa = 1/a$. The parabola $y = \dfrac{x^2}{2a} + a$ shares the same curvature at this point, illustrating why a catenary resembles a parabola near the vertex but diverges further out.
 
-The arc length of the chain between the two supports at $x = \pm L$ follows from $y' = \sinh(x/a)$, so $1 + (y')^2 = \cosh^2(x/a)$:
-$$S = \int_{-L}^{L}\sqrt{1 + (y')^2}\,dx = 2\,|a|\,\sinh\!\left(\frac{L}{|a|}\right)$$
+The arc length of the chain between the two supports at $x = \pm L$
+follows from $y' = \sinh(x/a)$, so $1 + (y')^2 = \cosh^2(x/a)$: $$S =
+\int_{-L}^{L}\sqrt{1 + (y')^2}\,dx =
+2\,|a|\,\sinh\!\left(\frac{L}{|a|}\right)$$ 
+The chain is drawn along the exact catenary arc between two knots.
 
-The chain is drawn along the exact catenary arc between two knots, with the half-span $L$ recovered from the chosen length via $L = |a|\,\operatorname{asinh}\!\left(\dfrac{S}{2|a|}\right)$.
 
 **Controls:**
 - **Parameter $a$** (−5 to 5): Shape parameter; positive values hang downward, negative values arch upward (inverted catenary)
@@ -818,3 +820,8 @@ You are free to share and adapt these materials for non-commercial purposes, pro
 **So Okada** (so.okada@gmail.com)
 
 These demonstrations were created through AI-assisted development using generative AI tools including Claude/Gemini/ChatGPT. The development process involved iterative collaboration—describing mathematical concepts and desired interactions in natural language, then refining the AI-generated code through conversation.
+
+## URLS
+
+source site: https://github.com/so-okada/math_teaching_materials
+html site: https://so-okada.github.io/math_teaching_materials/
