@@ -823,5 +823,5 @@ These demonstrations were created through AI-assisted development using generati
 
 ## URLS
 
-- source site: https://github.com/so-okada/math_teaching_materials
-- html site: https://so-okada.github.io/math_teaching_materials/
+- source site: [https://github.com/so-okada/math_teaching_materials](https://github.com/so-okada/math_teaching_materials)
+- html site: [https://so-okada.github.io/math_teaching_materials/](https://so-okada.github.io/math_teaching_materials/)
