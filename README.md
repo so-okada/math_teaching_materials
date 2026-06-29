@@ -424,7 +424,7 @@ Interactive side-view ray diagram of a pinhole camera, showing how a single hole
 **Mathematical Background:**
 With the pinhole at the origin, an object of height $h_o$ at distance $d_o$ and its image at distance $d_i$ span two similar right triangles sharing the apex at the hole:
 $$\frac{h_i}{h_o} = \frac{d_i}{d_o}, \qquad h_i = h_o\,\frac{d_i}{d_o}.$$
-
+ 
 The image lies on the opposite side of the optical axis, giving the signed magnification $m = -d_i/d_o$. In 3D, a scene point $(X, Y, Z)$ projects onto the image plane at $z = d_i$ as
 $$\big(x', y'\big) = \left(d_i\,\frac{X}{Z},\; d_i\,\frac{Y}{Z}\right),$$
 which in homogeneous coordinates is the linear map
