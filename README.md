@@ -22,6 +22,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Binomial to Gaussian](https://so-okada.github.io/math_teaching_materials/binomialtogaussian.html) | Probability & Statistics | Central limit theorem, de Moivre-Laplace |
 | [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html) | Probability & Statistics | Normal distribution, random walks |
 | [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
+| [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html) | Geometry | Perspective projection, similar triangles, circle of confusion |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 | [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
 | [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html) | Trigonometry | Triangle geometry, cosine rule |
@@ -34,6 +35,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
 | [Catenary Curve](https://so-okada.github.io/math_teaching_materials/catenary.html) | Differential Geometry | Hyperbolic cosine, hanging chain, curvature |
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
+| [Strandbeest (Jansen Linkage)](https://so-okada.github.io/math_teaching_materials/strandbeest_demo.html) | Mechanics | Planar linkage, circle intersection, walking curve |
 | [Vibration (2nd-Order ODE)](https://so-okada.github.io/math_teaching_materials/vibration_demo.html) | Differential Equations | Damped harmonic oscillator, phase portraits |
 
 ---
@@ -414,6 +416,36 @@ Eccentricity is computed as $e = \dfrac{\sin\theta}{\cos\alpha}$.
 
 ---
 
+### [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html)
+**File:** `pinhole_camera.html`
+
+Interactive side-view ray diagram of a pinhole camera, showing how a single hole maps every scene point to an inverted image, with the similar-triangle geometry, the perspective-projection map, and the finite-aperture blur.
+
+**Mathematical Background:**
+With the pinhole at the origin, an object of height $h_o$ at distance $d_o$ and its image at distance $d_i$ span two similar right triangles sharing the apex at the hole:
+$$\frac{h_i}{h_o} = \frac{d_i}{d_o}, \qquad h_i = h_o\,\frac{d_i}{d_o}.$$
+
+The image lies on the opposite side of the optical axis, giving the signed magnification $m = -d_i/d_o$. In 3D, a scene point $(X, Y, Z)$ projects onto the image plane at $z = d_i$ as
+$$\big(x', y'\big) = \left(d_i\,\frac{X}{Z},\; d_i\,\frac{Y}{Z}\right),$$
+which in homogeneous coordinates is the linear map
+$$\begin{pmatrix} x' \\ y' \\ 1 \end{pmatrix} \sim
+\begin{pmatrix} d_i & 0 & 0 & 0 \\ 0 & d_i & 0 & 0 \\ 0 & 0 & 1 & 0 \end{pmatrix}
+\begin{pmatrix} X \\ Y \\ Z \\ 1 \end{pmatrix}.$$
+For a real object the screen sits behind the hole, so the projection becomes the point reflection $(X, Y) \mapsto -\tfrac{d_i}{Z}(X, Y)$—a $180^\circ$ rotation about the optical axis (upside-down **and** left–right reversed).
+
+A real aperture of diameter $a > 0$ spreads each point into a *circle of confusion* of diameter
+$$b = a\left(1 + \frac{d_i}{d_o}\right) = a\,(1 + m),$$
+independent of image height. The demo convolves the image with this uniform disc—the exact geometric point-spread of a circular aperture. Geometric optics favors smaller $a$, but diffraction blurs by $\sim \lambda d_i / a$, so the two effects balance at the classical optimal diameter
+$$a_{\mathrm{opt}} \sim \sqrt{\lambda\,\frac{d_o d_i}{d_o + d_i}} \approx 1.9\sqrt{\lambda\, d_i} \quad (d_o \gg d_i).$$
+
+**Controls:**
+- **Object distance $d_o$, Image distance $d_i$, Object height $h_o$**: Scene and camera geometry
+- **Pinhole size $a$**: Aperture diameter, driving the blur disc
+- **Toggles**: Similar triangles, projection rays, dimension labels
+- Live readout of magnification $m$, image height $h_i$, and blur $b$
+
+---
+
 ## Trigonometry
 
 ### [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html)
@@ -690,6 +722,30 @@ The shifting center of mass due to water sloshing creates a damping effect on ro
 
 ---
 
+### [Strandbeest (Jansen Linkage)](https://so-okada.github.io/math_teaching_materials/strandbeest_demo.html)
+**File:** `strandbeest_demo.html`
+
+Interactive construction and animation of the Jansen leg—the single-degree-of-freedom planar linkage behind Theo Jansen's walking *Strandbeest*—built joint by joint from circle intersections so the foot's walking curve emerges from the geometry.
+
+**Mathematical Background:**
+The leg is a planar linkage driven by one rotating crank, with all rod lengths fixed by Jansen's thirteen "holy numbers." Each moving joint is located as the intersection of two circles: given two already-known points $A$ and $B$ connected to the unknown joint $J$ by rods of length $r_A$ and $r_B$, the joint satisfies
+$$|J - A| = r_A, \qquad |J - B| = r_B.$$
+
+Writing $d = |B - A|$, the perpendicular offset of $J$ from the line $AB$ is
+$$\ell = \frac{r_A^2 - r_B^2 + d^2}{2d}, \qquad h = \sqrt{r_A^2 - \ell^2},$$
+and the two solutions are $J = A + \ell\,\hat{u} \pm h\,\hat{u}^{\perp}$, where $\hat{u} = (B - A)/d$. A consistent choice of branch at each stage propagates the crank angle $\theta$ through the whole linkage; the foot then traces a closed curve whose nearly straight bottom edge gives the flat ground-contact stroke that makes the mechanism walk. The construction is only valid while $r_A^2 \ge \ell^2$ (the circles actually meet), which the demo checks live.
+
+**Controls:**
+- **Crank angle $\theta$**: Drag on the canvas or use the slider to drive the linkage
+- **Animation speed**: Crank rate in rpm, with play/pause and reset
+- **Construction stage**: Step through the eight circle-intersection stages from crank to foot $S$
+- **Mutate one length**: Select a rod $a$–$m$ and scale it to perturb the holy numbers
+- **Tiny random test**: Apply small random rod perturbations; **Reset rods** restores Jansen's values
+- **Show trace, Zoom, Rod thickness**: Display options for the foot path and figure
+- **Live construction checks**: Flags any stage where the two circles fail to intersect
+
+---
+
 ## Differential Equations
 
 ### [Vibration (2nd-Order ODE)](https://so-okada.github.io/math_teaching_materials/vibration_demo.html)
@@ -745,6 +801,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `cosine_theorem.html`: Uses MathJax (CDN)
 - `sine_theorem.html`: Uses MathJax (CDN)
 - `arrows_impossibility_theorem.html`: Uses MathJax (CDN)
+- `pinhole_camera.html`: Uses MathJax (CDN)
 
 ---
 

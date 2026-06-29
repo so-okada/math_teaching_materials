@@ -1,0 +1,399 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pinhole Camera</title>
+<script>
+  window.MathJax = {
+    tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+    svg: { fontCache: 'global' }
+  };
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+  :root{
+    --bg:#fbfaf7; --ink:#1a1a1a; --muted:#6b6b6b; --line:#d9d6cf;
+    --object:#1f6feb; --image:#d1342f; --ray:#e8920c; --tri-o:rgba(31,111,235,.10);
+    --tri-i:rgba(209,52,47,.10); --wall:#2b2b2b; --axis:#9a958c; --screen:#8a8a8a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.6 "Helvetica Neue",Arial,"Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:960px; margin:0 auto; padding:28px 20px 60px}
+  h1{font-size:1.6rem; font-weight:600; letter-spacing:.01em; margin:0 0 .2em}
+  .lede{color:var(--muted); margin:0 0 1.6em; max-width:62ch}
+  .panel{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:14px; margin:0 0 18px;
+  }
+  canvas{display:block; width:100%; border-radius:6px; background:#fff; touch-action:none}
+  #scene{height:440px}
+  .controls{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:16px 22px;
+    align-items:end;
+  }
+  @media(max-width:640px){ .controls{grid-template-columns:1fr} #scene{height:340px} }
+  .ctl label{display:flex; justify-content:space-between; font-size:.9rem; color:var(--muted); margin-bottom:4px}
+  .ctl label b{color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%; accent-color:var(--object)}
+  .opts{display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; font-size:.9rem; color:var(--muted)}
+  .opts label{display:flex; gap:6px; align-items:center; cursor:pointer}
+  .readout{
+    display:flex; gap:26px; flex-wrap:wrap; margin-top:14px;
+    font-size:.95rem; padding-top:12px; border-top:1px solid var(--line);
+  }
+  .readout span b{font-variant-numeric:tabular-nums}
+  .math{font-size:.98rem}
+  .math h2{font-size:1.05rem; font-weight:600; margin:0 0 .4em}
+  .math p{margin:.4em 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Pinhole Camera</h1>
+  <p class="lede">A pinhole maps every scene point along the single straight ray through the hole. The result is an
+  inverted image whose size is fixed by similar triangles — the foundation of perspective projection with blurring convolution.</p>
+
+  <div class="panel">
+    <canvas id="scene" aria-label="Pinhole camera ray diagram (side view)"></canvas>
+    <div class="readout">
+      <span>Magnification&nbsp; \(m = d_i/d_o\) = <b id="rmag">0.50</b></span>
+      <span>Image height&nbsp; \(h_i\) = <b id="rhi">0.00</b></span>
+      <span>Blur&nbsp; \(b=a(1{+}m)\) = <b id="rb">0.00</b></span>
+      <span>Image is inverted (rotated 180°)</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="controls">
+      <div class="ctl">
+        <label>Object distance \(d_o\) <b id="vdo">6.0</b></label>
+        <input id="do" type="range" min="2" max="12" step="0.1" value="6">
+      </div>
+      <div class="ctl">
+        <label>Image distance \(d_i\) <b id="vdi">3.0</b></label>
+        <input id="di" type="range" min="1" max="6" step="0.1" value="3">
+      </div>
+      <div class="ctl">
+        <label>Object height \(h_o\) <b id="vho">2.5</b></label>
+        <input id="ho" type="range" min="0.5" max="4" step="0.1" value="2.5">
+      </div>
+      <div class="ctl">
+        <label>Pinhole size \(a\) <b id="va">0.20</b></label>
+        <input id="a" type="range" min="0" max="0.8" step="0.01" value="0.2">
+      </div>
+    </div>
+    <div class="opts">
+      <label><input id="tri" type="checkbox" checked> similar triangles</label>
+      <label><input id="rays" type="checkbox" checked> projection rays</label>
+      <label><input id="labels" type="checkbox" checked> dimension labels</label>
+    </div>
+  </div>
+
+  <div class="panel math">
+    <h2>The mathematics</h2>
+    <p><b>Similar triangles.</b> With the pinhole at the origin, an object of height \(h_o\) at distance \(d_o\)
+    and its image at distance \(d_i\) span two similar right triangles sharing the apex at the hole, so
+    \[ \frac{h_i}{h_o}=\frac{d_i}{d_o}, \qquad h_i = h_o\,\frac{d_i}{d_o}. \]
+    The image lies on the opposite side of the optical axis, hence the minus sign in the signed magnification
+    \(m=-d_i/d_o\). In the diagram the equal right angles (squares) and the equal vertically-opposite angles at the
+    pinhole (arcs) give similarity by AA; matching tick counts mark corresponding edges (1: legs on the axis,
+    2: vertical legs, 3: hypotenuses).</p>
+    <p><b>Perspective projection.</b> Place the camera centre at the origin and the image plane at \(z=d_i\).
+    A scene point \((X,Y,Z)\) projects to
+    \[ \big(x',\,y'\big)=\Big(d_i\,\tfrac{X}{Z},\; d_i\,\tfrac{Y}{Z}\Big), \]
+    which in homogeneous coordinates is the linear map
+    \[ \begin{pmatrix}x'\\ y'\\ 1\end{pmatrix}\;\sim\;
+       \begin{pmatrix} d_i&0&0&0\\ 0&d_i&0&0\\ 0&0&1&0 \end{pmatrix}
+       \begin{pmatrix}X\\ Y\\ Z\\ 1\end{pmatrix}. \]
+    For a real object \((Z>0)\) behind the wall the screen sits at \(z<0\), giving the point reflection
+    \((X,Y)\mapsto -\tfrac{d_i}{Z}(X,Y)\): a rotation by \(180^\circ\) about the optical axis. This is why the
+    pinhole image is upside-down <em>and</em> left–right reversed.</p>
+    <p><b>Finite aperture.</b> A real pinhole has diameter \(a>0\), so each object point passes through the
+    whole opening and spreads into a <em>circle of confusion</em> on the image plane. Tracing the rays through
+    the two aperture edges gives a blur disc of diameter
+    \[ b = a\left(1+\frac{d_i}{d_o}\right) = a\,(1+m), \]
+    independent of the point's height — the entire image is uniformly softened by \(b\). Here the image is
+    convolved with that uniform disc (the exact geometric point-spread of a circular aperture), so the softening
+    shown is the true pinhole blur rather than a Gaussian approximation. Geometric optics alone
+    says “smaller \(a\) is sharper,” but diffraction blurs by \(\sim \lambda\,d_i/a\), which grows as \(a\)
+    shrinks. Balancing the two minimises total blur at the classical optimal pinhole diameter
+    \[ a_{\mathrm{opt}} \;\sim\; \sqrt{\lambda\,\frac{d_o d_i}{d_o+d_i}} \;\approx\; 1.9\sqrt{\lambda\, d_i}
+       \quad (d_o \gg d_i), \]
+    which is why a real pinhole has a sweet spot rather than being made infinitesimally small.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---- DOM ----
+  const $ = id => document.getElementById(id);
+  const sDo=$("do"), sDi=$("di"), sHo=$("ho"), sA=$("a");
+  const tTri=$("tri"), tRays=$("rays"), tLabels=$("labels");
+  const sceneCv=$("scene");
+
+  // ---- canvas setup with devicePixelRatio ----
+  function fit(cv){
+    const dpr = window.devicePixelRatio || 1;
+    const rect = cv.getBoundingClientRect();
+    const h = parseFloat(getComputedStyle(cv).height);
+    cv.width  = Math.round(rect.width * dpr);
+    cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext("2d");
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {ctx, w: rect.width, h};
+  }
+
+  function css(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  // ---- main ray diagram (side view) ----
+  function drawScene(p){
+    const {ctx,w,h} = fit(sceneCv);
+    ctx.clearRect(0,0,w,h);
+
+    const do_=p.do, di=p.di, ho=p.ho;
+    const m=di/do_;
+    const hi=ho*m;                        // image height (magnitude)
+    const b=p.a*(1+m);                    // circle of confusion (world units)
+
+    // world bounding box -> auto-fit transform
+    const pad=46;
+    const xmin=-do_-0.38*ho, xmax=di+0.38*hi, ymin=-hi, ymax=ho;
+    const spanX=Math.max(xmax-xmin,1e-3), spanY=Math.max(ymax-ymin,1e-3);
+    const s=Math.min((w-2*pad)/spanX,(h-2*pad)/spanY);
+    const cx=(xmin+xmax)/2, cy=(ymin+ymax)/2;
+    const ox=w/2-cx*s, oy=h/2+cy*s;
+    const X=x=>ox+x*s, Y=y=>oy-y*s;
+
+    // optical axis
+    ctx.strokeStyle=css("--axis"); ctx.lineWidth=1; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(8,Y(0)); ctx.lineTo(w-8,Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // similar triangles
+    if(p.tri){
+      ctx.fillStyle=css("--tri-o");
+      ctx.beginPath(); ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(-do_),Y(0)); ctx.lineTo(X(-do_),Y(ho)); ctx.closePath(); ctx.fill();
+      ctx.fillStyle=css("--tri-i");
+      ctx.beginPath(); ctx.moveTo(X(0),Y(0)); ctx.lineTo(X(di),Y(0)); ctx.lineTo(X(di),Y(-hi)); ctx.closePath(); ctx.fill();
+    }
+
+    // finite-aperture blur cones: object point -> aperture edges -> screen
+    if(b>1e-9){
+      ctx.fillStyle="rgba(232,146,12,0.12)";
+      for(const yo of [ho,0]){
+        const yc=-m*yo;
+        ctx.beginPath();
+        ctx.moveTo(X(-do_),Y(yo));
+        ctx.lineTo(X(di),Y(yc+b/2));
+        ctx.lineTo(X(di),Y(yc-b/2));
+        ctx.closePath(); ctx.fill();
+      }
+    }
+
+    // projection rays: object point (-do, y) -> image point (di, -y*di/do), through origin
+    if(p.rays){
+      ctx.strokeStyle=css("--ray"); ctx.lineWidth=1.4; ctx.globalAlpha=.9;
+      for(const t of [1, 0.66, 0.33, 0]){
+        const yo=ho*t;
+        ctx.beginPath(); ctx.moveTo(X(-do_),Y(yo)); ctx.lineTo(X(di),Y(-yo*m)); ctx.stroke();
+      }
+      ctx.globalAlpha=1;
+    }
+
+    // pinhole wall at x=0 with an aperture of diameter a at the axis
+    const gap=Math.max(p.a*s/2, 1.5);
+    ctx.strokeStyle=css("--wall"); ctx.lineWidth=4; ctx.lineCap="round";
+    ctx.beginPath(); ctx.moveTo(X(0),8);        ctx.lineTo(X(0),Y(0)-gap); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0),Y(0)+gap); ctx.lineTo(X(0),h-8);      ctx.stroke();
+    ctx.lineCap="butt";
+    // pinhole marker
+    ctx.fillStyle=css("--wall");
+    ctx.beginPath(); ctx.arc(X(0),Y(0),2.4,0,7); ctx.fill();
+
+    // image plane (screen)
+    ctx.strokeStyle=css("--screen"); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(X(di),8); ctx.lineTo(X(di),h-8); ctx.stroke();
+
+    // object tree (upright); image tree convolved with the aperture disc (the true pinhole PSF)
+    drawTree(ctx, X(-do_), Y(0), ho*s, 1);
+    blurredBlit(ctx, w, h, function(c){ drawTree(c, X(di), Y(0), hi*s, -1); }, Math.min(b*s/2, 24));
+
+    // similar-triangle annotations: right-angle squares, matching edge ticks, equal vertical angles
+    if(p.tri){
+      const mk="#2b2b2b";
+      const Ox=X(0),  Oy=Y(0);
+      const Ax=X(-do_),Ay=Y(0);
+      const Bx=X(-do_),By=Y(ho);
+      const Cx=X(di), Cy=Y(0);
+      const Dx=X(di), Dy=Y(-hi);
+      // crisp triangle outlines
+      ctx.lineWidth=1.4;
+      ctx.strokeStyle="rgba(31,111,235,.55)";
+      ctx.beginPath(); ctx.moveTo(Ox,Oy); ctx.lineTo(Ax,Ay); ctx.lineTo(Bx,By); ctx.closePath(); ctx.stroke();
+      ctx.strokeStyle="rgba(209,52,47,.55)";
+      ctx.beginPath(); ctx.moveTo(Ox,Oy); ctx.lineTo(Cx,Cy); ctx.lineTo(Dx,Dy); ctx.closePath(); ctx.stroke();
+      // matching ticks: same count = corresponding edges
+      edgeTicks(ctx, Ox,Oy, Ax,Ay, 1, mk);  edgeTicks(ctx, Ox,Oy, Cx,Cy, 1, mk);  // legs on the axis
+      edgeTicks(ctx, Ax,Ay, Bx,By, 2, mk);  edgeTicks(ctx, Cx,Cy, Dx,Dy, 2, mk);  // vertical legs
+      edgeTicks(ctx, Ox,Oy, Bx,By, 3, mk);  edgeTicks(ctx, Ox,Oy, Dx,Dy, 3, mk);  // hypotenuses
+      // right-angle squares at the two feet
+      rightAngleMark(ctx, Ax,Ay,  1,0, 0,-1, mk);
+      rightAngleMark(ctx, Cx,Cy, -1,0, 0, 1, mk);
+      // equal vertically-opposite angles at the pinhole
+      angleArc(ctx, Ox,Oy, Math.atan2(Ay-Oy,Ax-Ox), Math.atan2(By-Oy,Bx-Ox), 18, mk);
+      angleArc(ctx, Ox,Oy, Math.atan2(Cy-Oy,Cx-Ox), Math.atan2(Dy-Oy,Dx-Ox), 18, mk);
+    }
+
+    // labels
+    if(p.labels){
+      ctx.font='13px "Helvetica Neue",Arial,sans-serif';
+      ctx.textAlign="center"; ctx.textBaseline="top";
+      ctx.fillStyle=css("--muted");
+      ctx.fillText("d\u2092", (X(-do_)+X(0))/2, Y(0)+6);
+      ctx.fillText("d\u1d62", (X(0)+X(di))/2,  Y(0)+6);
+      ctx.textAlign="right"; ctx.textBaseline="middle";
+      ctx.fillStyle=css("--object"); ctx.fillText("h\u2092", X(-do_)-8, Y(ho/2));
+      ctx.fillStyle=css("--image");  ctx.fillText("h\u1d62", X(di)-8,  Y(-hi/2));
+      ctx.textAlign="center"; ctx.textBaseline="bottom";
+      ctx.fillStyle=css("--wall"); ctx.fillText("pinhole", X(0), 6);
+      ctx.fillStyle=css("--screen"); ctx.fillText("image plane", X(di), 6);
+    }
+  }
+
+  // n hash marks at a segment's midpoint; same n marks corresponding edges
+  function edgeTicks(ctx, x0,y0,x1,y1,n,color){
+    const mx=(x0+x1)/2, my=(y0+y1)/2;
+    const dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy)||1;
+    const ux=dx/len, uy=dy/len, px=-uy, py=ux;
+    const half=5, gap=4.5;
+    ctx.strokeStyle=color; ctx.lineWidth=1.6; ctx.lineCap="round";
+    for(let i=0;i<n;i++){
+      const o=(i-(n-1)/2)*gap, cx=mx+ux*o, cy=my+uy*o;
+      ctx.beginPath(); ctx.moveTo(cx-px*half,cy-py*half); ctx.lineTo(cx+px*half,cy+py*half); ctx.stroke();
+    }
+    ctx.lineCap="butt";
+  }
+
+  // right-angle square at vertex (vx,vy); d1,d2 are unit edge directions (pixel space)
+  function rightAngleMark(ctx, vx,vy, d1x,d1y, d2x,d2y, color){
+    const s=8; ctx.strokeStyle=color; ctx.lineWidth=1.3;
+    ctx.beginPath();
+    ctx.moveTo(vx+d1x*s, vy+d1y*s);
+    ctx.lineTo(vx+(d1x+d2x)*s, vy+(d1y+d2y)*s);
+    ctx.lineTo(vx+d2x*s, vy+d2y*s);
+    ctx.stroke();
+  }
+
+  // minor arc between two angles, marking equal angles
+  function angleArc(ctx, ox,oy, a1,a2, r, color){
+    let d=a2-a1;
+    while(d<=-Math.PI) d+=2*Math.PI;
+    while(d>Math.PI) d-=2*Math.PI;
+    ctx.strokeStyle=color; ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.arc(ox,oy,r,a1,a1+d,d<0); ctx.stroke();
+  }
+
+  // ---- a small tree, drawn procedurally; base at the pivot, grows toward +ly ----
+  // local coords: ly in [0,1] (height), lx in [-0.38,0.38] (width). flip=-1 rotates 180 deg.
+  function drawTree(ctx, bx, by, hPx, flip){
+    const P=(lx,ly)=>[bx+flip*lx*hPx, by-flip*ly*hPx];
+    let p;
+    // trunk
+    ctx.fillStyle="#7a5230";
+    ctx.beginPath();
+    p=P(-0.07,0);   ctx.moveTo(p[0],p[1]);
+    p=P( 0.07,0);   ctx.lineTo(p[0],p[1]);
+    p=P( 0.05,0.44);ctx.lineTo(p[0],p[1]);
+    p=P(-0.05,0.44);ctx.lineTo(p[0],p[1]);
+    ctx.closePath(); ctx.fill();
+    // canopy (overlapping blobs; top reaches ly=1.0 = the nominal height)
+    ctx.fillStyle="#4a9a55";
+    for(const c of [[0,0.70,0.28],[-0.18,0.60,0.19],[0.18,0.60,0.19],[0,0.83,0.17]]){
+      const q=P(c[0],c[1]); ctx.beginPath(); ctx.arc(q[0],q[1],c[2]*hPx,0,7); ctx.fill();
+    }
+    // apple: off-centre so the 180 deg rotation is visible, not merely a vertical flip
+    ctx.fillStyle="#d1342f";
+    p=P(0.14,0.72); ctx.beginPath(); ctx.arc(p[0],p[1],0.055*hPx,0,7); ctx.fill();
+  }
+
+  // area-uniform samples on a disc of radius R (Vogel/sunflower spiral) -> uniform-disc PSF
+  function discTaps(R){
+    const N=Math.max(12, Math.min(64, Math.round(R*2.5)));
+    const g=Math.PI*(3-Math.sqrt(5));               // golden angle
+    const t=new Array(N);
+    for(let k=0;k<N;k++){
+      const r=R*Math.sqrt((k+0.5)/N), a=k*g;
+      t[k]=[r*Math.cos(a), r*Math.sin(a)];
+    }
+    return t;
+  }
+
+  // Draw drawFn(sharp) convolved with the aperture disc of radius R (pixels).
+  // The sharp shape is rendered once, then summed additively (weight 1/N) over the
+  // disc samples in an offscreen buffer, so each pixel's alpha = fraction of the disc
+  // that covers it = (coverage mask) * (uniform disc) -- the exact pinhole point-spread.
+  let _sharpCv, _accCv;
+  function blurredBlit(ctx, w, h, drawFn, R){
+    if(!(R>0.75)){ drawFn(ctx); return; }           // negligible blur: draw sharp
+    const dpr=window.devicePixelRatio||1;
+    const dw=Math.round(w*dpr), dh=Math.round(h*dpr);
+    if(!_sharpCv){ _sharpCv=document.createElement("canvas"); _accCv=document.createElement("canvas"); }
+    if(_sharpCv.width!==dw||_sharpCv.height!==dh){ _sharpCv.width=dw; _sharpCv.height=dh; _accCv.width=dw; _accCv.height=dh; }
+    const sc=_sharpCv.getContext("2d"), ac=_accCv.getContext("2d");
+    // 1) sharp shape into its own buffer (transparent background)
+    sc.setTransform(dpr,0,0,dpr,0,0); sc.clearRect(0,0,w,h);
+    sc.globalCompositeOperation="source-over"; sc.globalAlpha=1;
+    drawFn(sc);
+    // 2) accumulate the disc samples additively
+    const taps=discTaps(R), N=taps.length;
+    ac.setTransform(1,0,0,1,0,0); ac.clearRect(0,0,dw,dh);
+    ac.globalCompositeOperation="lighter"; ac.globalAlpha=1/N;
+    for(let i=0;i<N;i++) ac.drawImage(_sharpCv, taps[i][0]*dpr, taps[i][1]*dpr);
+    // 3) composite the convolved result onto the scene
+    ctx.save();
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.globalCompositeOperation="source-over"; ctx.globalAlpha=1;
+    ctx.drawImage(_accCv,0,0);
+    ctx.restore();
+  }
+
+  // ---- state & wiring ----
+  function params(){
+    return {
+      do: parseFloat(sDo.value),
+      di: parseFloat(sDi.value),
+      ho: parseFloat(sHo.value),
+      a:  parseFloat(sA.value),
+      tri: tTri.checked, rays: tRays.checked, labels: tLabels.checked
+    };
+  }
+
+  function render(){
+    const p=params();
+    drawScene(p);
+    const m=p.di/p.do, hi=p.ho*m;
+    $("vdo").textContent=p.do.toFixed(1);
+    $("vdi").textContent=p.di.toFixed(1);
+    $("vho").textContent=p.ho.toFixed(1);
+    $("va").textContent=p.a.toFixed(2);
+    $("rmag").textContent=m.toFixed(2);
+    $("rhi").textContent=hi.toFixed(2);
+    $("rb").textContent=(p.a*(1+m)).toFixed(2);
+  }
+
+  [sDo,sDi,sHo,sA,tTri,tRays,tLabels].forEach(el=>el.addEventListener("input",render));
+  window.addEventListener("resize",render);
+  render();
+})();
+</script>
+</body>
+</html>

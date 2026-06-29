@@ -1,0 +1,1302 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interactive Strandbeest Math Demo — Jansen Linkage</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #111827;
+      --panel-2: #182033;
+      --ink: #e5e7eb;
+      --muted: #9ca3af;
+      --line: #334155;
+      --accent: #38bdf8;
+      --accent-2: #f59e0b;
+      --good: #34d399;
+      --warn: #f97316;
+      --bad: #fb7185;
+      --blue: #60a5fa;
+      --red: #f87171;
+      --green: #4ade80;
+      --purple: #c084fc;
+      --shadow: rgba(0, 0, 0, .35);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 20% 0%, rgba(56, 189, 248, .18), transparent 36rem),
+        radial-gradient(circle at 90% 15%, rgba(192, 132, 252, .14), transparent 32rem),
+        var(--bg);
+    }
+
+    header {
+      padding: 28px clamp(18px, 4vw, 46px) 14px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(1.65rem, 3.5vw, 3.3rem);
+      line-height: 1;
+      letter-spacing: -0.045em;
+    }
+
+    .lede {
+      max-width: 920px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(.98rem, 1.4vw, 1.15rem);
+      line-height: 1.55;
+    }
+
+    .credits {
+      max-width: 920px;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: .96rem;
+      line-height: 1.55;
+    }
+
+    .credits a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(56, 189, 248, .35);
+    }
+
+    .credits a:hover {
+      border-bottom-color: var(--accent);
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: minmax(320px, 1fr) minmax(320px, 420px);
+      gap: 18px;
+      padding: 12px clamp(14px, 3vw, 40px) 28px;
+      align-items: start;
+    }
+
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, .055), rgba(255, 255, 255, .025));
+      border: 1px solid rgba(148, 163, 184, .18);
+      box-shadow: 0 22px 65px var(--shadow);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .canvas-card {
+      min-height: 680px;
+      position: sticky;
+      top: 12px;
+    }
+
+    #demoCanvas {
+      display: block;
+      width: 100%;
+      height: min(72vh, 760px);
+      min-height: 620px;
+      cursor: crosshair;
+      background: #020617;
+      touch-action: none;
+    }
+
+    .canvas-note {
+      position: absolute;
+      left: 16px;
+      bottom: 14px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      color: rgba(226, 232, 240, .78);
+      font-size: .83rem;
+      pointer-events: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, .72);
+      border: 1px solid rgba(148, 163, 184, .2);
+      backdrop-filter: blur(8px);
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--good);
+      box-shadow: 0 0 18px var(--good);
+    }
+
+    .status-dot.bad { background: var(--bad); box-shadow: 0 0 18px var(--bad); }
+
+    aside.card {
+      padding: 16px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+      margin: 4px 0 10px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+      font-size: 1rem;
+    }
+
+    .section-title small {
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: normal;
+    }
+
+    .controls-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .control {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, .52);
+      border: 1px solid rgba(148, 163, 184, .14);
+    }
+
+    label.row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 9px;
+      color: #dbeafe;
+      font-size: .92rem;
+      font-weight: 700;
+    }
+
+    .value {
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    select, button, input[type="number"] {
+      font: inherit;
+      border-radius: 12px;
+      border: 1px solid rgba(148, 163, 184, .28);
+      color: var(--ink);
+      background: #0b1224;
+      padding: 9px 10px;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .multiplier-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 96px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .range-help {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: .74rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 800;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); border-color: rgba(56, 189, 248, .72); }
+    button:active { transform: translateY(0); }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .primary {
+      background: linear-gradient(135deg, rgba(56, 189, 248, .35), rgba(96, 165, 250, .18));
+      border-color: rgba(56, 189, 248, .5);
+    }
+
+    .danger { border-color: rgba(251, 113, 133, .44); }
+
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      border-radius: 12px;
+      color: var(--muted);
+      background: rgba(2, 6, 23, .28);
+      user-select: none;
+      font-size: .9rem;
+    }
+
+    .check input { accent-color: var(--accent); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .metric {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(2, 6, 23, .38);
+      border: 1px solid rgba(148, 163, 184, .12);
+      min-height: 74px;
+    }
+
+    .metric .k {
+      color: var(--muted);
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 5px;
+    }
+
+    .metric .v {
+      font-variant-numeric: tabular-nums;
+      font-weight: 850;
+      font-size: 1.15rem;
+    }
+
+    .metric .sub {
+      color: var(--muted);
+      font-size: .76rem;
+      margin-top: 3px;
+    }
+
+    .math-panel {
+      margin: 0 clamp(14px, 3vw, 40px) 38px;
+      padding: 18px;
+    }
+
+    .math-grid {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) minmax(300px, 1fr);
+      gap: 16px;
+    }
+
+    .math-block {
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(15, 23, 42, .56);
+      border: 1px solid rgba(148, 163, 184, .14);
+    }
+
+    h2, h3 {
+      margin: 0 0 10px;
+      letter-spacing: -.025em;
+    }
+
+    .formula {
+      margin: 12px 0;
+      padding: 12px;
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      background: rgba(56, 189, 248, .08);
+      color: #e0f2fe;
+      line-height: 1.65;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .9rem;
+      overflow-x: auto;
+    }
+
+    .steps {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .86rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 32px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 9px;
+      border-radius: 10px;
+      background: rgba(2, 6, 23, .34);
+      border: 1px solid rgba(148, 163, 184, .12);
+    }
+
+    .step .badge {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 999px;
+      background: rgba(56, 189, 248, .13);
+      color: var(--accent);
+      font-weight: 900;
+    }
+
+    .step .ok { color: var(--good); font-weight: 900; }
+    .step .no { color: var(--bad); font-weight: 900; }
+
+    .lengths-table {
+      display: grid;
+      grid-template-columns: repeat(13, minmax(36px, 1fr));
+      gap: 5px;
+      font-size: .76rem;
+      font-variant-numeric: tabular-nums;
+      margin-top: 10px;
+    }
+
+    .length-cell {
+      padding: 7px 4px;
+      text-align: center;
+      border-radius: 9px;
+      background: rgba(2, 6, 23, .34);
+      border: 1px solid rgba(148, 163, 184, .12);
+    }
+
+    .length-cell strong {
+      display: block;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+
+    p, li { color: var(--muted); line-height: 1.6; }
+
+    .tiny {
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.45;
+      margin-top: 8px;
+    }
+
+    @media (max-width: 980px) {
+      .app { grid-template-columns: 1fr; }
+      .canvas-card { position: relative; top: 0; min-height: auto; }
+      #demoCanvas { height: 62vh; min-height: 520px; }
+      .math-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 620px) {
+      .checkbox-grid, .button-row, .metrics { grid-template-columns: 1fr; }
+      .lengths-table { grid-template-columns: repeat(4, minmax(46px, 1fr)); }
+      .canvas-note { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Interactive Strandbeest math demo</h1>
+    <p class="lede">Drag the crank, animate the linkage, and mutate the “holy number” rods. The demo constructs each moving joint with circle intersections, so the math stays visible while the foot traces its walking curve.</p>
+    <p class="credits">Strandbeests are kinetic beasts by Theo Jansen. Learn more at <a href="http://www.strandbeest.com/" target="_blank" rel="noopener noreferrer">strandbeest.com</a> and <a href="https://en.wikipedia.org/wiki/Theo_Jansen" target="_blank" rel="noopener noreferrer">Theo Jansen on Wikipedia</a>.</p>
+  </header>
+
+  <main class="app">
+    <section class="card canvas-card" aria-label="Animated Jansen linkage canvas">
+      <canvas id="demoCanvas"></canvas>
+      <div class="canvas-note">
+        <span class="pill"><span id="statusDot" class="status-dot"></span><span id="statusText">linkage solved</span></span>
+        <span class="pill">Tip: drag anywhere on the canvas to set the crank angle</span>
+      </div>
+    </section>
+
+    <aside class="card" aria-label="Controls">
+      <div class="section-title">Controls <small>one rotary input</small></div>
+      <div class="controls-grid">
+        <div class="control">
+          <div class="button-row">
+            <button id="playPause" class="primary">Pause</button>
+            <button id="resetAngle">Reset angle</button>
+          </div>
+        </div>
+
+        <div class="control">
+          <label class="row" for="angle"><span>Crank angle θ</span><span id="angleValue" class="value">0.0°</span></label>
+          <input id="angle" type="range" min="0" max="360" step="0.1" value="0" />
+        </div>
+
+        <div class="control">
+          <label class="row" for="speed"><span>Animation speed</span><span id="speedValue" class="value">36 rpm</span></label>
+          <input id="speed" type="range" min="0" max="90" step="1" value="36" />
+        </div>
+
+        <div class="control">
+          <label class="row" for="stage"><span>Construction stage</span><span id="stageValue" class="value">8: foot S</span></label>
+          <input id="stage" type="range" min="3" max="8" step="1" value="8" />
+        </div>
+
+        <div class="control">
+          <label class="row" for="zoom"><span>Zoom</span><span id="zoomValue" class="value">1.00×</span></label>
+          <input id="zoom" type="range" min="0.65" max="1.6" step="0.01" value="1" />
+        </div>
+
+        <div class="control">
+          <label class="row" for="rodThickness"><span>Rod visual thickness</span><span id="rodThicknessValue" class="value">1.70×</span></label>
+          <input id="rodThickness" type="range" min="0.8" max="2.8" step="0.05" value="1.7" />
+        </div>
+
+        <div class="control">
+          <label class="row" for="linkSelect"><span>Mutate one length</span><span id="linkValue" class="value">m = 15.00</span></label>
+          <select id="linkSelect" aria-label="Choose a linkage length"></select>
+          <label class="row" for="linkMult" style="margin-top: 10px;"><span>Multiplier</span><span id="linkMultValue" class="value">1.000×</span></label>
+          <div class="multiplier-row">
+            <input id="linkMult" type="range" min="0.10" max="3.00" step="0.001" value="1" />
+            <input id="linkMultNumber" type="number" min="0.10" max="3.00" step="0.001" value="1.000" aria-label="Typed multiplier" />
+          </div>
+          <div class="range-help"><span>0.10×</span><span>1.00×</span><span>3.00×</span></div>
+          <div class="button-row" style="margin-top: 10px;">
+            <button id="resetLinks" class="danger">Reset rods</button>
+            <button id="smallRandom">Tiny random test</button>
+          </div>
+          <div class="tiny">Multiplier range is wider: 0.10×–3.00×. Extreme values often make a circle pair fail; the failed construction step is shown.</div>
+        </div>
+
+        <div class="control">
+          <div class="section-title" style="margin-top:0">Show / hide <small>visual aids</small></div>
+          <div class="checkbox-grid">
+            <label class="check"><input id="showTrace" type="checkbox" checked /> foot trace</label>
+            <label class="check"><input id="showCircles" type="checkbox" /> construction circles</label>
+            <label class="check"><input id="showLabels" type="checkbox" checked /> point labels</label>
+            <label class="check"><input id="showGrid" type="checkbox" checked /> grid</label>
+            <label class="check"><input id="showGhosts" type="checkbox" /> six-leg phases</label>
+            <label class="check"><input id="showVelocity" type="checkbox" checked /> foot velocity</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="metrics" aria-live="polite">
+        <div class="metric">
+          <div class="k">Foot S</div>
+          <div id="footMetric" class="v">—</div>
+          <div class="sub">current coordinates</div>
+        </div>
+        <div class="metric">
+          <div class="k">Stride</div>
+          <div id="strideMetric" class="v">—</div>
+          <div class="sub">max x − min x</div>
+        </div>
+        <div class="metric">
+          <div class="k">Lift</div>
+          <div id="liftMetric" class="v">—</div>
+          <div class="sub">max y − min y</div>
+        </div>
+        <div class="metric">
+          <div class="k">Flatness</div>
+          <div id="flatMetric" class="v">—</div>
+          <div class="sub">std. dev. near ground</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <section class="card math-panel">
+    <div class="math-grid">
+      <div class="math-block">
+        <h2>The circle-intersection math</h2>
+        <p>Each unknown joint is found from two already-known joints and two rod lengths. For centers P and Q, radii r and s:</p>
+        <div class="formula">
+          d = ||Q − P||<br />
+          α = (r² − s² + d²) / (2d)<br />
+          M = P + α(Q − P)/d<br />
+          h = √(r² − α²)<br />
+          intersection = M ± h · perpendicular((Q − P)/d)
+        </div>
+        <p>The two signs give the two possible triangle orientations. This demo follows the Strandbeest branch by choosing W upward, V leftward, then U, T, and S downward.</p>
+      </div>
+
+      <div class="math-block">
+        <h2>Live construction checks</h2>
+        <div id="steps" class="steps"></div>
+      </div>
+
+      <div class="math-block">
+        <h3>Canonical lengths used here</h3>
+        <p>The values are dimensionless proportions. Scaling them all together makes a larger or smaller leg with the same foot path shape.</p>
+        <div id="lengthsTable" class="lengths-table"></div>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    (() => {
+      'use strict';
+
+      const baseLengths = Object.freeze({
+        a: 38.0, b: 41.5, c: 39.3, d: 40.1, e: 55.8, f: 39.4, g: 36.7,
+        h: 65.7, i: 49.0, j: 50.0, k: 61.9, l: 7.8, m: 15.0
+      });
+
+      const descriptions = {
+        a: 'fixed horizontal offset', b: 'Y–W', c: 'Y–U', d: 'Y–V', e: 'W–V', f: 'V–T', g: 'U–T',
+        h: 'T–S', i: 'U–S', j: 'X–W', k: 'X–U', l: 'fixed vertical offset', m: 'crank radius'
+      };
+
+      const stageNames = {
+        3: '3: frame + crank',
+        4: '4: add W',
+        5: '5: add V',
+        6: '6: add U',
+        7: '7: add T',
+        8: '8: foot S'
+      };
+
+      const canvas = document.getElementById('demoCanvas');
+      const ctx = canvas.getContext('2d');
+      const els = {
+        playPause: document.getElementById('playPause'),
+        resetAngle: document.getElementById('resetAngle'),
+        angle: document.getElementById('angle'),
+        angleValue: document.getElementById('angleValue'),
+        speed: document.getElementById('speed'),
+        speedValue: document.getElementById('speedValue'),
+        stage: document.getElementById('stage'),
+        stageValue: document.getElementById('stageValue'),
+        zoom: document.getElementById('zoom'),
+        zoomValue: document.getElementById('zoomValue'),
+        rodThickness: document.getElementById('rodThickness'),
+        rodThicknessValue: document.getElementById('rodThicknessValue'),
+        linkSelect: document.getElementById('linkSelect'),
+        linkMult: document.getElementById('linkMult'),
+        linkMultNumber: document.getElementById('linkMultNumber'),
+        linkMultValue: document.getElementById('linkMultValue'),
+        linkValue: document.getElementById('linkValue'),
+        resetLinks: document.getElementById('resetLinks'),
+        smallRandom: document.getElementById('smallRandom'),
+        showTrace: document.getElementById('showTrace'),
+        showCircles: document.getElementById('showCircles'),
+        showLabels: document.getElementById('showLabels'),
+        showGrid: document.getElementById('showGrid'),
+        showGhosts: document.getElementById('showGhosts'),
+        showVelocity: document.getElementById('showVelocity'),
+        footMetric: document.getElementById('footMetric'),
+        strideMetric: document.getElementById('strideMetric'),
+        liftMetric: document.getElementById('liftMetric'),
+        flatMetric: document.getElementById('flatMetric'),
+        steps: document.getElementById('steps'),
+        lengthsTable: document.getElementById('lengthsTable'),
+        statusDot: document.getElementById('statusDot'),
+        statusText: document.getElementById('statusText')
+      };
+
+      const multipliers = {};
+      Object.keys(baseLengths).forEach(k => multipliers[k] = 1);
+      const multiplierLimits = { min: 0.10, max: 3.00 };
+
+      function clamp(n, lo, hi) {
+        return Math.max(lo, Math.min(hi, n));
+      }
+
+      function setSelectedMultiplier(rawValue) {
+        const n = Number(String(rawValue).trim());
+        if (!Number.isFinite(n)) return;
+        multipliers[state.selectedLink] = clamp(n, multiplierLimits.min, multiplierLimits.max);
+        resetTraceCache(); syncControls(); rebuildLengthTable(); render();
+      }
+
+      const state = {
+        theta: 0,
+        playing: true,
+        speed: Number(els.speed.value),
+        stage: Number(els.stage.value),
+        zoom: Number(els.zoom.value),
+        rodThickness: Number(els.rodThickness.value),
+        selectedLink: 'm',
+        dragging: false,
+        transform: null,
+        traceCacheKey: '',
+        trace: [],
+        metrics: null
+      };
+
+      const linkPairs = [
+        ['Z', 'X', 'm', 'crank'],
+        ['Y', 'W', 'b', 'upper'], ['X', 'W', 'j', 'upper'],
+        ['W', 'V', 'e', 'upper'], ['Y', 'V', 'd', 'upper'],
+        ['Y', 'U', 'c', 'lower'], ['X', 'U', 'k', 'lower'],
+        ['V', 'T', 'f', 'lower'], ['U', 'T', 'g', 'lower'],
+        ['T', 'S', 'h', 'foot'], ['U', 'S', 'i', 'foot']
+      ];
+
+      const pointStage = { Z: 3, Y: 3, X: 3, W: 4, V: 5, U: 6, T: 7, S: 8 };
+      const linkStage = { m: 3, b: 4, j: 4, e: 5, d: 5, c: 6, k: 6, f: 7, g: 7, h: 8, i: 8 };
+
+      function currentLengths() {
+        const L = {};
+        for (const k of Object.keys(baseLengths)) L[k] = baseLengths[k] * multipliers[k];
+        return L;
+      }
+
+      function fmt(n, digits = 2) {
+        return Number.isFinite(n) ? n.toFixed(digits) : '—';
+      }
+
+      function normAngle(rad) {
+        const tau = Math.PI * 2;
+        return ((rad % tau) + tau) % tau;
+      }
+
+      function angleDeg(rad) {
+        return normAngle(rad) * 180 / Math.PI;
+      }
+
+      function circleIntersections(P, r, Q, s) {
+        const dx = Q.x - P.x;
+        const dy = Q.y - P.y;
+        const d = Math.hypot(dx, dy);
+        const eps = 1e-9;
+        const tolerance = 1e-6;
+        if (d < eps) return { ok: false, reason: 'same center', d, points: [] };
+        if (d > r + s + tolerance) return { ok: false, reason: 'too far apart', d, points: [] };
+        if (d < Math.abs(r - s) - tolerance) return { ok: false, reason: 'nested circles', d, points: [] };
+
+        const alpha = (r * r - s * s + d * d) / (2 * d);
+        let h2 = r * r - alpha * alpha;
+        if (h2 < 0 && h2 > -tolerance) h2 = 0;
+        if (h2 < 0) return { ok: false, reason: 'no real h', d, points: [] };
+        const h = Math.sqrt(h2);
+        const ux = dx / d;
+        const uy = dy / d;
+        const mx = P.x + alpha * ux;
+        const my = P.y + alpha * uy;
+        const px = -uy;
+        const py = ux;
+        const points = h < eps
+          ? [{ x: mx, y: my }]
+          : [{ x: mx + h * px, y: my + h * py }, { x: mx - h * px, y: my - h * py }];
+        return { ok: true, d, alpha, h, points };
+      }
+
+      function choosePoint(name, points) {
+        if (points.length === 1) return points[0];
+        if (name === 'W') return points.reduce((best, p) => p.y > best.y ? p : best, points[0]);
+        if (name === 'V') return points.reduce((best, p) => p.x < best.x ? p : best, points[0]);
+        return points.reduce((best, p) => p.y < best.y ? p : best, points[0]);
+      }
+
+      function makeConstructionEntry(name, AName, rName, BName, sName, ci, chosen) {
+        const lower = Math.abs(ci?.r1 ?? 0);
+        return {
+          name, AName, rName, BName, sName,
+          ok: Boolean(ci && ci.ok),
+          d: ci ? ci.d : NaN,
+          h: ci ? ci.h : NaN,
+          alpha: ci ? ci.alpha : NaN,
+          reason: ci && !ci.ok ? ci.reason : '',
+          chosen
+        };
+      }
+
+      function solveLeg(theta, L = currentLengths()) {
+        const points = {
+          Z: { x: 0, y: 0 },
+          Y: { x: -L.a, y: -L.l },
+          X: { x: L.m * Math.cos(theta), y: L.m * Math.sin(theta) }
+        };
+
+        const construction = [];
+        const result = { ok: true, points, construction, failedAt: '', L };
+
+        function addPoint(name, AName, rName, BName, sName) {
+          const ci = circleIntersections(points[AName], L[rName], points[BName], L[sName]);
+          if (!ci.ok) {
+            construction.push(makeConstructionEntry(name, AName, rName, BName, sName, ci, null));
+            result.ok = false;
+            result.failedAt = `${name}: ${ci.reason}`;
+            return false;
+          }
+          const chosen = choosePoint(name, ci.points);
+          points[name] = chosen;
+          construction.push(makeConstructionEntry(name, AName, rName, BName, sName, ci, chosen));
+          return true;
+        }
+
+        if (!addPoint('W', 'X', 'j', 'Y', 'b')) return result;
+        if (!addPoint('V', 'W', 'e', 'Y', 'd')) return result;
+        if (!addPoint('U', 'Y', 'c', 'X', 'k')) return result;
+        if (!addPoint('T', 'V', 'f', 'U', 'g')) return result;
+        if (!addPoint('S', 'T', 'h', 'U', 'i')) return result;
+        return result;
+      }
+
+      function traceKey(L) {
+        return Object.keys(L).map(k => `${k}:${L[k].toFixed(4)}`).join('|');
+      }
+
+      function computeTrace(L) {
+        const key = traceKey(L);
+        if (key === state.traceCacheKey && state.trace.length) return { trace: state.trace, metrics: state.metrics };
+        const trace = [];
+        const failures = [];
+        const n = 360;
+        for (let i = 0; i < n; i++) {
+          const theta = i / n * Math.PI * 2;
+          const sol = solveLeg(theta, L);
+          if (sol.ok && sol.points.S) trace.push({ ...sol.points.S, theta });
+          else failures.push(theta);
+        }
+
+        let metrics = { stride: NaN, lift: NaN, flatness: NaN, stancePct: NaN, validPct: trace.length / n * 100 };
+        if (trace.length > 3) {
+          const xs = trace.map(p => p.x);
+          const ys = trace.map(p => p.y);
+          const minX = Math.min(...xs), maxX = Math.max(...xs);
+          const minY = Math.min(...ys), maxY = Math.max(...ys);
+          const lift = maxY - minY;
+          const stance = trace.filter(p => p.y <= minY + lift * 0.16);
+          const meanY = stance.reduce((a, p) => a + p.y, 0) / Math.max(1, stance.length);
+          const variance = stance.reduce((a, p) => a + (p.y - meanY) ** 2, 0) / Math.max(1, stance.length);
+          metrics = {
+            stride: maxX - minX,
+            lift,
+            flatness: Math.sqrt(variance),
+            stancePct: stance.length / trace.length * 100,
+            validPct: trace.length / n * 100,
+            minX, maxX, minY, maxY,
+            stanceCut: minY + lift * 0.16
+          };
+        }
+        state.traceCacheKey = key;
+        state.trace = trace;
+        state.metrics = metrics;
+        return { trace, metrics };
+      }
+
+      function resizeCanvas() {
+        const dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+        const rect = canvas.getBoundingClientRect();
+        const w = Math.round(rect.width * dpr);
+        const h = Math.round(rect.height * dpr);
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+        }
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        return { w: rect.width, h: rect.height, dpr };
+      }
+
+      function sceneBounds(L, sol, trace) {
+        const pts = [];
+        const add = p => { if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) pts.push(p); };
+        if (trace && trace.length) trace.forEach(add);
+        Object.values(sol.points).forEach(add);
+        add({ x: -L.a, y: 0 });
+        add({ x: 0, y: -L.l });
+
+        if (state.stage < 8 && !state.showGhosts) {
+          for (const [name, p] of Object.entries(sol.points)) if (pointStage[name] <= state.stage) add(p);
+        }
+
+        if (els.showGhosts.checked) {
+          const offsets = [-160, -96, -32, 32, 96, 160];
+          for (const off of offsets) {
+            trace.forEach(p => add({ x: p.x + off, y: p.y }));
+            add({ x: off, y: 0 });
+            add({ x: -L.a + off, y: -L.l });
+          }
+        }
+
+        if (!pts.length) return { minX: -100, maxX: 40, minY: -120, maxY: 60 };
+        let minX = Math.min(...pts.map(p => p.x));
+        let maxX = Math.max(...pts.map(p => p.x));
+        let minY = Math.min(...pts.map(p => p.y));
+        let maxY = Math.max(...pts.map(p => p.y));
+        const padX = Math.max(8, (maxX - minX) * 0.15);
+        const padY = Math.max(8, (maxY - minY) * 0.16);
+        minX -= padX; maxX += padX; minY -= padY; maxY += padY;
+        return { minX, maxX, minY, maxY };
+      }
+
+      function makeTransform(bounds, size) {
+        const pad = 32;
+        const rangeX = Math.max(1, bounds.maxX - bounds.minX);
+        const rangeY = Math.max(1, bounds.maxY - bounds.minY);
+        const scale = Math.max(0.1, Math.min((size.w - pad * 2) / rangeX, (size.h - pad * 2) / rangeY) * state.zoom);
+        const cx = (bounds.minX + bounds.maxX) / 2;
+        const cy = (bounds.minY + bounds.maxY) / 2;
+        return {
+          scale,
+          ox: size.w / 2 - cx * scale,
+          oy: size.h / 2 + cy * scale,
+          w: size.w,
+          h: size.h,
+          toScreen(p, offX = 0, offY = 0) {
+            return { x: this.ox + (p.x + offX) * this.scale, y: this.oy - (p.y + offY) * this.scale };
+          },
+          toMath(s) {
+            return { x: (s.x - this.ox) / this.scale, y: (this.oy - s.y) / this.scale };
+          }
+        };
+      }
+
+      function strokeLine(A, B, color, width = 2, dash = []) {
+        ctx.save();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.setLineDash(dash);
+        ctx.beginPath();
+        ctx.moveTo(A.x, A.y);
+        ctx.lineTo(B.x, B.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function fillCircle(P, r, fill, stroke = 'rgba(255,255,255,.8)', width = 1.2) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(P.x, P.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = width;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawLabel(text, P, fill = '#e5e7eb', dx = 8, dy = -8) {
+        ctx.save();
+        ctx.font = '700 13px ui-sans-serif, system-ui, sans-serif';
+        ctx.textBaseline = 'middle';
+        const w = ctx.measureText(text).width;
+        const x = P.x + dx;
+        const y = P.y + dy;
+        ctx.fillStyle = 'rgba(2, 6, 23, .72)';
+        ctx.strokeStyle = 'rgba(148, 163, 184, .22)';
+        roundRect(x - 4, y - 9, w + 8, 18, 7);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = fill;
+        ctx.fillText(text, x, y);
+        ctx.restore();
+      }
+
+      function roundRect(x, y, w, h, r) {
+        const rr = Math.min(r, w / 2, h / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + rr, y);
+        ctx.arcTo(x + w, y, x + w, y + h, rr);
+        ctx.arcTo(x + w, y + h, x, y + h, rr);
+        ctx.arcTo(x, y + h, x, y, rr);
+        ctx.arcTo(x, y, x + w, y, rr);
+        ctx.closePath();
+      }
+
+      function drawGrid(t, L, metrics) {
+        const step = 10;
+        const minMath = t.toMath({ x: 0, y: t.h });
+        const maxMath = t.toMath({ x: t.w, y: 0 });
+        ctx.save();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = 'rgba(148, 163, 184, .08)';
+        for (let x = Math.floor(minMath.x / step) * step; x <= maxMath.x; x += step) {
+          const A = t.toScreen({ x, y: minMath.y });
+          const B = t.toScreen({ x, y: maxMath.y });
+          ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+        }
+        for (let y = Math.floor(minMath.y / step) * step; y <= maxMath.y; y += step) {
+          const A = t.toScreen({ x: minMath.x, y });
+          const B = t.toScreen({ x: maxMath.x, y });
+          ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+        }
+        ctx.strokeStyle = 'rgba(96, 165, 250, .28)';
+        strokeLine(t.toScreen({ x: minMath.x, y: 0 }), t.toScreen({ x: maxMath.x, y: 0 }), 'rgba(96,165,250,.24)', 1.4, [6, 6]);
+        strokeLine(t.toScreen({ x: 0, y: minMath.y }), t.toScreen({ x: 0, y: maxMath.y }), 'rgba(96,165,250,.24)', 1.4, [6, 6]);
+
+        if (metrics && Number.isFinite(metrics.minY)) {
+          const groundY = metrics.stanceCut;
+          const A = t.toScreen({ x: minMath.x, y: groundY });
+          const B = t.toScreen({ x: maxMath.x, y: groundY });
+          strokeLine(A, B, 'rgba(52, 211, 153, .32)', 1.6, [10, 7]);
+        }
+        ctx.restore();
+      }
+
+      function drawTrace(t, trace, metrics, offX = 0, ghost = false) {
+        if (!trace.length) return;
+        ctx.save();
+        ctx.lineWidth = ghost ? 1.15 : 2.2;
+        ctx.strokeStyle = ghost ? 'rgba(56, 189, 248, .12)' : 'rgba(56, 189, 248, .58)';
+        ctx.beginPath();
+        trace.forEach((p, i) => {
+          const s = t.toScreen(p, offX);
+          if (i === 0) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+        });
+        ctx.closePath();
+        ctx.stroke();
+
+        if (!ghost && metrics && Number.isFinite(metrics.stanceCut)) {
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = 'rgba(52, 211, 153, .75)';
+          let open = false;
+          for (const p of trace) {
+            const s = t.toScreen(p, offX);
+            if (p.y <= metrics.stanceCut) {
+              if (!open) { ctx.beginPath(); ctx.moveTo(s.x, s.y); open = true; }
+              else ctx.lineTo(s.x, s.y);
+            } else if (open) {
+              ctx.stroke(); open = false;
+            }
+          }
+          if (open) ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function visiblePoint(name) {
+        return pointStage[name] <= state.stage;
+      }
+
+      function drawConstructionCircles(sol, t, offX = 0) {
+        const L = sol.L;
+        const byStage = sol.construction.filter(entry => pointStage[entry.name] <= state.stage);
+        ctx.save();
+        ctx.lineWidth = 1.1;
+        for (const entry of byStage) {
+          const A = sol.points[entry.AName];
+          const B = sol.points[entry.BName];
+          if (!A || !B) continue;
+          const sA = t.toScreen(A, offX);
+          const sB = t.toScreen(B, offX);
+          ctx.setLineDash([5, 7]);
+          ctx.strokeStyle = 'rgba(248, 113, 113, .24)';
+          ctx.beginPath(); ctx.arc(sA.x, sA.y, L[entry.rName] * t.scale, 0, Math.PI * 2); ctx.stroke();
+          ctx.strokeStyle = 'rgba(74, 222, 128, .22)';
+          ctx.beginPath(); ctx.arc(sB.x, sB.y, L[entry.sName] * t.scale, 0, Math.PI * 2); ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      function linkColor(kind, label, ghost) {
+        if (ghost) return 'rgba(226,232,240,.20)';
+        if (label === state.selectedLink) return 'rgba(245, 158, 11, .98)';
+        if (kind === 'crank') return 'rgba(245, 158, 11, .92)';
+        if (kind === 'upper') return label === 'b' || label === 'd' ? 'rgba(74, 222, 128, .90)' : 'rgba(248, 113, 113, .88)';
+        if (kind === 'lower') return label === 'c' || label === 'g' ? 'rgba(74, 222, 128, .90)' : 'rgba(96, 165, 250, .90)';
+        return 'rgba(248, 113, 113, .92)';
+      }
+
+      function drawFrame(sol, t, offX = 0, ghost = false) {
+        const L = sol.L;
+        const Z = sol.points.Z;
+        const Y = sol.points.Y;
+        const corner = { x: -L.a, y: 0 };
+        const colorA = state.selectedLink === 'a' && !ghost ? 'rgba(245, 158, 11, .98)' : (ghost ? 'rgba(96,165,250,.13)' : 'rgba(96,165,250,.55)');
+        const colorL = state.selectedLink === 'l' && !ghost ? 'rgba(245, 158, 11, .98)' : (ghost ? 'rgba(96,165,250,.13)' : 'rgba(96,165,250,.55)');
+        const frameWidth = (ghost ? 2.3 : 2.2) * state.rodThickness;
+        strokeLine(t.toScreen(Z, offX), t.toScreen(corner, offX), colorA, frameWidth, [8, 6]);
+        strokeLine(t.toScreen(corner, offX), t.toScreen(Y, offX), colorL, frameWidth, [8, 6]);
+        if (!ghost && els.showLabels.checked) {
+          drawLabel('a', midpoint(t.toScreen(Z, offX), t.toScreen(corner, offX)), colorA, -6, -14);
+          drawLabel('l', midpoint(t.toScreen(corner, offX), t.toScreen(Y, offX)), colorL, 8, 0);
+        }
+      }
+
+      function midpoint(A, B) {
+        return { x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 };
+      }
+
+      function drawLeg(sol, t, options = {}) {
+        const offX = options.offX || 0;
+        const ghost = Boolean(options.ghost);
+        const labels = els.showLabels.checked && !ghost && options.labels !== false;
+        const pointRadius = ghost ? 2.3 : 4.8;
+        const lineWidth = (ghost ? 2.4 : 3.2) * state.rodThickness;
+
+        if (els.showCircles.checked && !ghost) drawConstructionCircles(sol, t, offX);
+        drawFrame(sol, t, offX, ghost);
+
+        for (const [AName, BName, label, kind] of linkPairs) {
+          if (linkStage[label] > state.stage) continue;
+          const A = sol.points[AName];
+          const B = sol.points[BName];
+          if (!A || !B || !visiblePoint(AName) || !visiblePoint(BName)) continue;
+          const width = label === state.selectedLink && !ghost ? lineWidth + 2.2 * state.rodThickness : lineWidth;
+          strokeLine(t.toScreen(A, offX), t.toScreen(B, offX), linkColor(kind, label, ghost), width);
+          if (labels) {
+            const mid = midpoint(t.toScreen(A, offX), t.toScreen(B, offX));
+            if (['m','b','j','e','d','c','k','f','g','h','i'].includes(label)) {
+              drawLabel(label, mid, label === state.selectedLink ? '#fbbf24' : '#e5e7eb', -7, -7);
+            }
+          }
+        }
+
+        const pointColors = { Z: '#60a5fa', Y: '#60a5fa', X: '#f59e0b', W: '#fca5a5', V: '#fca5a5', U: '#93c5fd', T: '#93c5fd', S: '#34d399' };
+        for (const name of ['Z', 'Y', 'X', 'W', 'V', 'U', 'T', 'S']) {
+          if (!visiblePoint(name)) continue;
+          const p = sol.points[name];
+          if (!p) continue;
+          const s = t.toScreen(p, offX);
+          fillCircle(s, name === 'S' && !ghost ? pointRadius + 1.8 : pointRadius, ghost ? 'rgba(226,232,240,.18)' : pointColors[name], ghost ? 'rgba(226,232,240,.22)' : '#020617', ghost ? 1 : 1.8);
+          if (labels) drawLabel(name, s, name === 'S' ? '#86efac' : '#dbeafe');
+        }
+      }
+
+      function drawVelocity(sol, t, L) {
+        if (!sol.ok || !sol.points.S) return;
+        const dt = 0.015;
+        const next = solveLeg(state.theta + dt, L);
+        const prev = solveLeg(state.theta - dt, L);
+        if (!next.ok || !prev.ok || !next.points.S || !prev.points.S) return;
+        const vx = (next.points.S.x - prev.points.S.x) / (2 * dt);
+        const vy = (next.points.S.y - prev.points.S.y) / (2 * dt);
+        const mag = Math.hypot(vx, vy);
+        if (!Number.isFinite(mag) || mag < 1e-6) return;
+        const p = t.toScreen(sol.points.S);
+        const scale = Math.min(42, Math.max(18, mag * 0.75));
+        const q = { x: p.x + vx / mag * scale, y: p.y - vy / mag * scale };
+        ctx.save();
+        ctx.strokeStyle = 'rgba(245, 158, 11, .92)';
+        ctx.fillStyle = 'rgba(245, 158, 11, .92)';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+        const angle = Math.atan2(q.y - p.y, q.x - p.x);
+        ctx.beginPath();
+        ctx.moveTo(q.x, q.y);
+        ctx.lineTo(q.x - 9 * Math.cos(angle - .45), q.y - 9 * Math.sin(angle - .45));
+        ctx.lineTo(q.x - 9 * Math.cos(angle + .45), q.y - 9 * Math.sin(angle + .45));
+        ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
+
+      function drawGhosts(t, L, trace, metrics) {
+        const phases = [0, Math.PI, 2 * Math.PI / 3, 5 * Math.PI / 3, 4 * Math.PI / 3, Math.PI / 3];
+        const offsets = [-160, -96, -32, 32, 96, 160];
+        ctx.save();
+        ctx.strokeStyle = 'rgba(96, 165, 250, .22)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([9, 7]);
+        const railY = 0;
+        const start = t.toScreen({ x: offsets[0] - 15, y: railY });
+        const end = t.toScreen({ x: offsets[offsets.length - 1] + 15, y: railY });
+        ctx.beginPath(); ctx.moveTo(start.x, start.y); ctx.lineTo(end.x, end.y); ctx.stroke();
+        ctx.restore();
+        offsets.forEach((off, idx) => {
+          const sol = solveLeg(state.theta + phases[idx], L);
+          if (!sol.ok) return;
+          if (els.showTrace.checked) drawTrace(t, trace, metrics, off, true);
+          drawLeg(sol, t, { offX: off, ghost: true, labels: false });
+        });
+      }
+
+      function updateMetrics(sol, metrics) {
+        if (sol.ok && sol.points.S) {
+          els.footMetric.textContent = `(${fmt(sol.points.S.x, 1)}, ${fmt(sol.points.S.y, 1)})`;
+        } else {
+          els.footMetric.textContent = 'not solved';
+        }
+        els.strideMetric.textContent = Number.isFinite(metrics?.stride) ? fmt(metrics.stride, 1) : '—';
+        els.liftMetric.textContent = Number.isFinite(metrics?.lift) ? fmt(metrics.lift, 1) : '—';
+        els.flatMetric.textContent = Number.isFinite(metrics?.flatness) ? fmt(metrics.flatness, 2) : '—';
+      }
+
+      function updateSteps(sol) {
+        const rows = sol.construction.map((entry, idx) => {
+          const visible = pointStage[entry.name] <= state.stage;
+          const dText = Number.isFinite(entry.d) ? `d=${entry.d.toFixed(2)}` : 'd=—';
+          const hText = Number.isFinite(entry.h) ? `h=${entry.h.toFixed(2)}` : '';
+          const status = entry.ok ? '<span class="ok">✓</span>' : '<span class="no">×</span>';
+          const dim = visible ? '' : 'style="opacity:.45"';
+          return `<div class="step" ${dim}>
+            <span class="badge">${idx + 4}</span>
+            <span>${entry.name} = circle(${entry.AName}, ${entry.rName}) ∩ circle(${entry.BName}, ${entry.sName})<br><span style="color:#94a3b8">${dText} ${hText}${entry.reason ? ' · ' + entry.reason : ''}</span></span>
+            ${status}
+          </div>`;
+        }).join('');
+        els.steps.innerHTML = rows || '<div class="step"><span class="badge">!</span><span>Construction stopped before the first moving point.</span><span class="no">×</span></div>';
+      }
+
+      function drawHUD(sol, metrics, size) {
+        ctx.save();
+        const text = sol.ok
+          ? `θ=${fmt(angleDeg(state.theta), 1)}°  •  valid trace=${fmt(metrics?.validPct, 0)}%  •  stance≈${fmt(metrics?.stancePct, 0)}%`
+          : `θ=${fmt(angleDeg(state.theta), 1)}°  •  failed: ${sol.failedAt}`;
+        ctx.font = '700 13px ui-sans-serif, system-ui, sans-serif';
+        const w = ctx.measureText(text).width + 22;
+        roundRect(14, 14, Math.min(size.w - 28, w), 32, 12);
+        ctx.fillStyle = 'rgba(15, 23, 42, .72)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(148, 163, 184, .18)';
+        ctx.stroke();
+        ctx.fillStyle = sol.ok ? '#dbeafe' : '#fecdd3';
+        ctx.fillText(text, 25, 35);
+        ctx.restore();
+      }
+
+      function render() {
+        const size = resizeCanvas();
+        const L = currentLengths();
+        const sol = solveLeg(state.theta, L);
+        const { trace, metrics } = computeTrace(L);
+        const bounds = sceneBounds(L, sol, trace);
+        const t = makeTransform(bounds, size);
+        state.transform = t;
+
+        ctx.clearRect(0, 0, size.w, size.h);
+        const gradient = ctx.createLinearGradient(0, 0, size.w, size.h);
+        gradient.addColorStop(0, '#020617');
+        gradient.addColorStop(1, '#08111f');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size.w, size.h);
+
+        if (els.showGrid.checked) drawGrid(t, L, metrics);
+        if (els.showGhosts.checked) drawGhosts(t, L, trace, metrics);
+        if (els.showTrace.checked && state.stage >= 8 && !els.showGhosts.checked) drawTrace(t, trace, metrics);
+        drawLeg(sol, t);
+        if (els.showVelocity.checked && state.stage >= 8 && !els.showGhosts.checked) drawVelocity(sol, t, L);
+        drawHUD(sol, metrics, size);
+        updateMetrics(sol, metrics);
+        updateSteps(sol);
+
+        els.statusDot.classList.toggle('bad', !sol.ok);
+        els.statusText.textContent = sol.ok ? 'linkage solved' : sol.failedAt;
+      }
+
+      function syncControls() {
+        els.angle.value = angleDeg(state.theta).toFixed(1);
+        els.angleValue.textContent = `${fmt(angleDeg(state.theta), 1)}°`;
+        els.speedValue.textContent = `${state.speed} rpm`;
+        els.stageValue.textContent = stageNames[state.stage];
+        els.zoomValue.textContent = `${state.zoom.toFixed(2)}×`;
+        els.rodThicknessValue.textContent = `${state.rodThickness.toFixed(2)}×`;
+        const selected = state.selectedLink;
+        const current = baseLengths[selected] * multipliers[selected];
+        els.linkMult.value = multipliers[selected].toFixed(3);
+        els.linkMultNumber.value = multipliers[selected].toFixed(3);
+        els.linkMultValue.textContent = `${multipliers[selected].toFixed(3)}×`;
+        els.linkValue.textContent = `${selected} = ${current.toFixed(2)}`;
+        els.playPause.textContent = state.playing ? 'Pause' : 'Play';
+      }
+
+      function rebuildLengthTable() {
+        const L = currentLengths();
+        els.lengthsTable.innerHTML = Object.keys(baseLengths).map(k => {
+          const changed = Math.abs(multipliers[k] - 1) > 1e-6;
+          return `<div class="length-cell" title="${descriptions[k]}"><strong>${k}</strong><span style="${changed ? 'color:#fbbf24;font-weight:800' : ''}">${L[k].toFixed(1)}</span></div>`;
+        }).join('');
+      }
+
+      function resetTraceCache() {
+        state.traceCacheKey = '';
+        state.trace = [];
+      }
+
+      function populateLinkSelect() {
+        els.linkSelect.innerHTML = Object.keys(baseLengths).map(k => `<option value="${k}">${k}: ${descriptions[k]} (${baseLengths[k]})</option>`).join('');
+        els.linkSelect.value = state.selectedLink;
+      }
+
+      function installEvents() {
+        els.playPause.addEventListener('click', () => { state.playing = !state.playing; syncControls(); });
+        els.resetAngle.addEventListener('click', () => { state.theta = 0; state.playing = false; syncControls(); render(); });
+        els.angle.addEventListener('input', () => { state.theta = Number(els.angle.value) * Math.PI / 180; state.playing = false; syncControls(); render(); });
+        els.speed.addEventListener('input', () => { state.speed = Number(els.speed.value); syncControls(); });
+        els.stage.addEventListener('input', () => { state.stage = Number(els.stage.value); syncControls(); render(); });
+        els.zoom.addEventListener('input', () => { state.zoom = Number(els.zoom.value); syncControls(); render(); });
+        els.rodThickness.addEventListener('input', () => { state.rodThickness = Number(els.rodThickness.value); syncControls(); render(); });
+        els.linkSelect.addEventListener('change', () => {
+          state.selectedLink = els.linkSelect.value;
+          syncControls(); rebuildLengthTable(); render();
+        });
+        els.linkMult.addEventListener('input', () => {
+          multipliers[state.selectedLink] = Number(els.linkMult.value);
+          resetTraceCache(); syncControls(); rebuildLengthTable(); render();
+        });
+        els.linkMultNumber.addEventListener('change', () => setSelectedMultiplier(els.linkMultNumber.value));
+        els.linkMultNumber.addEventListener('keydown', ev => {
+          if (ev.key === 'Enter') setSelectedMultiplier(els.linkMultNumber.value);
+        });
+        els.resetLinks.addEventListener('click', () => {
+          Object.keys(multipliers).forEach(k => multipliers[k] = 1);
+          resetTraceCache(); syncControls(); rebuildLengthTable(); render();
+        });
+        els.smallRandom.addEventListener('click', () => {
+          Object.keys(multipliers).forEach(k => multipliers[k] = 1 + (Math.random() - 0.5) * 0.06);
+          multipliers.a = 1 + (Math.random() - 0.5) * 0.025;
+          multipliers.l = 1 + (Math.random() - 0.5) * 0.025;
+          resetTraceCache(); syncControls(); rebuildLengthTable(); render();
+        });
+        for (const key of ['showTrace','showCircles','showLabels','showGrid','showGhosts','showVelocity']) {
+          els[key].addEventListener('change', render);
+        }
+
+        function setAngleFromPointer(ev) {
+          const rect = canvas.getBoundingClientRect();
+          const screen = { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+          if (!state.transform) return;
+          const math = state.transform.toMath(screen);
+          state.theta = normAngle(Math.atan2(math.y, math.x));
+          state.playing = false;
+          syncControls();
+          render();
+        }
+
+        canvas.addEventListener('pointerdown', ev => {
+          canvas.setPointerCapture(ev.pointerId);
+          state.dragging = true;
+          setAngleFromPointer(ev);
+        });
+        canvas.addEventListener('pointermove', ev => { if (state.dragging) setAngleFromPointer(ev); });
+        canvas.addEventListener('pointerup', ev => { state.dragging = false; try { canvas.releasePointerCapture(ev.pointerId); } catch (_) {} });
+        canvas.addEventListener('pointercancel', () => { state.dragging = false; });
+        window.addEventListener('resize', render);
+      }
+
+      let last = performance.now();
+      function loop(now) {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        if (state.playing && state.speed > 0) {
+          state.theta = normAngle(state.theta + dt * state.speed * Math.PI * 2 / 60);
+          syncControls();
+        }
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      populateLinkSelect();
+      installEvents();
+      rebuildLengthTable();
+      syncControls();
+      requestAnimationFrame(loop);
+    })();
+  </script>
+</body>
+</html>
