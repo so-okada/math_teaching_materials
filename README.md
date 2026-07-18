@@ -789,8 +789,6 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 
 ## Technical Notes
 
-**Browser Compatibility:** All demos use vanilla JavaScript and HTML5 Canvas.
-
 **Dependencies:**
 - `brachistochrone.html`: Uses Tailwind CSS (CDN)
 - `stirling_formula.html`: Uses Chart.js and Tailwind CSS (CDN)
