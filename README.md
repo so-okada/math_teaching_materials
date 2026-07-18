@@ -23,6 +23,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html) | Probability & Statistics | Normal distribution, random walks |
 | [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
 | [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html) | Geometry | Perspective projection, similar triangles, circle of confusion |
+| [Gömböc](https://so-okada.github.io/math_teaching_materials/gomboc.html) | Geometry | Mono-monostatic convex body, equilibrium points |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 | [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
 | [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html) | Trigonometry | Triangle geometry, cosine rule |
@@ -429,6 +430,34 @@ Interactive side-view ray diagram of a pinhole camera, showing how a single hole
 
 ---
 
+### [Gömböc](https://so-okada.github.io/math_teaching_materials/gomboc.html)
+**File:** `gomboc.html`
+
+Interactive 3D exploration of a Gömböc surface (Sloan's analytical model), a homogeneous convex body with exactly one stable and one unstable equilibrium point.
+
+**Mathematical Background:**
+In spherical coordinates $(\theta,\varphi)$ centered at the center of mass,
+
+$$r^4 = 1 + 4\beta\,\sin\theta\,\cos\bigl(\varphi - P(\theta)\bigr),\qquad
+P(\theta) = \frac{3\pi}{2}\left(\cos\theta - \frac{\cos^3\theta}{3}\right).$$
+
+The radial function has exactly two critical points on $S^2$: the stable point $S$ at $(\pi/2,\pi)$, the equatorial minimum, and the unstable point $U$ at $(\pi/2,0)$, the equatorial maximum.
+
+**Controls:**
+- **Perturbation $\beta$**: Unit sphere to stronger relief
+- **Gravity lab**: Drop, place at $S$, tip from $U$, gravity and friction settings
+- **Probe point $(\theta,\varphi)$**: Live readout of $r$, $P(\theta)$, and $x,y,z$
+- **Rendering**: Coloring, mesh quality, equilibria, phase curves, OBJ export
+
+**References:**
+- M. L. Sloan, "An Analytical Gomboc," [arXiv:2306.14914](https://arxiv.org/abs/2306.14914) (2023)
+- P. L. Várkonyi and G. Domokos, "Mono-monostatic bodies: the answer to Arnold's question," *The Mathematical Intelligencer* **28** (2006), 34–38
+- V. W. Couey, "Sloan's Analytical Gömböc at Published $\beta$: A Strict-Convexity-Constrained Reanalysis," [arXiv:2604.17120](https://arxiv.org/abs/2604.17120) (2026)
+- [Gömböc — Wolfram MathWorld](https://mathworld.wolfram.com/Gomboc.html)
+- [Gömböc — Wikipedia](https://en.wikipedia.org/wiki/G%C3%B6mb%C3%B6c)
+
+---
+
 ## Trigonometry
 
 ### [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html)
@@ -787,6 +816,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `sine_theorem.html`: Uses MathJax (CDN)
 - `arrows_impossibility_theorem.html`: Uses MathJax (CDN)
 - `pinhole_camera.html`: Uses MathJax (CDN)
+- `gomboc.html`: Uses Three.js and OrbitControls (CDN)
 
 ---
 
