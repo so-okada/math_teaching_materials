@@ -1,0 +1,2579 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Interactive 3D mathematical demo of an analytical Gömböc surface model by Millard L. Sloan." />
+  <title>Gömböc Demo — Sloan Model 2</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07111d;
+      --bg-deep: #030914;
+      --card: rgba(13, 28, 44, 0.82);
+      --card-strong: rgba(16, 34, 52, 0.96);
+      --border: rgba(159, 207, 255, 0.16);
+      --border-strong: rgba(159, 207, 255, 0.28);
+      --text: #eef7ff;
+      --muted: #9fb4c8;
+      --muted-2: #71879b;
+      --cyan: #5de1e6;
+      --blue: #65a9ff;
+      --amber: #ffbd59;
+      --stable: #6ce5a5;
+      --unstable: #ff718f;
+      --danger: #ff718f;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.30);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100vh;
+      overflow-x: hidden;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(circle at 18% 5%, rgba(65, 128, 205, 0.22), transparent 34rem),
+        radial-gradient(circle at 86% 8%, rgba(52, 192, 187, 0.14), transparent 30rem),
+        linear-gradient(145deg, var(--bg-deep), var(--bg) 52%, #081523);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.22;
+      background-image:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: linear-gradient(to bottom, black, transparent 86%);
+    }
+
+    a { color: var(--cyan); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    button, input, select { font: inherit; }
+
+    button {
+      border: 0;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .app {
+      position: relative;
+      z-index: 1;
+      width: min(1760px, 100%);
+      margin: 0 auto;
+      padding: 22px;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin: 2px 0 18px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--cyan);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      content: "";
+      width: 24px;
+      height: 2px;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--cyan), transparent);
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 900px;
+      font-size: clamp(2rem, 4vw, 4.4rem);
+      line-height: 0.96;
+      letter-spacing: -0.055em;
+    }
+
+    .subtitle {
+      max-width: 820px;
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: clamp(0.98rem, 1.7vw, 1.16rem);
+      line-height: 1.55;
+    }
+
+    .source-pills {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+      min-width: 260px;
+    }
+
+    .pill-link, .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 7px 11px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(9, 21, 34, 0.56);
+      backdrop-filter: blur(14px);
+      font-size: 0.78rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .pill-link:hover {
+      color: var(--text);
+      border-color: var(--border-strong);
+      text-decoration: none;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .card {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px) saturate(125%);
+    }
+
+    .viewer-card {
+      position: relative;
+      height: clamp(540px, 70vh, 740px);
+      min-height: 0;
+      isolation: isolate;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(74, 174, 201, 0.13), transparent 32%),
+        radial-gradient(circle at 20% 85%, rgba(73, 113, 191, 0.13), transparent 35%),
+        linear-gradient(150deg, rgba(7, 19, 32, 0.93), rgba(9, 24, 39, 0.82));
+    }
+
+    #threeHost {
+      position: absolute;
+      inset: 0;
+      touch-action: none;
+    }
+
+    #threeHost canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+
+    #threeHost canvas.grabbing { cursor: grabbing; }
+
+    .viewer-card:fullscreen {
+      width: 100vw;
+      height: 100vh;
+      min-height: 100vh;
+      border-radius: 0;
+    }
+
+    .viewer-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    .viewer-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px;
+    }
+
+    .stat-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-width: 76%;
+    }
+
+    .stat-chip {
+      display: grid;
+      gap: 1px;
+      min-width: 92px;
+      padding: 8px 10px;
+      border: 1px solid rgba(180, 220, 255, 0.14);
+      border-radius: 13px;
+      background: rgba(3, 12, 21, 0.56);
+      box-shadow: 0 10px 24px rgba(0,0,0,.16);
+      backdrop-filter: blur(12px);
+    }
+
+    .stat-chip span {
+      color: var(--muted-2);
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+    }
+
+    .stat-chip strong {
+      font-variant-numeric: tabular-nums;
+      font-size: 0.88rem;
+      line-height: 1.25;
+    }
+
+    .viewer-actions {
+      display: flex;
+      gap: 7px;
+      pointer-events: auto;
+    }
+
+    .icon-btn {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--muted);
+      background: rgba(4, 14, 24, 0.68);
+      backdrop-filter: blur(12px);
+      transition: 150ms ease;
+    }
+
+    .icon-btn:hover { color: var(--text); border-color: var(--border-strong); transform: translateY(-1px); }
+    .icon-btn.active { color: var(--cyan); border-color: rgba(93,225,230,.40); background: rgba(49, 124, 136, .22); }
+
+    .viewer-bottom {
+      position: absolute;
+      left: 16px;
+      right: 16px;
+      bottom: 14px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: auto 150px auto;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      color: var(--muted);
+      background: rgba(3, 12, 21, 0.58);
+      backdrop-filter: blur(12px);
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    .legend-gradient {
+      height: 9px;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 99px;
+      background: linear-gradient(90deg,
+        #2f5cf4 0%,
+        #17bce5 25%,
+        #35d17a 50%,
+        #ffd34e 75%,
+        #f2554a 100%);
+      box-shadow: 0 0 12px rgba(23,188,229,.22), inset 0 0 0 1px rgba(0,0,0,.12);
+    }
+
+    .legend span:first-child { color: #9db8ff; }
+    .legend span:last-child { color: #ff9991; }
+
+    .viewer-hint {
+      max-width: 380px;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      color: var(--muted);
+      background: rgba(3, 12, 21, 0.58);
+      backdrop-filter: blur(12px);
+      font-size: 0.75rem;
+      line-height: 1.35;
+      text-align: right;
+    }
+
+    .webgl-error {
+      position: absolute;
+      inset: 20% 10%;
+      z-index: 5;
+      display: none;
+      place-items: center;
+      padding: 24px;
+      border: 1px solid rgba(255,113,143,.4);
+      border-radius: 20px;
+      color: #ffdce4;
+      background: rgba(61, 16, 31, .92);
+      text-align: center;
+    }
+
+    .controls-card {
+      display: flex;
+      flex-direction: column;
+      height: clamp(540px, 70vh, 740px);
+      min-height: 0;
+      background: var(--card-strong);
+    }
+
+    .controls-head {
+      padding: 18px 19px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .controls-head h2,
+    .panel-head h2,
+    .math-card h2 {
+      margin: 0;
+      font-size: 1rem;
+      letter-spacing: -0.015em;
+    }
+
+    .controls-head p,
+    .panel-head p {
+      margin: 5px 0 0;
+      color: var(--muted-2);
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .controls-scroll {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: auto;
+      padding: 6px 18px 18px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(125,170,205,.32) transparent;
+    }
+
+    .control-section {
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(159,207,255,.10);
+    }
+
+    .control-section:last-child { border-bottom: 0; }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      color: #cfe7f8;
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .value-badge {
+      min-width: 56px;
+      padding: 4px 7px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--cyan);
+      background: rgba(68, 153, 164, .10);
+      font-size: 0.72rem;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      padding: 5px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(3, 12, 21, .55);
+    }
+
+    .segmented button {
+      padding: 9px 8px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 0.82rem;
+      font-weight: 800;
+      transition: 150ms ease;
+    }
+
+    .segmented button:hover { color: var(--text); }
+    .segmented button.active {
+      color: var(--text);
+      border-color: rgba(93,225,230,.24);
+      background: linear-gradient(135deg, rgba(53, 155, 164, .32), rgba(65, 112, 179, .27));
+      box-shadow: 0 8px 20px rgba(0,0,0,.15);
+    }
+
+    .control-row { display: grid; gap: 7px; margin-top: 11px; }
+
+    .control-row label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 0.79rem;
+      line-height: 1.35;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 5px;
+      margin: 3px 0 1px;
+      border-radius: 99px;
+      outline: none;
+      appearance: none;
+      background: linear-gradient(90deg, rgba(93,225,230,.8), rgba(101,169,255,.75));
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      width: 17px;
+      height: 17px;
+      border: 2px solid #e9fbff;
+      border-radius: 50%;
+      appearance: none;
+      background: #0e6070;
+      box-shadow: 0 0 0 4px rgba(93,225,230,.14);
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 14px;
+      height: 14px;
+      border: 2px solid #e9fbff;
+      border-radius: 50%;
+      background: #0e6070;
+      box-shadow: 0 0 0 4px rgba(93,225,230,.14);
+    }
+
+    .range-hints {
+      display: flex;
+      justify-content: space-between;
+      margin-top: -1px;
+      color: var(--muted-2);
+      font-size: 0.62rem;
+      font-variant-numeric: tabular-nums;
+      user-select: none;
+    }
+
+    .time-scale-hints {
+      position: relative;
+      display: block;
+      min-height: 0.82rem;
+    }
+
+    .time-scale-hints span {
+      position: absolute;
+      top: 0;
+      white-space: nowrap;
+    }
+
+    .time-scale-hints span:first-child { left: 0; }
+    .time-scale-hints span:nth-child(2) { left: 37.6%; transform: translateX(-50%); }
+    .time-scale-hints span:last-child { right: 0; }
+
+    .micro-note {
+      margin-top: 7px;
+      color: var(--muted-2);
+      font-size: 0.69rem;
+      line-height: 1.45;
+    }
+
+    select {
+      width: 100%;
+      padding: 9px 34px 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      outline: none;
+      color: var(--text);
+      background: rgba(3, 12, 21, .58);
+    }
+
+    .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      color: var(--muted);
+      background: rgba(3,12,21,.38);
+      font-size: 0.76rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .toggle input { display: none; }
+
+    .switch {
+      position: relative;
+      flex: 0 0 auto;
+      width: 30px;
+      height: 17px;
+      border-radius: 99px;
+      background: rgba(112, 143, 167, .28);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+      transition: 150ms ease;
+    }
+
+    .switch::after {
+      content: "";
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      background: #b5c5d2;
+      transition: 150ms ease;
+    }
+
+    .toggle input:checked + .switch { background: rgba(56, 177, 184, .50); }
+    .toggle input:checked + .switch::after { left: 16px; background: #edffff; }
+
+    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .action-btn {
+      padding: 9px 10px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      color: var(--muted);
+      background: rgba(3, 12, 21, .50);
+      font-size: 0.76rem;
+      font-weight: 800;
+      transition: 150ms ease;
+    }
+
+    .action-btn:hover { color: var(--text); border-color: var(--border-strong); transform: translateY(-1px); }
+    .action-btn.primary { color: #031516; background: linear-gradient(135deg, var(--cyan), #74bfff); border-color: transparent; }
+
+    .probe-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 10px;
+    }
+
+    .probe-cell {
+      padding: 8px 9px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(3, 12, 21, .38);
+    }
+
+    .probe-cell span {
+      display: block;
+      color: var(--muted-2);
+      font-size: 0.61rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .probe-cell strong {
+      display: block;
+      margin-top: 3px;
+      font-size: 0.77rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .analytics-grid {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .panel-card { min-height: 330px; }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px 10px;
+    }
+
+    .panel-tag {
+      flex: 0 0 auto;
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: var(--muted-2);
+      font-size: 0.66rem;
+      font-weight: 800;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+
+    .canvas-wrap {
+      position: relative;
+      height: 268px;
+      padding: 0 10px 10px;
+    }
+
+    .canvas-wrap canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 14px;
+      cursor: crosshair;
+    }
+
+    .math-card {
+      grid-column: 1 / -1;
+      padding: 19px;
+    }
+
+    .math-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.25fr) minmax(260px, .75fr);
+      gap: 18px;
+      align-items: stretch;
+      margin-top: 13px;
+    }
+
+    .equation-box {
+      display: grid;
+      align-content: center;
+      gap: 10px;
+      min-height: 154px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background:
+        radial-gradient(circle at 90% 0%, rgba(93,225,230,.10), transparent 45%),
+        rgba(3, 12, 21, .50);
+    }
+
+    .equation-main {
+      overflow-wrap: anywhere;
+      font-family: "STIX Two Math", Cambria, Georgia, serif;
+      font-size: clamp(1.05rem, 2.1vw, 1.62rem);
+      line-height: 1.45;
+      letter-spacing: .005em;
+    }
+
+    .equation-sub {
+      color: var(--muted);
+      font-family: "STIX Two Math", Cambria, Georgia, serif;
+      font-size: 0.93rem;
+      line-height: 1.45;
+    }
+
+    .math-facts {
+      display: grid;
+      gap: 8px;
+    }
+
+    .fact {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 13px;
+      background: rgba(3, 12, 21, .36);
+    }
+
+    .fact strong {
+      display: block;
+      margin-bottom: 3px;
+      font-size: .75rem;
+    }
+
+    .fact span {
+      color: var(--muted);
+      font-size: .75rem;
+      line-height: 1.45;
+    }
+
+    .stable-text { color: var(--stable); }
+    .unstable-text { color: var(--unstable); }
+
+    .research-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255,189,89,.20);
+      border-radius: 13px;
+      color: #c7b897;
+      background: rgba(92, 63, 16, .14);
+      font-size: .73rem;
+      line-height: 1.55;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 18px 3px 6px;
+      color: var(--muted-2);
+      font-size: .69rem;
+      line-height: 1.5;
+    }
+
+    .kbd {
+      padding: 1px 5px;
+      border: 1px solid var(--border);
+      border-bottom-color: rgba(159,207,255,.32);
+      border-radius: 5px;
+      color: var(--muted);
+      background: rgba(255,255,255,.04);
+      font-size: .66rem;
+    }
+
+    @media (max-width: 1080px) {
+      .hero { align-items: flex-start; flex-direction: column; }
+      .source-pills { justify-content: flex-start; min-width: 0; }
+      .main-grid { grid-template-columns: 1fr; }
+      .viewer-card { height: clamp(520px, 68vh, 680px); }
+      .controls-card { height: auto; min-height: 0; }
+      .controls-scroll { overflow: visible; }
+      .analytics-grid { grid-template-columns: 1fr; }
+      .math-card { grid-column: auto; }
+    }
+
+    @media (max-width: 700px) {
+      .app { padding: 13px; }
+      .viewer-card { height: 520px; min-height: 0; }
+      .stat-strip { max-width: 100%; }
+      .stat-chip { min-width: 78px; }
+      .viewer-hint { display: none; }
+      .viewer-bottom { align-items: flex-start; }
+      .legend { grid-template-columns: auto 72px auto; }
+      .toggle-grid, .button-row { grid-template-columns: 1fr; }
+      .math-layout { grid-template-columns: 1fr; }
+      footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">Interactive geometry laboratory</div>
+        <h1>Gömböc Demo</h1>
+        <p class="subtitle">Explore an analytical Gömböc surface model by Millard L. Sloan.</p>
+      </div>
+      <nav class="source-pills" aria-label="Sources">
+        <a class="pill-link" href="https://mathworld.wolfram.com/Gomboc.html" target="_blank" rel="noopener">↗ MathWorld</a>
+        <a class="pill-link" href="https://en.wikipedia.org/wiki/G%C3%B6mb%C3%B6c" target="_blank" rel="noopener">↗ Wikipedia</a>
+        <a class="pill-link" href="https://link.springer.com/article/10.1007/BF02984701" target="_blank" rel="noopener">↗ Mono-monostatic bodies</a>
+        <a class="pill-link" href="https://arxiv.org/abs/2306.14914" target="_blank" rel="noopener">↗ Sloan 2023</a>
+        <a class="pill-link" href="https://arxiv.org/abs/2604.17120" target="_blank" rel="noopener">↗ 2026 reanalysis</a>
+      </nav>
+    </header>
+
+    <section class="main-grid">
+      <article class="card viewer-card" id="viewerCard">
+        <div id="threeHost" aria-label="Interactive three-dimensional Gömböc"></div>
+        <div class="viewer-overlay">
+          <div class="viewer-top">
+            <div class="stat-strip">
+              <div class="stat-chip"><span>Surface</span><strong id="modelChip">Sloan Model 2</strong></div>
+              <div class="stat-chip"><span>β</span><strong id="betaChip">0.030</strong></div>
+              <div class="stat-chip"><span>Radius</span><strong id="radiusChip">0.968–1.029</strong></div>
+              <div class="stat-chip"><span>Approx. Kmin</span><strong id="curvatureChip">scanning…</strong></div>
+              <div class="stat-chip"><span>Motion</span><strong id="motionChip">resting</strong></div>
+            </div>
+            <div class="viewer-actions">
+              <button class="icon-btn" id="spinButton" type="button" title="Toggle camera auto-rotation" aria-label="Toggle camera auto-rotation">↻</button>
+              <button class="icon-btn" id="dropButtonTop" type="button" title="Drop from a random pose" aria-label="Drop from a random pose">⇣</button>
+              <button class="icon-btn" id="resetButtonTop" type="button" title="Reset camera" aria-label="Reset camera">⌂</button>
+              <button class="icon-btn" id="fullscreenButton" type="button" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+            </div>
+          </div>
+          <div class="viewer-bottom">
+            <div class="legend" id="radiusLegend"><span>low r</span><div class="legend-gradient"></div><span>high r</span></div>
+            <div class="viewer-hint">Grab and release to drop · extra-wide rolling floor · drag empty space to orbit · wheel/pinch or View size to zoom</div>
+          </div>
+        </div>
+        <div class="webgl-error" id="webglError">The 3D renderer could not start. Check that WebGL is enabled and that the Three.js CDN is reachable.</div>
+      </article>
+
+      <aside class="card controls-card">
+        <div class="controls-head">
+          <h2>Surface controls</h2>
+          <p>All angles below use Sloan's convention: θ is polar angle; φ is azimuth.</p>
+        </div>
+        <div class="controls-scroll">
+          <section class="control-section">
+            <div class="section-label">Perturbation <span class="value-badge" id="betaValue">0.030</span></div>
+            <div class="control-row">
+              <label for="betaSlider"><span>β</span><span>sphere ⟶ stronger relief</span></label>
+              <input id="betaSlider" type="range" min="0" max="0.18" step="0.001" value="0.030" />
+            </div>
+            <div class="micro-note">This demo uses Sloan's nonlinear second model.</div>
+          </section>
+
+          <section class="control-section">
+            <div class="section-label">Gravity lab · no assist <span class="value-badge" id="motionValue">running</span></div>
+            <div class="control-row">
+              <label for="gravitySlider"><span>Gravity</span><span id="gravityValue">9.8 m/s²</span></label>
+              <input id="gravitySlider" type="range" min="0" max="16" step="0.1" value="9.8" />
+            </div>
+            <div class="control-row">
+              <label for="timeScaleSlider"><span>Simulation speed</span><span id="timeScaleValue">1.00×</span></label>
+              <input id="timeScaleSlider" type="range" min="-2" max="3.32" step="0.01" value="0" aria-describedby="timeScaleHelp" />
+              <div class="range-hints time-scale-hints" aria-hidden="true"><span>¼× slow motion</span><span>1×</span><span>10× fast-forward</span></div>
+            </div>
+            <div class="toggle-grid" style="margin-top:10px">
+              <label class="toggle">Gravity<input id="gravityToggle" type="checkbox" checked><span class="switch"></span></label>
+              <label class="toggle">Floor friction<input id="frictionToggle" type="checkbox" checked><span class="switch"></span></label>
+            </div>
+            <div class="button-row" style="margin-top:10px">
+              <button class="action-btn primary" id="randomDropButton" type="button">Random drop</button>
+              <button class="action-btn" id="stablePoseButton" type="button">Place stable S</button>
+            </div>
+            <div class="button-row" style="margin-top:8px">
+              <button class="action-btn" id="unstablePoseButton" type="button">Tip from unstable U</button>
+              <button class="action-btn" id="resetBodyButton" type="button">Reset body</button>
+            </div>
+            <div class="micro-note" id="timeScaleHelp">Press directly on the Gömböc to grab it. Move while holding, then release to drop or toss it. The solver uses sampled floor contact, collision impulses, friction, approximate spherical inertia, and numerical velocity damping.</div>
+          </section>
+
+          <section class="control-section">
+            <div class="section-label">Probe point</div>
+            <div class="control-row">
+              <label for="thetaSlider"><span>θ · polar</span><span id="thetaValue">π/2</span></label>
+              <input id="thetaSlider" type="range" min="0" max="3.141592653589793" step="0.001" value="1.5707963267948966" />
+            </div>
+            <div class="control-row">
+              <label for="phiSlider"><span>φ · azimuth</span><span id="phiValue">π</span></label>
+              <input id="phiSlider" type="range" min="0" max="6.283185307179586" step="0.001" value="3.141592653589793" />
+            </div>
+            <div class="button-row" style="margin-top:10px">
+              <button class="action-btn" id="stableButton" type="button">Probe stable S</button>
+              <button class="action-btn" id="unstableButton" type="button">Probe unstable U</button>
+            </div>
+            <div class="probe-grid">
+              <div class="probe-cell"><span>r</span><strong id="probeR">—</strong></div>
+              <div class="probe-cell"><span>P(θ)</span><strong id="probeP">—</strong></div>
+              <div class="probe-cell"><span>x</span><strong id="probeX">—</strong></div>
+              <div class="probe-cell"><span>y</span><strong id="probeY">—</strong></div>
+              <div class="probe-cell"><span>z</span><strong id="probeZ">—</strong></div>
+              <div class="probe-cell"><span>φ − P</span><strong id="probePhase">—</strong></div>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <div class="section-label">Rendering</div>
+            <div class="control-row">
+              <label for="viewSizeSlider"><span>Object view size</span><span id="viewSizeValue">42%</span></label>
+              <input id="viewSizeSlider" type="range" min="35" max="100" step="1" value="42" />
+            </div>
+            <div class="control-row">
+              <label for="colorSelect"><span>Surface coloring</span></label>
+              <select id="colorSelect">
+                <option value="radius">Radius: vivid low → high</option>
+                <option value="phase">Phase: cyclic</option>
+                <option value="solid">Single material</option>
+              </select>
+            </div>
+            <div class="control-row" id="colorContrastRow">
+              <label for="colorContrastSlider"><span>Radius color contrast</span><span id="colorContrastValue">125%</span></label>
+              <input id="colorContrastSlider" type="range" min="70" max="190" step="5" value="125" />
+            </div>
+            <div class="control-row">
+              <label for="resolutionSelect"><span>Mesh quality</span></label>
+              <select id="resolutionSelect">
+                <option value="64">Fast · 64 × 128</option>
+                <option value="96" selected>Balanced · 96 × 192</option>
+                <option value="128">Fine · 128 × 256</option>
+              </select>
+            </div>
+            <div class="toggle-grid" style="margin-top:10px">
+              <label class="toggle">Wireframe<input id="wireToggle" type="checkbox"><span class="switch"></span></label>
+              <label class="toggle">Auto-rotate<input id="autoToggle" type="checkbox"><span class="switch"></span></label>
+              <label class="toggle">Equilibria<input id="equilibriumToggle" type="checkbox" checked><span class="switch"></span></label>
+              <label class="toggle">Phase curves<input id="phaseToggle" type="checkbox" checked><span class="switch"></span></label>
+              <label class="toggle">Axes<input id="axesToggle" type="checkbox" checked><span class="switch"></span></label>
+              <label class="toggle">Probe ray<input id="probeToggle" type="checkbox" checked><span class="switch"></span></label>
+            </div>
+          </section>
+
+          <section class="control-section">
+            <div class="section-label">Actions</div>
+            <div class="button-row">
+              <button class="action-btn" id="resetButton" type="button">Reset view</button>
+              <button class="action-btn primary" id="exportButton" type="button">Export OBJ</button>
+            </div>
+            <div class="micro-note">OBJ export uses the current β and mesh quality. The HTML itself loads Three.js from a CDN.</div>
+          </section>
+        </div>
+      </aside>
+    </section>
+
+    <section class="analytics-grid">
+      <article class="card panel-card">
+        <div class="panel-head">
+          <div><h2>Radial field on the sphere</h2><p>Equirectangular map of r(θ,φ). Click anywhere to move the probe.</p></div>
+          <span class="panel-tag">φ → · θ ↓</span>
+        </div>
+        <div class="canvas-wrap"><canvas id="radiusMap" aria-label="Map of the radial function"></canvas></div>
+      </article>
+
+      <article class="card panel-card">
+        <div class="panel-head">
+          <div><h2>Latitude profile</h2><p>At the selected θ, compare r over a full azimuthal turn.</p></div>
+          <span class="panel-tag" id="profileTag">θ = π/2</span>
+        </div>
+        <div class="canvas-wrap"><canvas id="profilePlot" aria-label="Plot of radius against azimuth"></canvas></div>
+      </article>
+
+      <article class="card math-card">
+        <h2>Sloan's second model</h2>
+        <div class="math-layout">
+          <div class="equation-box">
+            <div class="equation-main" id="equationMain">r<sup>4</sup> = 1 + 4β sin(θ) cos[φ − (3π/2)(cosθ − cos<sup>3</sup>θ/3)]</div>
+            <div class="equation-sub" id="equationSub">P(θ) = (3π/2)(cosθ − cos³θ/3) &nbsp;·&nbsp; x = r sinθ cosφ, y = r sinθ sinφ, z = r cosθ</div>
+          </div>
+          <div class="math-facts">
+            <div class="fact"><strong class="stable-text">Stable point S</strong><span id="stableFact">θ = π/2, φ = π; this is the equatorial radial minimum.</span></div>
+            <div class="fact"><strong class="unstable-text">Unstable point U</strong><span id="unstableFact">θ = π/2, φ = 0; this is the equatorial radial maximum.</span></div>
+            <div class="fact"><strong>How the phase works</strong><span>The red ridge follows φ = P(θ), where the cosine term is +1. The green valley follows φ = P(θ)+π, where it is −1.</span></div>
+          </div>
+        </div>
+        <div class="research-note"><strong>Convexity caution.</strong> A 2026 reanalysis reports a mono-monostatic and strictly convex sub-regime for sufficiently small β (about β ≲ 0.036 for the analyzed parameterization). This is not a rigorous demonstration; it adopts an approximate finite-difference Gaussian-curvature scan for surface analysis and an approximate rigid-body solver for the gravity simulation.</div>
+      </article>
+    </section>
+
+    <footer>
+      <span>Notation follows Sloan's paper: θ ∈ [0,π] is polar angle and φ ∈ [0,2π) is azimuth. MathWorld displays the same formulas with the angular symbols reversed.</span>
+      <span>Keys: <span class="kbd">D</span> random drop, <span class="kbd">G</span> gravity, <span class="kbd">B</span> stable body, <span class="kbd">S</span>/<span class="kbd">U</span> probe equilibria, <span class="kbd">R</span> reset camera.</span>
+    </footer>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script>
+  (() => {
+    "use strict";
+
+    const TAU = Math.PI * 2;
+    const EPS = 1e-10;
+    const FLOOR_Z = -1.24;
+    const STAGE_RADIUS = 6.00;
+    const BODY_TRAVEL_LIMIT = 5.15;
+    const DRAG_TRAVEL_LIMIT = 4.95;
+    const FIXED_DT = 1 / 120;
+
+    const state = {
+      beta: 0.03,
+      resolution: 96,
+      colorMode: "radius",
+      colorContrast: 1.25,
+      wireframe: false,
+      autoRotate: false,
+      gravityOn: true,
+      floorFrictionOn: true,
+      gravity: 9.8,
+      timeScale: 1,
+      viewSize: 42,
+      showEquilibria: true,
+      showPhase: true,
+      showAxes: true,
+      showProbe: true,
+      theta: Math.PI / 2,
+      phi: Math.PI,
+      curvatureTimer: null,
+      mapMetrics: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+    const mod = (x, m) => ((x % m) + m) % m;
+
+    const ui = {
+      host: $("threeHost"),
+      viewerCard: $("viewerCard"),
+      webglError: $("webglError"),
+      modelChip: $("modelChip"),
+      betaChip: $("betaChip"),
+      radiusChip: $("radiusChip"),
+      curvatureChip: $("curvatureChip"),
+      motionChip: $("motionChip"),
+      motionValue: $("motionValue"),
+      betaValue: $("betaValue"),
+      betaSlider: $("betaSlider"),
+      thetaSlider: $("thetaSlider"),
+      phiSlider: $("phiSlider"),
+      thetaValue: $("thetaValue"),
+      phiValue: $("phiValue"),
+      colorSelect: $("colorSelect"),
+      colorContrastRow: $("colorContrastRow"),
+      colorContrastSlider: $("colorContrastSlider"),
+      colorContrastValue: $("colorContrastValue"),
+      viewSizeSlider: $("viewSizeSlider"),
+      viewSizeValue: $("viewSizeValue"),
+      resolutionSelect: $("resolutionSelect"),
+      wireToggle: $("wireToggle"),
+      autoToggle: $("autoToggle"),
+      equilibriumToggle: $("equilibriumToggle"),
+      phaseToggle: $("phaseToggle"),
+      axesToggle: $("axesToggle"),
+      probeToggle: $("probeToggle"),
+      spinButton: $("spinButton"),
+      dropButtonTop: $("dropButtonTop"),
+      resetButton: $("resetButton"),
+      resetButtonTop: $("resetButtonTop"),
+      fullscreenButton: $("fullscreenButton"),
+      exportButton: $("exportButton"),
+      gravitySlider: $("gravitySlider"),
+      gravityValue: $("gravityValue"),
+      timeScaleSlider: $("timeScaleSlider"),
+      timeScaleValue: $("timeScaleValue"),
+      gravityToggle: $("gravityToggle"),
+      frictionToggle: $("frictionToggle"),
+      randomDropButton: $("randomDropButton"),
+      stablePoseButton: $("stablePoseButton"),
+      unstablePoseButton: $("unstablePoseButton"),
+      resetBodyButton: $("resetBodyButton"),
+      stableButton: $("stableButton"),
+      unstableButton: $("unstableButton"),
+      probeR: $("probeR"),
+      probeP: $("probeP"),
+      probeX: $("probeX"),
+      probeY: $("probeY"),
+      probeZ: $("probeZ"),
+      probePhase: $("probePhase"),
+      equationMain: $("equationMain"),
+      equationSub: $("equationSub"),
+      stableFact: $("stableFact"),
+      unstableFact: $("unstableFact"),
+      radiusMap: $("radiusMap"),
+      profilePlot: $("profilePlot"),
+      profileTag: $("profileTag"),
+      radiusLegend: $("radiusLegend")
+    };
+
+    function phase(theta) {
+      const c = Math.cos(theta);
+      return 1.5 * Math.PI * (c - (c * c * c) / 3);
+    }
+
+    function radial(theta, phi, beta = state.beta) {
+      const q = 1 + 4 * beta * Math.sin(theta) * Math.cos(phi - phase(theta));
+      return Math.pow(Math.max(EPS, q), 0.25);
+    }
+
+    function pointAt(theta, phi, scale = 1, beta = state.beta) {
+      const r = radial(theta, phi, beta) * scale;
+      const s = Math.sin(theta);
+      return {
+        x: r * s * Math.cos(phi),
+        y: r * s * Math.sin(phi),
+        z: r * Math.cos(theta),
+        r
+      };
+    }
+
+    function equilibria() {
+      return {
+        stable: { theta: Math.PI / 2, phi: Math.PI },
+        unstable: { theta: Math.PI / 2, phi: 0 }
+      };
+    }
+
+    function piText(value, denominatorLimit = 12) {
+      const v = mod(value, TAU);
+      if (Math.abs(value - Math.PI) < 1e-8) return "π";
+      if (Math.abs(value - TAU) < 1e-8 || Math.abs(value) < 1e-8) return Math.abs(value) < 1e-8 ? "0" : "2π";
+      let best = { err: Infinity, n: 0, d: 1 };
+      for (let d = 1; d <= denominatorLimit; d++) {
+        const n = Math.round((value / Math.PI) * d);
+        const err = Math.abs(value / Math.PI - n / d);
+        if (err < best.err) best = { err, n, d };
+      }
+      if (best.err < 0.0025) {
+        const sign = best.n < 0 ? "−" : "";
+        const n = Math.abs(best.n);
+        if (n === 0) return "0";
+        if (best.d === 1) return sign + (n === 1 ? "π" : n + "π");
+        return sign + (n === 1 ? "π" : n + "π") + "/" + best.d;
+      }
+      return value.toFixed(3);
+    }
+
+    function signedPiText(value) {
+      const wrapped = Math.atan2(Math.sin(value), Math.cos(value));
+      return piText(wrapped) + " rad";
+    }
+
+    function timeScaleText(value) {
+      return value.toFixed(2) + "×";
+    }
+
+    function hslToRgb(h, s, l) {
+      h = mod(h, 1);
+      if (s === 0) {
+        const v = Math.round(l * 255);
+        return [v, v, v];
+      }
+      const hue2rgb = (p, q, t) => {
+        t = mod(t, 1);
+        if (t < 1/6) return p + (q - p) * 6 * t;
+        if (t < 1/2) return q;
+        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+        return p;
+      };
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      return [
+        Math.round(hue2rgb(p, q, h + 1/3) * 255),
+        Math.round(hue2rgb(p, q, h) * 255),
+        Math.round(hue2rgb(p, q, h - 1/3) * 255)
+      ];
+    }
+
+    const RADIUS_PALETTE = [
+      { t: 0.00, rgb: [47, 92, 244] },
+      { t: 0.25, rgb: [23, 188, 229] },
+      { t: 0.50, rgb: [53, 209, 122] },
+      { t: 0.75, rgb: [255, 211, 78] },
+      { t: 1.00, rgb: [242, 85, 74] }
+    ];
+
+    function contrastUnitInterval(t, strength) {
+      const k = Math.max(0.05, strength);
+      const denominator = Math.tanh(k);
+      if (Math.abs(denominator) < 1e-9) return t;
+      return clamp(0.5 + 0.5 * Math.tanh((2 * t - 1) * k) / denominator, 0, 1);
+    }
+
+    function paletteColor(stops, t) {
+      t = clamp(t, 0, 1);
+      for (let i = 0; i < stops.length - 1; i++) {
+        const a = stops[i];
+        const b = stops[i + 1];
+        if (t <= b.t) {
+          const u = (t - a.t) / Math.max(EPS, b.t - a.t);
+          return [
+            Math.round(a.rgb[0] + (b.rgb[0] - a.rgb[0]) * u),
+            Math.round(a.rgb[1] + (b.rgb[1] - a.rgb[1]) * u),
+            Math.round(a.rgb[2] + (b.rgb[2] - a.rgb[2]) * u)
+          ];
+        }
+      }
+      return stops[stops.length - 1].rgb.slice();
+    }
+
+    function srgbToLinear(value) {
+      return value <= 0.04045
+        ? value / 12.92
+        : Math.pow((value + 0.055) / 1.055, 2.4);
+    }
+
+    function colorFor(theta, phi, r, mode = state.colorMode) {
+      if (mode === "solid") return hslToRgb(0.52, 0.62, 0.48);
+      if (mode === "phase") {
+        const h = mod((phi - phase(theta)) / TAU, 1);
+        return hslToRgb(h, 0.78, 0.50);
+      }
+      const rMin = Math.pow(Math.max(EPS, 1 - 4 * state.beta), 0.25);
+      const rMax = Math.pow(1 + 4 * state.beta, 0.25);
+      const rawT = rMax - rMin < 1e-9 ? 0.5 : clamp((r - rMin) / (rMax - rMin), 0, 1);
+      const t = contrastUnitInterval(rawT, state.colorContrast);
+      return paletteColor(RADIUS_PALETTE, t);
+    }
+
+    let scene, camera, renderer, controls;
+    let bodyGroup, floorMesh, physics;
+    let surfaceMesh, wireMesh, axesGroup, grid;
+    let stableMarker, unstableMarker, stableLabel, unstableLabel;
+    let stableRay, unstableRay, probeMarker, probeRay;
+    let ridgeTube, valleyTube;
+    let currentGeometry = null;
+    let raycaster, mouse;
+
+    function makeLabelSprite(text, background, foreground = "#ffffff") {
+      const canvas = document.createElement("canvas");
+      canvas.width = 512;
+      canvas.height = 144;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = background;
+      roundRect(ctx, 8, 12, 496, 120, 36);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.30)";
+      ctx.lineWidth = 3;
+      roundRect(ctx, 8, 12, 496, 120, 36);
+      ctx.stroke();
+      ctx.fillStyle = foreground;
+      ctx.font = "800 52px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(text, 256, 74);
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      const material = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false, depthWrite: false });
+      const sprite = new THREE.Sprite(material);
+      sprite.scale.set(0.68, 0.19, 1);
+      sprite.renderOrder = 20;
+      return sprite;
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    function makeRay(color, opacity = 0.65) {
+      const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(1, 0, 0)]);
+      const material = new THREE.LineDashedMaterial({ color, transparent: true, opacity, dashSize: 0.035, gapSize: 0.022 });
+      const line = new THREE.Line(geometry, material);
+      line.computeLineDistances();
+      return line;
+    }
+
+    function initThree() {
+      if (!window.THREE || !THREE.OrbitControls) {
+        ui.webglError.style.display = "grid";
+        return false;
+      }
+      try {
+        raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
+        scene = new THREE.Scene();
+        scene.fog = new THREE.Fog(0x07111d, 9.0, 19.5);
+
+        camera = new THREE.PerspectiveCamera(42, 1, 0.01, 100);
+        camera.up.set(0, 0, 1);
+        camera.position.set(5.79, -6.45, 4.80);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        renderer.outputEncoding = THREE.sRGBEncoding;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.05;
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setClearColor(0x000000, 0);
+        ui.host.appendChild(renderer.domElement);
+
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.065;
+        controls.autoRotate = state.autoRotate;
+        controls.autoRotateSpeed = 0.70;
+        controls.minDistance = 4.2;
+        controls.maxDistance = 14.5;
+        controls.target.set(0, 0, -0.18);
+        controls.addEventListener("end", syncViewSizeFromCamera);
+        controls.update();
+
+        bodyGroup = new THREE.Group();
+        scene.add(bodyGroup);
+        physics = createPhysicsState();
+
+        scene.add(new THREE.HemisphereLight(0xdff9ff, 0x122031, 1.22));
+        const key = new THREE.DirectionalLight(0xffffff, 1.45);
+        key.position.set(4.2, -3.2, 5.4);
+        key.castShadow = true;
+        key.shadow.mapSize.set(1024, 1024);
+        key.shadow.camera.left = -7.2;
+        key.shadow.camera.right = 7.2;
+        key.shadow.camera.top = 7.2;
+        key.shadow.camera.bottom = -7.2;
+        key.shadow.camera.near = 0.2;
+        key.shadow.camera.far = 22;
+        key.shadow.bias = -0.0005;
+        scene.add(key);
+        const fill = new THREE.DirectionalLight(0x6bb8ff, 0.70);
+        fill.position.set(-4, 1.8, 2.2);
+        scene.add(fill);
+        const rim = new THREE.DirectionalLight(0x5de1e6, 0.58);
+        rim.position.set(1, 4.5, -1.5);
+        scene.add(rim);
+
+        floorMesh = new THREE.Mesh(
+          new THREE.CircleGeometry(STAGE_RADIUS, 160),
+          new THREE.MeshStandardMaterial({ color: 0x0b1b29, roughness: 0.88, metalness: 0.02, transparent: true, opacity: 0.92, side: THREE.DoubleSide })
+        );
+        floorMesh.position.z = FLOOR_Z;
+        floorMesh.receiveShadow = true;
+        scene.add(floorMesh);
+
+        const stageRim = new THREE.Mesh(
+          new THREE.RingGeometry(STAGE_RADIUS - 0.045, STAGE_RADIUS, 160),
+          new THREE.MeshBasicMaterial({ color: 0x4e9bb2, transparent: true, opacity: 0.30, side: THREE.DoubleSide, depthWrite: false })
+        );
+        stageRim.position.z = FLOOR_Z + 0.006;
+        scene.add(stageRim);
+
+        grid = new THREE.GridHelper(STAGE_RADIUS * 2, 44, 0x3a7890, 0x254154);
+        grid.rotation.x = Math.PI / 2;
+        grid.position.z = FLOOR_Z + 0.003;
+        grid.material.transparent = true;
+        grid.material.opacity = 0.22;
+        grid.material.depthWrite = false;
+        scene.add(grid);
+
+        axesGroup = new THREE.Group();
+        const axes = new THREE.AxesHelper(1.38);
+        axes.renderOrder = 10;
+        axesGroup.add(axes);
+        const xLabel = makeLabelSprite("x", "rgba(179,52,57,.92)");
+        const yLabel = makeLabelSprite("y", "rgba(44,143,77,.92)");
+        const zLabel = makeLabelSprite("z", "rgba(42,91,177,.92)");
+        xLabel.scale.multiplyScalar(0.55); yLabel.scale.multiplyScalar(0.55); zLabel.scale.multiplyScalar(0.55);
+        xLabel.position.set(1.54, 0, 0); yLabel.position.set(0, 1.54, 0); zLabel.position.set(0, 0, 1.54);
+        axesGroup.add(xLabel, yLabel, zLabel);
+        bodyGroup.add(axesGroup);
+
+        const center = new THREE.Mesh(
+          new THREE.SphereGeometry(0.038, 20, 14),
+          new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        bodyGroup.add(center);
+
+        stableMarker = new THREE.Mesh(
+          new THREE.SphereGeometry(0.050, 28, 18),
+          new THREE.MeshStandardMaterial({ color: 0x6ce5a5, emissive: 0x123b2a, roughness: 0.22 })
+        );
+        unstableMarker = new THREE.Mesh(
+          new THREE.SphereGeometry(0.050, 28, 18),
+          new THREE.MeshStandardMaterial({ color: 0xff718f, emissive: 0x3f1420, roughness: 0.22 })
+        );
+        stableLabel = makeLabelSprite("S · stable", "rgba(24,112,75,.92)");
+        unstableLabel = makeLabelSprite("U · unstable", "rgba(148,42,67,.92)");
+        stableRay = makeRay(0x6ce5a5, 0.58);
+        unstableRay = makeRay(0xff718f, 0.58);
+        bodyGroup.add(stableRay, unstableRay, stableMarker, unstableMarker, stableLabel, unstableLabel);
+
+        probeMarker = new THREE.Mesh(
+          new THREE.SphereGeometry(0.036, 24, 16),
+          new THREE.MeshBasicMaterial({ color: 0xffffff })
+        );
+        probeRay = makeRay(0xffffff, 0.52);
+        bodyGroup.add(probeRay, probeMarker);
+
+        renderer.domElement.addEventListener("pointerdown", onBodyPointerDown, { capture: true });
+        renderer.domElement.addEventListener("pointermove", onBodyPointerMove, { capture: true });
+        renderer.domElement.addEventListener("pointerup", onBodyPointerUp, { capture: true });
+        renderer.domElement.addEventListener("pointercancel", onBodyPointerUp, { capture: true });
+        renderer.domElement.addEventListener("dblclick", onSurfaceDoubleClick);
+        new ResizeObserver(resizeThree).observe(ui.host);
+        window.addEventListener("resize", resizeThree);
+        resizeThree();
+        animate();
+        return true;
+      } catch (error) {
+        console.error(error);
+        ui.webglError.style.display = "grid";
+        return false;
+      }
+    }
+
+    function resizeThree() {
+      if (!renderer || !camera) return;
+      const rect = ui.host.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    function createPhysicsState() {
+      return {
+        position: new THREE.Vector3(),
+        quaternion: new THREE.Quaternion(),
+        linearVelocity: new THREE.Vector3(),
+        angularVelocity: new THREE.Vector3(),
+        dragTarget: new THREE.Vector3(),
+        dragTargetVelocity: new THREE.Vector3(),
+        localGrab: new THREE.Vector3(),
+        dragPlane: new THREE.Plane(),
+        pointerId: null,
+        grabbed: false,
+        inContact: false,
+        sleeping: false,
+        accumulator: 0,
+        lastFrameTime: performance.now() * 0.001,
+        lastDragTime: 0,
+        supportSamples: null,
+        supportTheta: Math.PI,
+        supportPhi: 0,
+        stableAlignment: 1,
+        invMass: 1,
+        invInertia: 1 / 0.42,
+        restitution: 0.035,
+        friction: 0.85,
+        lastStatusUpdate: 0,
+        worldUp: new THREE.Vector3(0, 0, 1),
+        worldDown: new THREE.Vector3(0, 0, -1),
+        stableLocal: new THREE.Vector3(0, -1, 0),
+        tempStableWorld: new THREE.Vector3(),
+        tempPreviousTarget: new THREE.Vector3(),
+        tempInverseQ: new THREE.Quaternion(),
+        tempUpLocal: new THREE.Vector3(),
+        tempSupport: new THREE.Vector3(),
+        tempSupportWorld: new THREE.Vector3(),
+        tempPoint: new THREE.Vector3(),
+        tempR: new THREE.Vector3(),
+        tempVelocity: new THREE.Vector3(),
+        tempImpulse: new THREE.Vector3(),
+        tempTorque: new THREE.Vector3(),
+        tempTangent: new THREE.Vector3(),
+        tempAxis: new THREE.Vector3(),
+        tempDQ: new THREE.Quaternion(),
+        tempRayPoint: new THREE.Vector3(),
+        tempPlaneNormal: new THREE.Vector3(),
+        tempLocalHit: new THREE.Vector3()
+      };
+    }
+
+    function surfacePointInto(out, theta, phi) {
+      const r = radial(theta, phi);
+      const sinTheta = Math.sin(theta);
+      return out.set(
+        r * sinTheta * Math.cos(phi),
+        r * sinTheta * Math.sin(phi),
+        r * Math.cos(theta)
+      );
+    }
+
+    function rebuildPhysicsShape() {
+      if (!physics) return;
+      const nTheta = 34;
+      const nPhi = 68;
+      const stride = 5;
+      const data = new Float64Array((nTheta + 1) * nPhi * stride);
+      let k = 0;
+      for (let i = 0; i <= nTheta; i++) {
+        const theta = Math.PI * i / nTheta;
+        for (let j = 0; j < nPhi; j++) {
+          const phi = TAU * j / nPhi;
+          const p = surfacePointInto(physics.tempPoint, theta, phi);
+          data[k++] = theta;
+          data[k++] = phi;
+          data[k++] = p.x;
+          data[k++] = p.y;
+          data[k++] = p.z;
+        }
+      }
+      physics.supportSamples = { data, stride, count: data.length / stride, nTheta, nPhi };
+      const stable = equilibria().stable;
+      surfacePointInto(physics.stableLocal, stable.theta, stable.phi).normalize();
+      wakeBody();
+      keepBodyAboveFloor();
+    }
+
+    function supportValue(theta, phi, direction) {
+      const p = surfacePointInto(physics.tempPoint, theta, phi);
+      return p.x * direction.x + p.y * direction.y + p.z * direction.z;
+    }
+
+    function findSupportLocal() {
+      if (!physics.supportSamples) return physics.tempSupport.set(0, 0, -1);
+      physics.tempInverseQ.copy(physics.quaternion).invert();
+      const direction = physics.tempUpLocal.copy(physics.worldUp).applyQuaternion(physics.tempInverseQ);
+      const { data, stride, count, nTheta, nPhi } = physics.supportSamples;
+      let bestValue = Infinity;
+      let bestTheta = physics.supportTheta;
+      let bestPhi = physics.supportPhi;
+
+      for (let i = 0, k = 0; i < count; i++, k += stride) {
+        const value = direction.x * data[k + 2] + direction.y * data[k + 3] + direction.z * data[k + 4];
+        if (value < bestValue) {
+          bestValue = value;
+          bestTheta = data[k];
+          bestPhi = data[k + 1];
+        }
+      }
+
+      let stepTheta = Math.PI / nTheta;
+      let stepPhi = TAU / nPhi;
+      for (let iter = 0; iter < 7; iter++) {
+        let nextTheta = bestTheta;
+        let nextPhi = bestPhi;
+        let nextValue = bestValue;
+        for (let di = -1; di <= 1; di++) {
+          for (let dj = -1; dj <= 1; dj++) {
+            if (di === 0 && dj === 0) continue;
+            const theta = clamp(bestTheta + di * stepTheta, 0, Math.PI);
+            const phi = mod(bestPhi + dj * stepPhi, TAU);
+            const value = supportValue(theta, phi, direction);
+            if (value < nextValue) {
+              nextValue = value;
+              nextTheta = theta;
+              nextPhi = phi;
+            }
+          }
+        }
+        bestTheta = nextTheta;
+        bestPhi = nextPhi;
+        bestValue = nextValue;
+        stepTheta *= 0.46;
+        stepPhi *= 0.46;
+      }
+
+      physics.supportTheta = bestTheta;
+      physics.supportPhi = bestPhi;
+      return surfacePointInto(physics.tempSupport, bestTheta, bestPhi);
+    }
+
+    function syncBodyTransform() {
+      if (!bodyGroup || !physics) return;
+      bodyGroup.position.copy(physics.position);
+      bodyGroup.quaternion.copy(physics.quaternion);
+      bodyGroup.updateMatrixWorld(true);
+    }
+
+    function wakeBody() {
+      if (!physics) return;
+      physics.sleeping = false;
+    }
+
+    function keepBodyAboveFloor() {
+      if (!physics || !physics.supportSamples) return;
+      const localSupport = findSupportLocal();
+      const r = physics.tempSupportWorld.copy(localSupport).applyQuaternion(physics.quaternion);
+      const bottom = physics.position.z + r.z;
+      if (bottom < FLOOR_Z + 0.001) physics.position.z += FLOOR_Z + 0.001 - bottom;
+      syncBodyTransform();
+    }
+
+    function applyImpulse(impulse, r) {
+      physics.linearVelocity.addScaledVector(impulse, physics.invMass);
+      physics.tempTorque.crossVectors(r, impulse).multiplyScalar(physics.invInertia);
+      physics.angularVelocity.add(physics.tempTorque);
+    }
+
+    function applyGrabForce(dt) {
+      const r = physics.tempR.copy(physics.localGrab).applyQuaternion(physics.quaternion);
+      const worldPoint = physics.tempPoint.copy(physics.position).add(r);
+      const pointVelocity = physics.tempVelocity.copy(physics.angularVelocity).cross(r).add(physics.linearVelocity);
+      const force = physics.tempImpulse.copy(physics.dragTarget).sub(worldPoint).multiplyScalar(112);
+      force.addScaledVector(physics.dragTargetVelocity, 11);
+      force.addScaledVector(pointVelocity, -19);
+      const maxForce = 230;
+      if (force.lengthSq() > maxForce * maxForce) force.setLength(maxForce);
+      physics.linearVelocity.addScaledVector(force, physics.invMass * dt);
+      physics.tempTorque.crossVectors(r, force).multiplyScalar(physics.invInertia * dt);
+      physics.angularVelocity.add(physics.tempTorque);
+      physics.dragTargetVelocity.multiplyScalar(Math.exp(-9 * dt));
+    }
+
+    function updateStableAlignment() {
+      const stableWorld = physics.tempStableWorld.copy(physics.stableLocal).applyQuaternion(physics.quaternion).normalize();
+      physics.stableAlignment = clamp(stableWorld.dot(physics.worldDown), -1, 1);
+    }
+
+    function resolveFloor(dt) {
+      const localSupport = findSupportLocal();
+      const r = physics.tempSupportWorld.copy(localSupport).applyQuaternion(physics.quaternion);
+      const bottom = physics.position.z + r.z;
+      const penetration = FLOOR_Z - bottom;
+      physics.inContact = bottom <= FLOOR_Z + 0.006;
+      if (!physics.inContact) return;
+
+      if (penetration > 0) physics.position.z += Math.min(0.18, penetration + 0.00008);
+
+      const contactVelocity = physics.tempVelocity.copy(physics.angularVelocity).cross(r).add(physics.linearVelocity);
+      const vn = contactVelocity.z;
+      const normalDenom = physics.invMass + physics.invInertia * (r.x * r.x + r.y * r.y);
+      let desiredVn = 0;
+      if (vn < -0.38) desiredVn = -physics.restitution * vn;
+      if (penetration > 0) desiredVn = Math.max(desiredVn, Math.min(1.4, penetration * 28));
+      let normalImpulse = 0;
+
+      if (vn < desiredVn && normalDenom > EPS) {
+        normalImpulse = (desiredVn - vn) / normalDenom;
+        applyImpulse(physics.tempImpulse.set(0, 0, normalImpulse), r);
+      }
+
+      if (state.floorFrictionOn && normalImpulse > 0) {
+        const afterNormal = physics.tempVelocity.copy(physics.angularVelocity).cross(r).add(physics.linearVelocity);
+        const tangent = physics.tempTangent.set(afterNormal.x, afterNormal.y, 0);
+        const speed = tangent.length();
+        if (speed > 1e-6) {
+          tangent.multiplyScalar(1 / speed);
+          const rCrossT = physics.tempTorque.crossVectors(r, tangent);
+          const tangentDenom = physics.invMass + physics.invInertia * rCrossT.lengthSq();
+          let jt = tangentDenom > EPS ? -speed / tangentDenom : 0;
+          jt = clamp(jt, -physics.friction * normalImpulse, physics.friction * normalImpulse);
+          applyImpulse(physics.tempImpulse.copy(tangent).multiplyScalar(jt), r);
+        }
+      }
+
+      // Measure orientation only; no corrective torque or alignment-specific damping is applied.
+      updateStableAlignment();
+      physics.linearVelocity.x *= Math.exp(-0.25 * dt);
+      physics.linearVelocity.y *= Math.exp(-0.25 * dt);
+      physics.angularVelocity.multiplyScalar(Math.exp(-0.16 * dt));
+    }
+
+    function integrateOrientation(dt) {
+      const speed = physics.angularVelocity.length();
+      if (speed < 1e-8) return;
+      if (speed > 18) physics.angularVelocity.multiplyScalar(18 / speed);
+      const w = physics.angularVelocity.length();
+      physics.tempAxis.copy(physics.angularVelocity).multiplyScalar(1 / w);
+      physics.tempDQ.setFromAxisAngle(physics.tempAxis, w * dt);
+      physics.quaternion.premultiply(physics.tempDQ).normalize();
+    }
+
+    function stepPhysics(dt) {
+      if (!physics || (physics.sleeping && !physics.grabbed)) return;
+      if (state.gravityOn) physics.linearVelocity.z -= state.gravity * dt;
+      if (physics.grabbed) applyGrabForce(dt);
+
+      physics.linearVelocity.multiplyScalar(Math.exp(-0.055 * dt));
+      physics.angularVelocity.multiplyScalar(Math.exp(-0.10 * dt));
+      physics.position.addScaledVector(physics.linearVelocity, dt);
+      integrateOrientation(dt);
+      resolveFloor(dt);
+
+      // Keep the body on the extra-wide circular stage while allowing a much longer roll.
+      const radialLimit = BODY_TRAVEL_LIMIT;
+      const planar = Math.hypot(physics.position.x, physics.position.y);
+      if (planar > radialLimit) {
+        const scale = radialLimit / planar;
+        physics.position.x *= scale;
+        physics.position.y *= scale;
+        physics.linearVelocity.x *= -0.18;
+        physics.linearVelocity.y *= -0.18;
+      }
+      physics.position.z = Math.min(physics.position.z, 2.65);
+    }
+
+    function equilibriumQuaternion(kind) {
+      const eq = equilibria()[kind];
+      const p = pointAt(eq.theta, eq.phi);
+      const localDirection = new THREE.Vector3(p.x, p.y, p.z).normalize();
+      return new THREE.Quaternion().setFromUnitVectors(localDirection, physics.worldDown);
+    }
+
+    function placeBody(kind = "stable", perturb = false) {
+      if (!physics) return;
+      physics.quaternion.copy(equilibriumQuaternion(kind));
+      if (perturb) {
+        physics.tempAxis.set(0.73, 0.44, 0.18).normalize();
+        physics.tempDQ.setFromAxisAngle(physics.tempAxis, THREE.MathUtils.degToRad(2.4));
+        physics.quaternion.premultiply(physics.tempDQ).normalize();
+      }
+      physics.position.set(0, 0, 0);
+      physics.linearVelocity.set(0, 0, 0);
+      physics.angularVelocity.set(0, 0, 0);
+      wakeBody();
+      keepBodyAboveFloor();
+      if (perturb) {
+        physics.stableAlignment = -0.999;
+        physics.angularVelocity.set(0.035, -0.026, 0.012);
+      } else {
+        physics.stableAlignment = kind === "stable" ? 1 : -1;
+        physics.sleeping = true;
+        physics.inContact = true;
+      }
+      syncBodyTransform();
+    }
+
+    function randomQuaternion(out) {
+      const u1 = Math.random();
+      const u2 = Math.random();
+      const u3 = Math.random();
+      const a = Math.sqrt(1 - u1);
+      const b = Math.sqrt(u1);
+      out.set(
+        a * Math.sin(TAU * u2),
+        a * Math.cos(TAU * u2),
+        b * Math.sin(TAU * u3),
+        b * Math.cos(TAU * u3)
+      );
+      return out.normalize();
+    }
+
+    function randomDrop() {
+      if (!physics) return;
+      randomQuaternion(physics.quaternion);
+      physics.position.set((Math.random() - 0.5) * 2.60, (Math.random() - 0.5) * 2.20, 1.05 + Math.random() * 0.42);
+      physics.linearVelocity.set((Math.random() - 0.5) * 1.35, (Math.random() - 0.5) * 1.10, 0);
+      physics.angularVelocity.set((Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.6, (Math.random() - 0.5) * 1.1);
+      physics.stableAlignment = -1;
+      wakeBody();
+      syncBodyTransform();
+    }
+
+    function toggleGravity(value) {
+      state.gravityOn = value;
+      ui.gravityToggle.checked = value;
+      wakeBody();
+      updateMotionStatus(true);
+    }
+
+    function updateMotionStatus(force = false) {
+      if (!physics) return;
+      const now = performance.now();
+      if (!force && now - physics.lastStatusUpdate < 90) return;
+      physics.lastStatusUpdate = now;
+      let label = "moving";
+      let color = "var(--cyan)";
+      if (physics.grabbed) { label = "grabbed"; color = "var(--amber)"; }
+      else if (!state.gravityOn) { label = "gravity off"; color = "var(--muted)"; }
+      else if (physics.sleeping) { label = "resting"; color = "var(--stable)"; }
+      else if (!physics.inContact && physics.linearVelocity.z < -0.12) { label = "falling"; color = "var(--amber)"; }
+      else if (physics.inContact && physics.stableAlignment < 0.985) { label = "self-righting"; color = "var(--cyan)"; }
+      else if (physics.inContact && physics.angularVelocity.length() > 0.12) { label = "rolling"; color = "var(--cyan)"; }
+      else if (physics.inContact) { label = "settling"; color = "var(--cyan)"; }
+      ui.motionChip.textContent = label;
+      ui.motionChip.style.color = color;
+      ui.motionValue.textContent = state.gravityOn ? "running" : "paused";
+      ui.motionValue.style.color = state.gravityOn ? "var(--cyan)" : "var(--muted)";
+    }
+
+    function setRayFromPointer(event) {
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+    }
+
+    function surfaceHitFromPointer(event) {
+      if (!surfaceMesh || !camera) return null;
+      setRayFromPointer(event);
+      return raycaster.intersectObject(surfaceMesh, false)[0] || null;
+    }
+
+    function onBodyPointerDown(event) {
+      if (!physics || physics.grabbed) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      const hit = surfaceHitFromPointer(event);
+      if (!hit) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      physics.grabbed = true;
+      physics.pointerId = event.pointerId;
+      physics.sleeping = false;
+      physics.dragTarget.copy(hit.point);
+      physics.dragTargetVelocity.set(0, 0, 0);
+      physics.lastDragTime = event.timeStamp;
+      physics.tempLocalHit.copy(hit.point);
+      bodyGroup.worldToLocal(physics.tempLocalHit);
+      physics.localGrab.copy(physics.tempLocalHit);
+      camera.getWorldDirection(physics.tempPlaneNormal).normalize();
+      physics.dragPlane.setFromNormalAndCoplanarPoint(physics.tempPlaneNormal, hit.point);
+      renderer.domElement.classList.add("grabbing");
+      renderer.domElement.setPointerCapture?.(event.pointerId);
+      controls.enabled = false;
+      controls.autoRotate = false;
+      updateMotionStatus(true);
+    }
+
+    function onBodyPointerMove(event) {
+      if (!physics || !physics.grabbed || event.pointerId !== physics.pointerId) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      setRayFromPointer(event);
+      const hit = raycaster.ray.intersectPlane(physics.dragPlane, physics.tempRayPoint);
+      if (!hit) return;
+      const previous = physics.tempPreviousTarget.copy(physics.dragTarget);
+      physics.dragTarget.copy(hit);
+      const planar = Math.hypot(physics.dragTarget.x, physics.dragTarget.y);
+      if (planar > DRAG_TRAVEL_LIMIT) {
+        const scale = DRAG_TRAVEL_LIMIT / planar;
+        physics.dragTarget.x *= scale;
+        physics.dragTarget.y *= scale;
+      }
+      physics.dragTarget.z = clamp(physics.dragTarget.z, FLOOR_Z + 0.08, 2.55);
+      const elapsed = Math.max(0.008, Math.min(0.08, (event.timeStamp - physics.lastDragTime) * 0.001));
+      physics.dragTargetVelocity.copy(physics.dragTarget).sub(previous).multiplyScalar(1 / elapsed);
+      if (physics.dragTargetVelocity.length() > 7) physics.dragTargetVelocity.setLength(7);
+      physics.lastDragTime = event.timeStamp;
+      wakeBody();
+    }
+
+    function onBodyPointerUp(event) {
+      if (!physics || !physics.grabbed || event.pointerId !== physics.pointerId) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      physics.grabbed = false;
+      physics.pointerId = null;
+      renderer.domElement.classList.remove("grabbing");
+      try { renderer.domElement.releasePointerCapture?.(event.pointerId); } catch (_) {}
+      controls.enabled = true;
+      controls.autoRotate = state.autoRotate;
+      wakeBody();
+      updateMotionStatus(true);
+    }
+
+    function animate(nowMs) {
+      requestAnimationFrame(animate);
+      if (!renderer) return;
+      const now = (Number.isFinite(nowMs) ? nowMs : performance.now()) * 0.001;
+      if (physics) {
+        const frameDt = clamp(now - physics.lastFrameTime, 0, 0.05);
+        physics.lastFrameTime = now;
+        // Keep direct grabbing at normal speed for predictable pointer control;
+        // after release, advance the fixed-step solver at the selected time rate.
+        const effectiveTimeScale = physics.grabbed ? 1 : state.timeScale;
+        const accumulatorLimit = Math.max(0.25, 0.06 * effectiveTimeScale);
+        physics.accumulator = Math.min(accumulatorLimit, physics.accumulator + frameDt * effectiveTimeScale);
+        const maxSteps = Math.max(8, Math.ceil(6 * effectiveTimeScale));
+        let steps = 0;
+        while (physics.accumulator >= FIXED_DT && steps < maxSteps) {
+          stepPhysics(FIXED_DT);
+          physics.accumulator -= FIXED_DT;
+          steps++;
+        }
+        syncBodyTransform();
+        updateMotionStatus();
+      }
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    function buildSurfaceGeometry() {
+      const nTheta = state.resolution;
+      const nPhi = state.resolution * 2;
+      const positions = [];
+      const colors = [];
+      const indices = [];
+
+      for (let i = 0; i <= nTheta; i++) {
+        const theta = Math.PI * i / nTheta;
+        for (let j = 0; j <= nPhi; j++) {
+          const phi = TAU * j / nPhi;
+          const p = pointAt(theta, phi);
+          positions.push(p.x, p.y, p.z);
+          const rgb = colorFor(theta, phi, p.r);
+          colors.push(
+            srgbToLinear(rgb[0] / 255),
+            srgbToLinear(rgb[1] / 255),
+            srgbToLinear(rgb[2] / 255)
+          );
+        }
+      }
+
+      const row = nPhi + 1;
+      for (let i = 0; i < nTheta; i++) {
+        for (let j = 0; j < nPhi; j++) {
+          const a = i * row + j;
+          const b = (i + 1) * row + j;
+          const c = (i + 1) * row + j + 1;
+          const d = i * row + j + 1;
+          if (i !== 0) indices.push(a, b, d);
+          if (i !== nTheta - 1) indices.push(b, c, d);
+        }
+      }
+
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+      geometry.setIndex(indices);
+      geometry.computeVertexNormals();
+      geometry.computeBoundingSphere();
+      return geometry;
+    }
+
+    function rebuildSurface() {
+      if (!scene) return;
+      const geometry = buildSurfaceGeometry();
+      const material = new THREE.MeshPhysicalMaterial({
+        vertexColors: true,
+        roughness: 0.46,
+        metalness: 0.015,
+        reflectivity: 0.20,
+        clearcoat: 0.08,
+        clearcoatRoughness: 0.74,
+        side: THREE.FrontSide
+      });
+
+      if (surfaceMesh) {
+        bodyGroup.remove(surfaceMesh);
+        surfaceMesh.geometry.dispose();
+        surfaceMesh.material.dispose();
+      }
+      if (wireMesh) {
+        bodyGroup.remove(wireMesh);
+        wireMesh.geometry.dispose();
+        wireMesh.material.dispose();
+      }
+
+      surfaceMesh = new THREE.Mesh(geometry, material);
+      surfaceMesh.renderOrder = 1;
+      surfaceMesh.castShadow = true;
+      surfaceMesh.receiveShadow = true;
+      bodyGroup.add(surfaceMesh);
+
+      const wireGeometry = new THREE.WireframeGeometry(geometry);
+      wireMesh = new THREE.LineSegments(
+        wireGeometry,
+        new THREE.LineBasicMaterial({ color: 0xb9eeff, transparent: true, opacity: 0.18, depthWrite: false })
+      );
+      wireMesh.visible = state.wireframe;
+      wireMesh.renderOrder = 2;
+      bodyGroup.add(wireMesh);
+
+      currentGeometry = geometry;
+      updateRadiusStats();
+    }
+
+    function makeTube(offset) {
+      const pts = [];
+      const count = 260;
+      for (let i = 0; i <= count; i++) {
+        const theta = Math.PI * i / count;
+        const phi = phase(theta) + offset;
+        const p = pointAt(theta, phi, 1.009);
+        pts.push(new THREE.Vector3(p.x, p.y, p.z));
+      }
+      const curve = new THREE.CatmullRomCurve3(pts, false, "centripetal", 0.5);
+      return new THREE.TubeGeometry(curve, 320, 0.0085, 7, false);
+    }
+
+    function rebuildPhaseCurves() {
+      if (!scene) return;
+      if (ridgeTube) {
+        bodyGroup.remove(ridgeTube, valleyTube);
+        ridgeTube.geometry.dispose(); ridgeTube.material.dispose();
+        valleyTube.geometry.dispose(); valleyTube.material.dispose();
+      }
+      ridgeTube = new THREE.Mesh(
+        makeTube(0),
+        new THREE.MeshBasicMaterial({ color: 0xff718f, transparent: true, opacity: 0.90, depthTest: true })
+      );
+      valleyTube = new THREE.Mesh(
+        makeTube(Math.PI),
+        new THREE.MeshBasicMaterial({ color: 0x6ce5a5, transparent: true, opacity: 0.90, depthTest: true })
+      );
+      ridgeTube.renderOrder = 4;
+      valleyTube.renderOrder = 4;
+      ridgeTube.visible = valleyTube.visible = state.showPhase;
+      bodyGroup.add(ridgeTube, valleyTube);
+    }
+
+    function updateLine(line, end) {
+      const a = line.geometry.attributes.position.array;
+      a[0] = 0; a[1] = 0; a[2] = 0;
+      a[3] = end.x; a[4] = end.y; a[5] = end.z;
+      line.geometry.attributes.position.needsUpdate = true;
+      line.computeLineDistances();
+    }
+
+    function updateEquilibria() {
+      if (!scene) return;
+      const eq = equilibria();
+      const s = pointAt(eq.stable.theta, eq.stable.phi, 1.025);
+      const u = pointAt(eq.unstable.theta, eq.unstable.phi, 1.025);
+      stableMarker.position.set(s.x, s.y, s.z);
+      unstableMarker.position.set(u.x, u.y, u.z);
+      stableLabel.position.set(s.x * 1.15, s.y * 1.15, s.z * 1.15 + 0.05);
+      unstableLabel.position.set(u.x * 1.15, u.y * 1.15, u.z * 1.15 + 0.05);
+      updateLine(stableRay, s);
+      updateLine(unstableRay, u);
+      [stableMarker, unstableMarker, stableLabel, unstableLabel, stableRay, unstableRay].forEach(obj => obj.visible = state.showEquilibria);
+    }
+
+    function updateProbe() {
+      const p = pointAt(state.theta, state.phi, 1.022);
+      if (probeMarker) {
+        probeMarker.position.set(p.x, p.y, p.z);
+        updateLine(probeRay, p);
+        probeMarker.visible = probeRay.visible = state.showProbe;
+      }
+      const P = phase(state.theta);
+      ui.thetaSlider.value = state.theta;
+      ui.phiSlider.value = state.phi;
+      ui.thetaValue.textContent = piText(state.theta);
+      ui.phiValue.textContent = piText(state.phi);
+      ui.profileTag.textContent = "θ = " + piText(state.theta);
+      ui.probeR.textContent = p.r.toFixed(6);
+      ui.probeP.textContent = piText(mod(P, TAU));
+      ui.probeX.textContent = p.x.toFixed(5);
+      ui.probeY.textContent = p.y.toFixed(5);
+      ui.probeZ.textContent = p.z.toFixed(5);
+      ui.probePhase.textContent = signedPiText(state.phi - P);
+      drawMap();
+      drawProfile();
+    }
+
+    function setProbe(theta, phi) {
+      state.theta = clamp(theta, 0, Math.PI);
+      state.phi = mod(phi, TAU);
+      updateProbe();
+    }
+
+    function updateRadiusStats() {
+      const rMin = Math.pow(Math.max(EPS, 1 - 4 * state.beta), 0.25);
+      const rMax = Math.pow(1 + 4 * state.beta, 0.25);
+      ui.radiusChip.textContent = rMin.toFixed(3) + "–" + rMax.toFixed(3);
+      ui.betaChip.textContent = state.beta.toFixed(3);
+      ui.betaValue.textContent = state.beta.toFixed(3);
+      ui.modelChip.textContent = "Sloan Model 2";
+    }
+
+    function updateMathText() {
+      const eq = equilibria();
+      ui.equationMain.innerHTML = "r<sup>4</sup> = 1 + 4β sin(θ) cos[φ − (3π/2)(cosθ − cos<sup>3</sup>θ/3)]";
+      ui.equationSub.innerHTML = "P(θ) = (3π/2)(cosθ − cos³θ/3) &nbsp;·&nbsp; x = r sinθ cosφ, y = r sinθ sinφ, z = r cosθ";
+      ui.stableFact.textContent = "θ = " + piText(eq.stable.theta) + ", φ = " + piText(eq.stable.phi) + "; this is the equatorial radial minimum.";
+      ui.unstableFact.textContent = "θ = " + piText(eq.unstable.theta) + ", φ = " + piText(eq.unstable.phi) + "; this is the equatorial radial maximum.";
+    }
+
+    function rebuildAll() {
+      rebuildSurface();
+      rebuildPhysicsShape();
+      rebuildPhaseCurves();
+      updateEquilibria();
+      updateProbe();
+      updateMathText();
+      scheduleCurvatureScan();
+    }
+
+    const VIEW_DISTANCE_AT_100 = 4.2;
+
+    function viewDistanceForPercent(percent) {
+      return VIEW_DISTANCE_AT_100 * 100 / clamp(percent, 35, 100);
+    }
+
+    function setViewSize(percent, moveCamera = true) {
+      const value = Math.round(clamp(Number(percent) || 45, 35, 100));
+      state.viewSize = value;
+      if (ui.viewSizeSlider) ui.viewSizeSlider.value = String(value);
+      if (ui.viewSizeValue) ui.viewSizeValue.textContent = value + "%";
+      if (!moveCamera || !camera || !controls) return;
+
+      const offset = camera.position.clone().sub(controls.target);
+      if (offset.lengthSq() < 1e-8) offset.set(3.75, -4.18, 3.23);
+      offset.setLength(viewDistanceForPercent(value));
+      camera.position.copy(controls.target).add(offset);
+      controls.update();
+    }
+
+    function syncViewSizeFromCamera() {
+      if (!camera || !controls) return;
+      const distance = camera.position.distanceTo(controls.target);
+      const value = clamp(Math.round(VIEW_DISTANCE_AT_100 * 100 / Math.max(distance, 0.001)), 35, 100);
+      state.viewSize = value;
+      if (ui.viewSizeSlider) ui.viewSizeSlider.value = String(value);
+      if (ui.viewSizeValue) ui.viewSizeValue.textContent = value + "%";
+    }
+
+    function resetCamera() {
+      if (!camera || !controls) return;
+      state.viewSize = 42;
+      camera.position.set(5.79, -6.45, 4.80);
+      camera.up.set(0, 0, 1);
+      controls.target.set(0, 0, -0.18);
+      controls.update();
+      setViewSize(42, false);
+    }
+
+    function onSurfaceDoubleClick(event) {
+      if (!surfaceMesh || !camera) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const hit = raycaster.intersectObject(surfaceMesh, false)[0];
+      if (!hit) return;
+      const v = bodyGroup.worldToLocal(hit.point.clone()).normalize();
+      const theta = Math.acos(clamp(v.z, -1, 1));
+      const phi = mod(Math.atan2(v.y, v.x), TAU);
+      setProbe(theta, phi);
+    }
+
+    function vec(theta, phi, beta = state.beta) {
+      const p = pointAt(theta, phi, 1, beta);
+      return [p.x, p.y, p.z];
+    }
+
+    function add(a, b) { return [a[0]+b[0], a[1]+b[1], a[2]+b[2]]; }
+    function sub(a, b) { return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+    function mul(a, s) { return [a[0]*s, a[1]*s, a[2]*s]; }
+    function dot(a, b) { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+    function cross(a, b) { return [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]]; }
+    function norm(a) { return Math.sqrt(dot(a, a)); }
+
+    function gaussianCurvature(theta, phi, beta) {
+      const h = 0.0017;
+      const X = vec(theta, phi, beta);
+      const Xtp = vec(theta + h, phi, beta);
+      const Xtm = vec(theta - h, phi, beta);
+      const Xpp = vec(theta, phi + h, beta);
+      const Xpm = vec(theta, phi - h, beta);
+      const Xtpp = vec(theta + h, phi + h, beta);
+      const Xtpm = vec(theta + h, phi - h, beta);
+      const Xtmp = vec(theta - h, phi + h, beta);
+      const Xtmm = vec(theta - h, phi - h, beta);
+
+      const Xt = mul(sub(Xtp, Xtm), 1 / (2*h));
+      const Xp = mul(sub(Xpp, Xpm), 1 / (2*h));
+      const Xtt = mul(add(sub(Xtp, mul(X, 2)), Xtm), 1 / (h*h));
+      const Xphiphi = mul(add(sub(Xpp, mul(X, 2)), Xpm), 1 / (h*h));
+      const Xtphi = mul(add(sub(Xtpp, Xtpm), sub(Xtmm, Xtmp)), 1 / (4*h*h));
+
+      const c = cross(Xt, Xp);
+      const cNorm = norm(c);
+      if (!Number.isFinite(cNorm) || cNorm < 1e-10) return NaN;
+      const n = mul(c, 1 / cNorm);
+      const E = dot(Xt, Xt);
+      const F = dot(Xt, Xp);
+      const G = dot(Xp, Xp);
+      const e = dot(n, Xtt);
+      const f = dot(n, Xtphi);
+      const g = dot(n, Xphiphi);
+      const den = E * G - F * F;
+      if (Math.abs(den) < 1e-12) return NaN;
+      return (e * g - f * f) / den;
+    }
+
+    function scheduleCurvatureScan() {
+      clearTimeout(state.curvatureTimer);
+      ui.curvatureChip.textContent = "scanning…";
+      ui.curvatureChip.style.color = "";
+      const beta = state.beta;
+      state.curvatureTimer = setTimeout(() => {
+        let minK = Infinity;
+        let neg = 0;
+        let total = 0;
+        const nT = 28;
+        const nP = 56;
+        for (let i = 0; i < nT; i++) {
+          const theta = 0.035 + (Math.PI - 0.07) * (i + 0.5) / nT;
+          for (let j = 0; j < nP; j++) {
+            const phi = TAU * j / nP;
+            const K = gaussianCurvature(theta, phi, beta);
+            if (!Number.isFinite(K)) continue;
+            minK = Math.min(minK, K);
+            if (K < 0) neg++;
+            total++;
+          }
+        }
+        if (!Number.isFinite(minK)) {
+          ui.curvatureChip.textContent = "unavailable";
+          ui.curvatureChip.style.color = "var(--danger)";
+          return;
+        }
+        const pct = total ? 100 * neg / total : 0;
+        ui.curvatureChip.textContent = minK.toFixed(3) + (neg ? " · " + pct.toFixed(1) + "% < 0" : " · positive");
+        ui.curvatureChip.style.color = minK > 0.025 ? "var(--stable)" : (minK > -0.025 ? "var(--amber)" : "var(--danger)");
+      }, 140);
+    }
+
+    function fitCanvas(canvas) {
+      const rect = canvas.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const w = Math.max(10, Math.round(rect.width * dpr));
+      const h = Math.max(10, Math.round(rect.height * dpr));
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
+      return { ctx: canvas.getContext("2d"), width: w, height: h, dpr };
+    }
+
+    function drawMap() {
+      const { ctx, width, height, dpr } = fitCanvas(ui.radiusMap);
+      const left = 42 * dpr, right = 15 * dpr, top = 13 * dpr, bottom = 29 * dpr;
+      const pw = width - left - right;
+      const ph = height - top - bottom;
+      state.mapMetrics = { left, top, pw, ph, dpr };
+
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(3, 12, 21, .34)";
+      roundRect(ctx, 0, 0, width, height, 14*dpr);
+      ctx.fill();
+
+      const img = ctx.createImageData(Math.max(1, Math.floor(pw)), Math.max(1, Math.floor(ph)));
+      const data = img.data;
+      let k = 0;
+      for (let y = 0; y < img.height; y++) {
+        const theta = Math.PI * y / Math.max(1, img.height - 1);
+        for (let x = 0; x < img.width; x++) {
+          const phi = TAU * x / Math.max(1, img.width - 1);
+          const r = radial(theta, phi);
+          const rgb = colorFor(theta, phi, r, state.colorMode === "solid" ? "radius" : state.colorMode);
+          data[k++] = rgb[0]; data[k++] = rgb[1]; data[k++] = rgb[2]; data[k++] = 235;
+        }
+      }
+      ctx.putImageData(img, Math.round(left), Math.round(top));
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(225,246,255,.17)";
+      ctx.lineWidth = 1 * dpr;
+      for (let i = 0; i <= 4; i++) {
+        const x = left + pw * i / 4;
+        ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + ph); ctx.stroke();
+      }
+      for (let i = 0; i <= 4; i++) {
+        const y = top + ph * i / 4;
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left + pw, y); ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(225,246,255,.38)";
+      ctx.strokeRect(left, top, pw, ph);
+
+      drawPhaseMapCurve(ctx, 0, "rgba(255,113,143,.94)", left, top, pw, ph, dpr);
+      drawPhaseMapCurve(ctx, Math.PI, "rgba(108,229,165,.94)", left, top, pw, ph, dpr);
+
+      const eq = equilibria();
+      drawMapMarker(ctx, eq.stable.theta, eq.stable.phi, "S", "#6ce5a5", left, top, pw, ph, dpr);
+      drawMapMarker(ctx, eq.unstable.theta, eq.unstable.phi, "U", "#ff718f", left, top, pw, ph, dpr);
+
+      const px = left + pw * mod(state.phi, TAU) / TAU;
+      const py = top + ph * state.theta / Math.PI;
+      ctx.strokeStyle = "rgba(255,255,255,.95)";
+      ctx.lineWidth = 1.25 * dpr;
+      ctx.beginPath(); ctx.moveTo(px - 8*dpr, py); ctx.lineTo(px + 8*dpr, py); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px, py - 8*dpr); ctx.lineTo(px, py + 8*dpr); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, 4.3*dpr, 0, TAU); ctx.stroke();
+
+      ctx.fillStyle = "rgba(188,211,228,.86)";
+      ctx.font = `${10*dpr}px system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      [[0,"0"],[.25,"π/2"],[.5,"π"],[.75,"3π/2"],[1,"2π"]].forEach(([t,label]) => ctx.fillText(label, left + pw*t, top + ph + 7*dpr));
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      [[0,"0"],[.5,"π/2"],[1,"π"]].forEach(([t,label]) => ctx.fillText(label, left - 7*dpr, top + ph*t));
+      ctx.restore();
+    }
+
+    function drawPhaseMapCurve(ctx, offset, color, left, top, pw, ph, dpr) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.7 * dpr;
+      ctx.beginPath();
+      let penDown = false;
+      let prevX = null;
+      const steps = 480;
+      for (let i = 0; i <= steps; i++) {
+        const theta = Math.PI * i / steps;
+        const phi = mod(phase(theta) + offset, TAU);
+        const x = left + pw * phi / TAU;
+        const y = top + ph * theta / Math.PI;
+        if (!penDown || (prevX !== null && Math.abs(x - prevX) > pw * 0.5)) {
+          ctx.moveTo(x, y);
+          penDown = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+        prevX = x;
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawMapMarker(ctx, theta, phi, label, color, left, top, pw, ph, dpr) {
+      const x = left + pw * mod(phi, TAU) / TAU;
+      const y = top + ph * theta / Math.PI;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.strokeStyle = "rgba(5,18,28,.92)";
+      ctx.lineWidth = 2*dpr;
+      ctx.beginPath(); ctx.arc(x, y, 7*dpr, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#07111d";
+      ctx.font = `900 ${9*dpr}px system-ui, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, x, y + .25*dpr);
+      ctx.restore();
+    }
+
+    function drawProfile() {
+      const { ctx, width, height, dpr } = fitCanvas(ui.profilePlot);
+      const left = 48*dpr, right = 15*dpr, top = 15*dpr, bottom = 31*dpr;
+      const pw = width - left - right;
+      const ph = height - top - bottom;
+      ctx.clearRect(0, 0, width, height);
+      ctx.fillStyle = "rgba(3, 12, 21, .34)";
+      roundRect(ctx, 0, 0, width, height, 14*dpr);
+      ctx.fill();
+
+      const samples = 540;
+      const vals = [];
+      let minR = Infinity, maxR = -Infinity;
+      for (let i = 0; i <= samples; i++) {
+        const phi = TAU * i / samples;
+        const r = radial(state.theta, phi);
+        vals.push(r);
+        minR = Math.min(minR, r); maxR = Math.max(maxR, r);
+      }
+      const pad = Math.max(0.006, (maxR - minR) * 0.18);
+      const yMin = minR - pad, yMax = maxR + pad;
+      const xOf = phi => left + pw * mod(phi, TAU) / TAU;
+      const yOf = r => top + ph * (1 - (r - yMin) / (yMax - yMin));
+
+      ctx.save();
+      ctx.strokeStyle = "rgba(225,246,255,.15)";
+      ctx.lineWidth = 1*dpr;
+      for (let i = 0; i <= 4; i++) {
+        const x = left + pw*i/4;
+        ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top+ph); ctx.stroke();
+      }
+      for (let i = 0; i <= 4; i++) {
+        const y = top + ph*i/4;
+        ctx.beginPath(); ctx.moveTo(left, y); ctx.lineTo(left+pw, y); ctx.stroke();
+      }
+      ctx.strokeStyle = "rgba(225,246,255,.38)";
+      ctx.strokeRect(left, top, pw, ph);
+
+      const P = mod(phase(state.theta), TAU);
+      const valley = mod(P + Math.PI, TAU);
+      drawProfileGuide(ctx, xOf(P), top, ph, "rgba(255,113,143,.82)", dpr, "ridge");
+      drawProfileGuide(ctx, xOf(valley), top, ph, "rgba(108,229,165,.82)", dpr, "valley");
+
+      const gradient = ctx.createLinearGradient(left, 0, left+pw, 0);
+      gradient.addColorStop(0, "#65a9ff");
+      gradient.addColorStop(.5, "#5de1e6");
+      gradient.addColorStop(1, "#ffbd59");
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 2.4*dpr;
+      ctx.beginPath();
+      vals.forEach((r, i) => {
+        const x = left + pw * i / samples;
+        const y = yOf(r);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      const probeR = radial(state.theta, state.phi);
+      const px = xOf(state.phi);
+      const py = yOf(probeR);
+      ctx.strokeStyle = "rgba(255,255,255,.68)";
+      ctx.lineWidth = 1*dpr;
+      ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, top+ph); ctx.stroke();
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath(); ctx.arc(px, py, 4.5*dpr, 0, TAU); ctx.fill();
+
+      ctx.fillStyle = "rgba(188,211,228,.86)";
+      ctx.font = `${10*dpr}px system-ui, sans-serif`;
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      [[0,"0"],[.25,"π/2"],[.5,"π"],[.75,"3π/2"],[1,"2π"]].forEach(([t,label]) => ctx.fillText(label, left+pw*t, top+ph+7*dpr));
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      [0,.5,1].forEach(t => {
+        const val = yMax - (yMax-yMin)*t;
+        ctx.fillText(val.toFixed(3), left-7*dpr, top+ph*t);
+      });
+      ctx.restore();
+    }
+
+    function drawProfileGuide(ctx, x, top, ph, color, dpr, label) {
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.2*dpr;
+      ctx.setLineDash([5*dpr, 4*dpr]);
+      ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top+ph); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = color;
+      ctx.font = `800 ${9*dpr}px system-ui, sans-serif`;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(label, x + 4*dpr, top + 4*dpr);
+      ctx.restore();
+    }
+
+    function exportOBJ() {
+      if (!currentGeometry) return;
+      const pos = currentGeometry.attributes.position;
+      const index = currentGeometry.index;
+      const lines = [
+        "# Sloan analytical Gomboc, Model 2",
+        "# beta=" + state.beta.toFixed(6),
+        "o Sloan_Gomboc_Model_2"
+      ];
+      for (let i = 0; i < pos.count; i++) {
+        lines.push(`v ${pos.getX(i).toFixed(8)} ${pos.getY(i).toFixed(8)} ${pos.getZ(i).toFixed(8)}`);
+      }
+      for (let i = 0; i < index.count; i += 3) {
+        lines.push(`f ${index.getX(i)+1} ${index.getX(i+1)+1} ${index.getX(i+2)+1}`);
+      }
+      const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `sloan_gomboc_model2_beta${state.beta.toFixed(3)}.obj`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }
+
+    function toggleAutoRotate(value) {
+      state.autoRotate = value;
+      ui.autoToggle.checked = value;
+      ui.spinButton.classList.toggle("active", value);
+      if (controls) controls.autoRotate = value;
+    }
+
+    function bindUI() {
+      ui.gravitySlider.addEventListener("input", () => {
+        state.gravity = Number(ui.gravitySlider.value);
+        ui.gravityValue.textContent = state.gravity.toFixed(1) + " m/s²";
+        wakeBody();
+      });
+      ui.timeScaleSlider.addEventListener("input", () => {
+        const logScale = Number(ui.timeScaleSlider.value);
+        state.timeScale = logScale >= 3.319 ? 10 : Math.pow(2, logScale);
+        ui.timeScaleValue.textContent = timeScaleText(state.timeScale);
+        if (physics) physics.accumulator = 0;
+      });
+      ui.gravityToggle.addEventListener("change", () => toggleGravity(ui.gravityToggle.checked));
+      ui.frictionToggle.addEventListener("change", () => {
+        state.floorFrictionOn = ui.frictionToggle.checked;
+        wakeBody();
+      });
+      ui.randomDropButton.addEventListener("click", randomDrop);
+      ui.dropButtonTop.addEventListener("click", randomDrop);
+      ui.stablePoseButton.addEventListener("click", () => placeBody("stable"));
+      ui.unstablePoseButton.addEventListener("click", () => placeBody("unstable", true));
+      ui.resetBodyButton.addEventListener("click", () => placeBody("stable"));
+
+      ui.betaSlider.addEventListener("input", () => {
+        state.beta = Number(ui.betaSlider.value);
+        rebuildAll();
+      });
+      ui.thetaSlider.addEventListener("input", () => setProbe(Number(ui.thetaSlider.value), state.phi));
+      ui.phiSlider.addEventListener("input", () => setProbe(state.theta, Number(ui.phiSlider.value)));
+      ui.viewSizeSlider.addEventListener("input", () => setViewSize(Number(ui.viewSizeSlider.value)));
+      ui.colorContrastSlider.addEventListener("input", () => {
+        state.colorContrast = Number(ui.colorContrastSlider.value) / 100;
+        ui.colorContrastValue.textContent = Math.round(state.colorContrast * 100) + "%";
+        rebuildSurface();
+        drawMap();
+      });
+      ui.colorSelect.addEventListener("change", () => {
+        state.colorMode = ui.colorSelect.value;
+        rebuildSurface();
+        drawMap();
+        const radiusMode = state.colorMode === "radius";
+        ui.radiusLegend.style.display = radiusMode ? "grid" : "none";
+        ui.colorContrastRow.style.display = radiusMode ? "grid" : "none";
+      });
+      ui.resolutionSelect.addEventListener("change", () => {
+        state.resolution = Number(ui.resolutionSelect.value);
+        rebuildSurface();
+      });
+      ui.wireToggle.addEventListener("change", () => {
+        state.wireframe = ui.wireToggle.checked;
+        if (wireMesh) wireMesh.visible = state.wireframe;
+      });
+      ui.autoToggle.addEventListener("change", () => toggleAutoRotate(ui.autoToggle.checked));
+      ui.equilibriumToggle.addEventListener("change", () => {
+        state.showEquilibria = ui.equilibriumToggle.checked;
+        updateEquilibria();
+      });
+      ui.phaseToggle.addEventListener("change", () => {
+        state.showPhase = ui.phaseToggle.checked;
+        if (ridgeTube) ridgeTube.visible = valleyTube.visible = state.showPhase;
+      });
+      ui.axesToggle.addEventListener("change", () => {
+        state.showAxes = ui.axesToggle.checked;
+        if (axesGroup) axesGroup.visible = state.showAxes;
+        if (grid) grid.visible = state.showAxes;
+      });
+      ui.probeToggle.addEventListener("change", () => {
+        state.showProbe = ui.probeToggle.checked;
+        updateProbe();
+      });
+      ui.stableButton.addEventListener("click", () => {
+        const p = equilibria().stable;
+        setProbe(p.theta, p.phi);
+      });
+      ui.unstableButton.addEventListener("click", () => {
+        const p = equilibria().unstable;
+        setProbe(p.theta, p.phi);
+      });
+      ui.resetButton.addEventListener("click", resetCamera);
+      ui.resetButtonTop.addEventListener("click", resetCamera);
+      ui.spinButton.addEventListener("click", () => toggleAutoRotate(!state.autoRotate));
+      ui.exportButton.addEventListener("click", exportOBJ);
+      ui.fullscreenButton.addEventListener("click", () => {
+        if (!document.fullscreenElement) ui.viewerCard.requestFullscreen?.();
+        else document.exitFullscreen?.();
+      });
+
+      ui.radiusMap.addEventListener("click", event => {
+        const m = state.mapMetrics;
+        if (!m) return;
+        const rect = ui.radiusMap.getBoundingClientRect();
+        const sx = ui.radiusMap.width / rect.width;
+        const sy = ui.radiusMap.height / rect.height;
+        const x = (event.clientX - rect.left) * sx;
+        const y = (event.clientY - rect.top) * sy;
+        if (x < m.left || x > m.left + m.pw || y < m.top || y > m.top + m.ph) return;
+        const phi = TAU * (x - m.left) / m.pw;
+        const theta = Math.PI * (y - m.top) / m.ph;
+        setProbe(theta, phi);
+      });
+
+      window.addEventListener("resize", () => { drawMap(); drawProfile(); });
+      new ResizeObserver(() => { drawMap(); drawProfile(); }).observe(ui.radiusMap.parentElement);
+
+      window.addEventListener("keydown", event => {
+        if (event.target && /input|select|textarea/i.test(event.target.tagName)) return;
+        const key = event.key.toLowerCase();
+        if (key === "s") {
+          const p = equilibria().stable; setProbe(p.theta, p.phi);
+        } else if (key === "u") {
+          const p = equilibria().unstable; setProbe(p.theta, p.phi);
+        } else if (key === "r") {
+          resetCamera();
+        } else if (key === "d") {
+          randomDrop();
+        } else if (key === "g") {
+          toggleGravity(!state.gravityOn);
+        } else if (key === "b") {
+          placeBody("stable");
+        } else if (key === " ") {
+          event.preventDefault(); toggleAutoRotate(!state.autoRotate);
+        }
+      });
+    }
+
+    bindUI();
+    setViewSize(state.viewSize, false);
+    const ok = initThree();
+    updateMathText();
+    if (ok) {
+      rebuildAll();
+      placeBody("stable");
+      updateMotionStatus(true);
+    } else { drawMap(); drawProfile(); updateProbe(); scheduleCurvatureScan(); }
+  })();
+  </script>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/">Back to Collection</a></p>
+</body>
+</html>
