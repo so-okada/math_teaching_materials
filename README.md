@@ -24,6 +24,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
 | [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html) | Geometry | Perspective projection, similar triangles, circle of confusion |
 | [Gömböc](https://so-okada.github.io/math_teaching_materials/gomboc.html) | Geometry | Mono-monostatic convex body, equilibrium points |
+| [Epicycles vs. Heliocentric Ellipses](https://so-okada.github.io/math_teaching_materials/epicycle_vs_heliocentric.html) | Geometry | Kepler orbits, geocentric motion, Fourier series |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 | [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
 | [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html) | Trigonometry | Triangle geometry, cosine rule |
@@ -458,6 +459,35 @@ The radial function has exactly two critical points on $S^2$: the stable point $
 
 ---
 
+### [Epicycles vs. Heliocentric Ellipses](https://so-okada.github.io/math_teaching_materials/epicycle_vs_heliocentric.html)
+**File:** `epicycle_vs_heliocentric.html`
+
+Side-by-side comparison of the heliocentric and geocentric pictures of planetary motion, showing why epicycles reproduce the observed path and how many circles are needed.
+
+**Mathematical Background:**
+Each body moves on a Kepler ellipse. With $t$ in years, $E$ the eccentric anomaly, and $R(\varpi)$ the rotation by the longitude of perihelion,
+
+$$\mathbf{r}(t) = R(\varpi)\begin{pmatrix} a\cos E - ae \\ a\sqrt{1-e^2}\,\sin E \end{pmatrix},
+\qquad E - e\sin E = \frac{2\pi t}{T}.$$
+
+The geocentric position is the difference $\mathbf{r}_{\mathrm{geo}}(t) = \mathbf{r}_{\text{planet}}(t) - \mathbf{r}_{\text{Earth}}(t)$, which produces retrograde loops without any physical mechanism.
+
+Writing the geocentric path as a complex-valued function $z(t)$ and expanding it in a Fourier series,
+
+$$z(t) \approx \sum_{j=1}^{N} c_j\,e^{\,i(\omega_j t + \phi_j)},$$
+
+exhibits each term as a circle of radius $|c_j|$ turning at rate $\omega_j$. This is the precise sense in which epicycles are Fourier modes: $N = 2$ recovers the classical deferent-and-epicycle pair, and increasing $N$ improves the fit to the elliptic orbit.
+
+**Controls:**
+- **Planet**: Venus, Mars, or Jupiter (J2000 orbital elements)
+- **Epicycles $N$**: Number of Fourier circles, from 1 to 12
+- **Equant**: Interpolate between uniform circular motion and the equant construction
+- **Speed, Trail**: Animation rate and trail length in years
+- **Toggles**: Deferent and epicycle circles, epicycle-model trace
+- Live LaTeX display of the explicit formulas for the current settings
+
+---
+
 ## Trigonometry
 
 ### [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html)
@@ -798,6 +828,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `binomialtogaussian.html`: Uses Tailwind CSS (CDN)
 - `xsinx.html`: Uses Tailwind CSS and math.js (CDN)
 - `ftc_vertical.html`: Uses MathJax (CDN)
+- `epicycle_vs_heliocentric.html`: Uses MathJax (CDN)
 - `quadrature_xn.html`: Uses MathJax (CDN)
 - `clothoid_highway_demo.html`: Uses MathJax (CDN)
 - `catenary.html`: Uses MathJax (CDN)

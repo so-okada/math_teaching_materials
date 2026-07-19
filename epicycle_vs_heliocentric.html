@@ -1,0 +1,618 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epicycles vs. Heliocentric Ellipses</title>
+<script>
+window.MathJax = { tex: { inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']] } };
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;background:#fafafa;color:#222;}
+.wrap{max-width:1000px;margin:0 auto;padding:16px;}
+h1{font-size:1.4rem;margin:8px 0 4px;}
+.sub{color:#555;margin:0 0 12px;font-size:0.95rem;}
+.controls{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;margin:12px 0;font-size:0.9rem;}
+.controls label{display:flex;align-items:center;gap:6px;}
+button{padding:4px 14px;font-size:0.9rem;border:1px solid #888;border-radius:6px;background:#fff;cursor:pointer;}
+button:hover{background:#eee;}
+.panels{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;}
+.panel{text-align:center;}
+.panel h2{font-size:1rem;margin:4px 0;font-weight:600;}
+canvas{background:#0b1020;border-radius:8px;max-width:100%;height:auto;}
+.legend{font-size:0.85rem;color:#444;margin:8px 0 0;text-align:center;line-height:1.6;}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 4px -1px 10px;vertical-align:baseline;}
+.ring{display:inline-block;width:8px;height:8px;border-radius:50%;border:2px solid #999;margin:0 4px -1px 10px;vertical-align:baseline;}
+.explain{background:#fff;border:1px solid #ddd;border-radius:8px;padding:6px 18px;margin:18px 0;font-size:0.95rem;line-height:1.55;}
+mjx-container[display="true"]{overflow-x:auto;overflow-y:hidden;max-width:100%;}
+footer{text-align:center;margin:20px 0;font-size:0.9rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Epicycles vs. Heliocentric Ellipses</h1>
+<p class="sub">The same planetary motion in two coordinate systems: Sun-centered Kepler ellipses (left) and the Earth-centered deferent&ndash;epicycle construction (right).</p>
+
+<div class="controls">
+  <label>Planet
+    <select id="planetSel">
+      <option value="venus">Venus</option>
+      <option value="mars" selected>Mars</option>
+      <option value="jupiter">Jupiter</option>
+    </select>
+  </label>
+  <label>Speed <input type="range" id="speed" min="0.02" max="1.5" step="0.01" value="0.30"> <span id="speedVal">0.30</span> yr/s</label>
+  <label>Trail <input type="range" id="trailLen" min="1" max="30" step="1" value="8"> <span id="trailVal">8</span> yr</label>
+  <label>Epicycles <input type="range" id="epiN" min="1" max="12" step="1" value="2"> <span id="epiVal">2</span></label>
+  <label>Equant <input type="range" id="equant" min="0" max="1" step="0.01" value="0"> <span id="equantVal">0%</span></label>
+  <label><input type="checkbox" id="showCircles" checked> deferent &amp; epicycle</label>
+  <label><input type="checkbox" id="showModel" checked> epicycle-model trace</label>
+  <button id="pauseBtn">Pause</button>
+  <button id="refreshBtn">Refresh</button>
+</div>
+
+<div class="panels">
+  <div class="panel">
+    <h2>Heliocentric (Kepler ellipses)</h2>
+    <canvas id="helio" width="460" height="460"></canvas>
+  </div>
+  <div class="panel">
+    <h2>Geocentric (deferent &amp; epicycle)</h2>
+    <canvas id="geo" width="460" height="460"></canvas>
+  </div>
+</div>
+
+<p class="legend">
+  <span class="dot" style="background:#ffd94d"></span>Sun
+  <span class="dot" style="background:#4d8dff"></span>Earth
+  <span class="dot" id="legendPlanet" style="background:#ff6b4a"></span><span id="legendPlanetName">Mars</span> (elliptic model)
+  <span class="ring"></span>epicycle-model position (dashed trace)
+  <span style="color:#e078dc;font-weight:bold;margin-left:10px">&times;</span> equant point
+</p>
+
+<div class="explain" id="formulaBox"></div>
+
+<div class="explain">
+<h3>Heliocentric model (left)</h3>
+<p>
+Each planet moves on an ellipse with the Sun at one focus. With mean anomaly \(M = 2\pi t/T\), we solve Kepler's equation \(M = E - e\sin E\) numerically and take
+\[ x = a(\cos E - e), \qquad y = a\sqrt{1-e^{2}}\,\sin E. \]
+</p>
+
+<h3>Geocentric model (right)</h3>
+<p>
+Seen from Earth, the planet is at \(\mathbf{r}_{p} - \mathbf{r}_{\oplus}\). If both orbits were circles, this is a sum of two uniform circular motions:
+\[ z(t) \;=\; a_{p}\,e^{i\omega_{p} t + i\lambda_p} \;-\; a_{\oplus}\,e^{i\omega_{\oplus} t + i\lambda_\oplus}, \qquad \omega = \tfrac{2\pi}{T}. \]
+The larger circle is the <em>deferent</em>, the smaller one the <em>epicycle</em> riding on it. Their combined motion produces the retrograde loops. The dashed trace (epicycle model) almost matches the solid trace (ellipse model); the gap is of order \(e\).
+</p>
+
+<h3>Equant slider</h3>
+<p>
+Ptolemy's fix for that gap: shift the deferent center away from Earth by \(ase\) and let the deferent point revolve uniformly about the <em>equant</em> point \(\times\) at distance \(2ase\), where \(s\) is the slider value. The epicycle center moves at constant angular speed relative to the equant point (the planet itself does not). At \(s=1\) this matches the Kepler ellipse to \(O(e^{2})\)&mdash;try Mars and watch the traces lock together. It applies only to the two-circle model (\(N=2\)).
+</p>
+
+<h3>Epicycles slider</h3>
+<p>
+The modern fix: each Kepler orbit is periodic, so it has a Fourier series
+\[ z_b(t) \;=\; \sum_{k} c_{k}\, e^{\,i k \omega_b t}, \]
+and the geocentric motion is a sum of circles with frequencies \(k\omega_p\) and \(k\omega_\oplus\). The slider keeps the \(N\) largest circles, chained one on top of another; each circle is centered on the tip of the previous one. The constant term (\(k=0\)) is a fixed offset of the center&mdash;an <em>eccentric</em>&mdash;drawn as an arm without a circle. As \(N\) grows, the model trace converges to the true one: "you can always add another epicycle."
+</p>
+
+<h3>Orbital elements used</h3>
+<p>
+Venus \((a,e,T) = (0.723, 0.007, 0.615)\), Earth \((1.000, 0.017, 1.000)\), Mars \((1.524, 0.093, 1.881)\), Jupiter \((5.203, 0.048, 11.862)\), with \(a\) in au and \(T\) in years.
+</p>
+
+<h3>Further reading</h3>
+<p>
+S. D. Norton, <a href="https://www.encyclopedia.com/science/encyclopedias-almanacs-transcripts-and-maps/ptolemaic-astronomy-islamic-planetary-theory-and-copernicuss-debt-maragha-school">&ldquo;Ptolemaic Astronomy, Islamic Planetary Theory, and Copernicus's Debt to the Maragha School&rdquo;</a>, in <em>Science and Its Times</em> (Encyclopedia.com)&mdash;on the equant problem and its resolutions from Ptolemy through the Maragha school (al-T&#363;s&#299;, al-&#699;Ur&#7693;&#299;, Ibn al-Sh&#257;&#7789;ir) to Copernicus.
+</p>
+</div>
+
+<footer><a href="https://so-okada.github.io/math_teaching_materials/">Back to Collection</a></footer>
+</div>
+
+<script>
+'use strict';
+
+const PLANETS = {
+  venus:   { name: 'Venus',   a: 0.7233, e: 0.0068, T: 0.6152,  varpi: 131.6, color: '#f0c060' },
+  mars:    { name: 'Mars',    a: 1.5237, e: 0.0934, T: 1.8809,  varpi: 336.0, color: '#ff6b4a' },
+  jupiter: { name: 'Jupiter', a: 5.2026, e: 0.0484, T: 11.862,  varpi: 14.8,  color: '#e0b080' }
+};
+const EARTH = { name: 'Earth', a: 1.0, e: 0.0167, T: 1.0, varpi: 102.9, color: '#4d8dff' };
+const SUN_COLOR = '#ffd94d';
+const MODEL_COLOR = 'rgba(255,255,255,0.85)';
+
+const helio = document.getElementById('helio');
+const geo = document.getElementById('geo');
+const hc = helio.getContext('2d');
+const gc = geo.getContext('2d');
+
+const planetSel = document.getElementById('planetSel');
+const speedInput = document.getElementById('speed');
+const trailInput = document.getElementById('trailLen');
+const equantInput = document.getElementById('equant');
+const epiInput = document.getElementById('epiN');
+const showCircles = document.getElementById('showCircles');
+const showModel = document.getElementById('showModel');
+const pauseBtn = document.getElementById('pauseBtn');
+
+let planet = PLANETS.mars;
+let t = 0;                 // time in years
+let paused = false;
+let lastTs = null;
+let trueTrail = [];        // geocentric trace, elliptic model
+let modelTrail = [];       // geocentric trace, two-circle epicycle model
+
+// ---------- orbital mechanics ----------
+
+function solveKepler(M, e) {
+  let E = M;
+  for (let i = 0; i < 12; i++) {
+    E -= (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+  }
+  return E;
+}
+
+// Elliptic (Kepler) heliocentric position of body b at time t (years) -> {x, y} in au
+function ellipsePos(b, t) {
+  const M = 2 * Math.PI * t / b.T;
+  const E = solveKepler(M, b.e);
+  const x = b.a * (Math.cos(E) - b.e);
+  const y = b.a * Math.sqrt(1 - b.e * b.e) * Math.sin(E);
+  const w = b.varpi * Math.PI / 180;
+  const c = Math.cos(w), s = Math.sin(w);
+  return { x: c * x - s * y, y: s * x + c * y };
+}
+
+// Rotate a point in the perihelion frame of body b by its longitude of perihelion
+function rotW(b, x, y) {
+  const w = b.varpi * Math.PI / 180;
+  const c = Math.cos(w), s = Math.sin(w);
+  return { x: c * x - s * y, y: s * x + c * y };
+}
+
+// Eccentric deferent + equant with bisected eccentricity, strength q in [0,1].
+// q = 0: uniform circle (angle = mean longitude); q = 1: full Ptolemaic equant,
+// matching the Kepler ellipse to O(e^2). Position is relative to the observer.
+function equantPos(b, t, q) {
+  const M = 2 * Math.PI * t / b.T;
+  const es = q * b.e;
+  const rho = b.a * (es * Math.cos(M) + Math.sqrt(1 - es * es * Math.sin(M) * Math.sin(M)));
+  return rotW(b, rho * Math.cos(M) - 2 * b.a * es, rho * Math.sin(M));
+}
+
+// Deferent-circle center and equant point of body b (vectors from the observer)
+function eccCenter(b, q) { return rotW(b, -b.a * q * b.e, 0); }
+function equantPoint(b, q) { return rotW(b, -2 * b.a * q * b.e, 0); }
+
+// ---------- Fourier epicycles ----------
+// Expand each heliocentric Kepler orbit as a Fourier series in its mean anomaly,
+// z_b(t) = sum_k c_k e^{i k (2pi/T_b) t}  (coefficients computable via Bessel
+// functions J_n(ke); here obtained numerically by a DFT over one period).
+// The geocentric motion is then a sum of uniform circular motions ("epicycles")
+// at frequencies k*omega_p and k*omega_earth; we rank them by radius |c_k|.
+
+function fourierTerms(b, sign) {
+  const K = 256, maxH = 12, terms = [];
+  const re = new Array(K), im = new Array(K);
+  for (let j = 0; j < K; j++) {
+    const p = ellipsePos(b, j * b.T / K);
+    re[j] = p.x; im[j] = p.y;
+  }
+  for (let k = -maxH; k <= maxH; k++) {
+    let cr = 0, ci = 0;
+    for (let j = 0; j < K; j++) {
+      const ang = -2 * Math.PI * k * j / K;
+      const c = Math.cos(ang), s = Math.sin(ang);
+      cr += re[j] * c - im[j] * s;
+      ci += re[j] * s + im[j] * c;
+    }
+    cr = sign * cr / K; ci = sign * ci / K;
+    const amp = Math.hypot(cr, ci);
+    if (amp > 1e-6) terms.push({ omega: 2 * Math.PI * k / b.T, re: cr, im: ci, amp: amp });
+  }
+  return terms;
+}
+
+function buildTerms() {
+  const list = fourierTerms(planet, 1).concat(fourierTerms(EARTH, -1));
+  let zre = 0, zim = 0;
+  const rest = [];
+  for (const tm of list) {
+    if (tm.omega === 0) { zre += tm.re; zim += tm.im; } else rest.push(tm);
+  }
+  const zamp = Math.hypot(zre, zim);      // merged constant terms: an "eccentric" offset
+  if (zamp > 1e-6) rest.push({ omega: 0, re: zre, im: zim, amp: zamp });
+  rest.sort((u, v) => v.amp - u.amp);
+  return rest;
+}
+
+// Partial sums of the N largest circles at time t; pts[0] = Earth, last = planet.
+function fourierChain(t, N) {
+  const pts = [{ x: 0, y: 0 }];
+  let x = 0, y = 0;
+  const n = Math.min(N, fTerms.length);
+  for (let j = 0; j < n; j++) {
+    const tm = fTerms[j];
+    const c = Math.cos(tm.omega * t), s = Math.sin(tm.omega * t);
+    x += tm.re * c - tm.im * s;
+    y += tm.re * s + tm.im * c;
+    pts.push({ x: x, y: y });
+  }
+  return pts;
+}
+
+// Model geocentric position: the equant-capable two-circle model for N = 2,
+// otherwise the N largest Fourier epicycles.
+function modelPosition(t) {
+  const N = parseInt(epiInput.value, 10);
+  if (N === 2) {
+    const q = parseFloat(equantInput.value);
+    const zE = equantPos(EARTH, t, q);
+    const zP = equantPos(planet, t, q);
+    return { x: zP.x - zE.x, y: zP.y - zE.y };
+  }
+  const pts = fourierChain(t, N);
+  return pts[pts.length - 1];
+}
+
+let fTerms = buildTerms();
+
+// ---------- explicit formulas ----------
+
+function helioLine(b, label) {
+  const A = b.a.toFixed(4);                                   // a
+  const AE = (b.a * b.e).toFixed(4);                          // a e
+  const B = (b.a * Math.sqrt(1 - b.e * b.e)).toFixed(4);      // a sqrt(1-e^2)
+  return '\\[ \\begin{aligned} \\mathbf{r}_{\\text{' + label + '}}(t) &= R(' + b.varpi.toFixed(1) +
+    '^\\circ)\\begin{pmatrix} ' + A + '\\cos E - ' + AE + ' \\\\ ' + B +
+    '\\,\\sin E \\end{pmatrix}, \\\\ E - ' + b.e.toFixed(4) +
+    '\\sin E &= \\frac{2\\pi t}{' + b.T.toFixed(4) + '}. \\end{aligned} \\]';
+}
+
+function circTerm(b) {
+  return b.a.toFixed(4) + '\\, e^{\\,i\\left(2\\pi t/' + b.T.toFixed(4) +
+    ' \\,+\\, ' + b.varpi.toFixed(1) + '^\\circ\\right)}';
+}
+
+function equantLine(b, s) {
+  const eps = s * b.e;
+  return '\\[ \\begin{aligned} z_{\\text{' + b.name + '}}(t) &= R(' + b.varpi.toFixed(1) +
+    '^\\circ)\\left( \\rho\\, e^{iM} - ' + (2 * b.a * eps).toFixed(4) +
+    ' \\right), \\\\ \\rho &= ' + (b.a * eps).toFixed(4) + '\\cos M + ' +
+    b.a.toFixed(4) + '\\sqrt{1 - ' + eps.toFixed(4) + '^{2}\\sin^{2} M}, \\quad M = \\frac{2\\pi t}{' +
+    b.T.toFixed(4) + '}. \\end{aligned} \\]';
+}
+
+// Model formula matching the current Epicycles / Equant settings
+function modelFormula() {
+  const N = parseInt(epiInput.value, 10);
+  if (N === 2) {
+    const s = parseFloat(equantInput.value);
+    if (s === 0) {
+      return '<p>Two-circle epicycle model (equant \\(s = 0\\), circular limit):</p>' +
+        '\\[ z(t) = ' + circTerm(planet) + ' \\;-\\; ' + circTerm(EARTH) + '. \\]';
+    }
+    return '<p>Two-circle model with equant strength \\(s = ' + s.toFixed(2) +
+      '\\): \\(\\;z(t) = z_{\\text{' + planet.name +
+      '}}(t) - z_{\\text{Earth}}(t)\\), where each heliocentric term is</p>' +
+      equantLine(planet, s) + equantLine(EARTH, s);
+  }
+  const n = Math.min(N, fTerms.length);
+  const parts = [];
+  for (let j = 0; j < n; j++) {
+    const tm = fTerms[j];
+    let ph = Math.atan2(tm.im, tm.re) * 180 / Math.PI;
+    if (ph < 0) ph += 360;
+    parts.push(tm.omega === 0
+      ? tm.amp.toFixed(4) + '\\, e^{\\,i\\,' + ph.toFixed(1) + '^\\circ}'
+      : tm.amp.toFixed(4) + '\\, e^{\\,i(' + tm.omega.toFixed(4) + '\\,t \\,+\\, ' + ph.toFixed(1) + '^\\circ)}');
+  }
+  let sum = '';
+  for (let j = 0; j < parts.length; j++) {     // two terms per line
+    if (j === 0) sum += parts[j];
+    else if (j % 2 === 0) sum += ' \\\\ &+ ' + parts[j];
+    else sum += ' + ' + parts[j];
+  }
+  return '<p>Fourier model with the \\(N = ' + n +
+    '\\) largest circles (angular rates in rad/yr; a constant term is the eccentric offset):</p>' +
+    '\\[ \\begin{aligned} z(t) ={}& ' + sum + '. \\end{aligned} \\]';
+}
+
+function updateFormulas() {
+  const box = document.getElementById('formulaBox');
+  box.innerHTML =
+    '<h3>Explicit formulas (' + planet.name + ')</h3>' +
+    '<p>Heliocentric positions in au, with \\(t\\) in years, \\(E\\) the eccentric anomaly of each body, and \\(R\\) the rotation by its longitude of perihelion:</p>' +
+    helioLine(EARTH, 'Earth') +
+    helioLine(planet, planet.name) +
+    '<p>Geocentric position: \\(\\mathbf{r}_{\\mathrm{geo}}(t) = \\mathbf{r}_{\\text{' +
+    planet.name + '}}(t) - \\mathbf{r}_{\\text{Earth}}(t)\\).</p>' +
+    modelFormula();
+  if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([box]);
+}
+
+updateFormulas();
+
+// ---------- scaling ----------
+
+function scales() {
+  const Rh = Math.max(planet.a * (1 + planet.e), EARTH.a * (1 + EARTH.e)) * 1.12;
+  const Rg = (planet.a + EARTH.a) * 1.08;
+  return {
+    sh: (helio.width / 2 - 8) / Rh,
+    sg: (geo.width / 2 - 8) / Rg
+  };
+}
+
+// ---------- drawing helpers ----------
+
+function dot(ctx, cx, cy, s, p, r, color) {
+  ctx.beginPath();
+  ctx.arc(cx + s * p.x, cy - s * p.y, r, 0, 2 * Math.PI);
+  ctx.fillStyle = color;
+  ctx.fill();
+}
+
+function ringDot(ctx, cx, cy, s, p, r, color) {
+  ctx.beginPath();
+  ctx.arc(cx + s * p.x, cy - s * p.y, r, 0, 2 * Math.PI);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.6;
+  ctx.stroke();
+}
+
+function cross(ctx, cx, cy, s, p, r, style) {
+  const px = cx + s * p.x, py = cy - s * p.y;
+  ctx.beginPath();
+  ctx.moveTo(px - r, py - r); ctx.lineTo(px + r, py + r);
+  ctx.moveTo(px - r, py + r); ctx.lineTo(px + r, py - r);
+  ctx.strokeStyle = style;
+  ctx.lineWidth = 1.4;
+  ctx.stroke();
+}
+
+function circle(ctx, cx, cy, s, center, R, style, dash) {
+  ctx.beginPath();
+  ctx.arc(cx + s * center.x, cy - s * center.y, s * R, 0, 2 * Math.PI);
+  ctx.strokeStyle = style;
+  ctx.lineWidth = 1;
+  ctx.setLineDash(dash || []);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function segment(ctx, cx, cy, s, p, q, style) {
+  ctx.beginPath();
+  ctx.moveTo(cx + s * p.x, cy - s * p.y);
+  ctx.lineTo(cx + s * q.x, cy - s * q.y);
+  ctx.strokeStyle = style;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function polyline(ctx, cx, cy, s, pts, style, dash) {
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  for (let i = 0; i < pts.length; i++) {
+    const px = cx + s * pts[i].x, py = cy - s * pts[i].y;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.strokeStyle = style;
+  ctx.lineWidth = 1.3;
+  ctx.setLineDash(dash || []);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function orbitPath(ctx, cx, cy, s, b) {
+  ctx.beginPath();
+  const w = b.varpi * Math.PI / 180;
+  const cw = Math.cos(w), sw = Math.sin(w);
+  for (let i = 0; i <= 240; i++) {
+    const E = 2 * Math.PI * i / 240;
+    const x = b.a * (Math.cos(E) - b.e);
+    const y = b.a * Math.sqrt(1 - b.e * b.e) * Math.sin(E);
+    const X = cw * x - sw * y, Y = sw * x + cw * y;
+    const px = cx + s * X, py = cy - s * Y;
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+// ---------- main draw ----------
+
+function draw() {
+  const { sh, sg } = scales();
+  const q = parseFloat(equantInput.value);
+  const N = parseInt(epiInput.value, 10);
+  const pE = ellipsePos(EARTH, t);
+  const pP = ellipsePos(planet, t);
+
+  // --- heliocentric panel ---
+  hc.fillStyle = '#0b1020';
+  hc.fillRect(0, 0, helio.width, helio.height);
+  const hx = helio.width / 2, hy = helio.height / 2;
+
+  orbitPath(hc, hx, hy, sh, EARTH);
+  orbitPath(hc, hx, hy, sh, planet);
+  segment(hc, hx, hy, sh, pE, pP, 'rgba(255,255,255,0.25)');
+  dot(hc, hx, hy, sh, { x: 0, y: 0 }, 7, SUN_COLOR);
+  dot(hc, hx, hy, sh, pE, 4.5, EARTH.color);
+  dot(hc, hx, hy, sh, pP, 4.5, planet.color);
+
+  // --- geocentric panel ---
+  gc.fillStyle = '#0b1020';
+  gc.fillRect(0, 0, geo.width, geo.height);
+  const gx = geo.width / 2, gy = geo.height / 2;
+
+  // geocentric positions
+  const sunGeo = { x: -pE.x, y: -pE.y };                  // true Sun as seen from Earth
+  const trueGeo = { x: pP.x - pE.x, y: pP.y - pE.y };     // elliptic model
+  const modelGeo = modelPosition(t);                      // epicycle model
+
+  if (N === 2) {
+    // deferent & epicycle decomposition of modelGeo = zP + (-zE)
+    const zE = equantPos(EARTH, t, q);
+    const zP = equantPos(planet, t, q);
+    const termP = zP;
+    const termE = { x: -zE.x, y: -zE.y };
+    let defPoint, defR, defCenter, eqPt, epiR;
+    if (planet.a >= EARTH.a) {          // outer planet: deferent ~ planet's circle
+      defPoint = termP; defR = planet.a;
+      defCenter = eccCenter(planet, q);
+      eqPt = equantPoint(planet, q);
+      epiR = Math.hypot(termE.x, termE.y);
+    } else {                            // inner planet: deferent ~ mean Sun's circle
+      defPoint = termE; defR = EARTH.a;
+      const cE = eccCenter(EARTH, q), qE = equantPoint(EARTH, q);
+      defCenter = { x: -cE.x, y: -cE.y };   // term is negated, so reflect through Earth
+      eqPt = { x: -qE.x, y: -qE.y };
+      epiR = Math.hypot(termP.x, termP.y);
+    }
+
+    if (showCircles.checked) {
+      circle(gc, gx, gy, sg, defCenter, defR, 'rgba(120,170,255,0.35)');
+      segment(gc, gx, gy, sg, eqPt, defPoint, 'rgba(255,120,220,0.55)');  // uniform arm about the equant
+      circle(gc, gx, gy, sg, defPoint, epiR, 'rgba(120,255,180,0.45)');
+      segment(gc, gx, gy, sg, defPoint, modelGeo, 'rgba(120,255,180,0.45)');
+      dot(gc, gx, gy, sg, defPoint, 2.5, 'rgba(120,170,255,0.8)');
+      if (q > 0) {
+        cross(gc, gx, gy, sg, eqPt, 4, 'rgba(255,120,220,0.9)');          // equant point
+        dot(gc, gx, gy, sg, defCenter, 2, 'rgba(120,170,255,0.7)');       // deferent center
+      }
+    }
+  } else if (showCircles.checked) {
+    // chain of the N largest Fourier circles (a zero-frequency term is a fixed
+    // "eccentric" offset, drawn as an arm without a circle)
+    const pts = fourierChain(t, N);
+    for (let j = 0; j + 1 < pts.length; j++) {
+      const tm = fTerms[j];
+      const cCol = j === 0 ? 'rgba(120,170,255,0.35)' : 'rgba(120,255,180,0.35)';
+      const aCol = j === 0 ? 'rgba(120,170,255,0.5)' : 'rgba(120,255,180,0.5)';
+      if (tm.omega !== 0) circle(gc, gx, gy, sg, pts[j], tm.amp, cCol);
+      segment(gc, gx, gy, sg, pts[j], pts[j + 1], aCol);
+      dot(gc, gx, gy, sg, pts[j + 1], 2, 'rgba(180,220,255,0.7)');
+    }
+  }
+
+  // trails
+  polyline(gc, gx, gy, sg, trueTrail, planet.color);
+  if (showModel.checked) {
+    polyline(gc, gx, gy, sg, modelTrail, MODEL_COLOR, [4, 4]);
+  }
+
+  // bodies
+  dot(gc, gx, gy, sg, { x: 0, y: 0 }, 5, EARTH.color);    // Earth at center
+  dot(gc, gx, gy, sg, sunGeo, 6, SUN_COLOR);
+  dot(gc, gx, gy, sg, trueGeo, 4.5, planet.color);
+  if (showModel.checked) {
+    ringDot(gc, gx, gy, sg, modelGeo, 5.5, MODEL_COLOR);
+  }
+}
+
+// ---------- animation & trails ----------
+
+function pushTrails() {
+  const pE = ellipsePos(EARTH, t);
+  const pP = ellipsePos(planet, t);
+  const m = modelPosition(t);
+  trueTrail.push({ t: t, x: pP.x - pE.x, y: pP.y - pE.y });
+  modelTrail.push({ t: t, x: m.x, y: m.y });
+  const keep = parseFloat(trailInput.value);
+  while (trueTrail.length && trueTrail[0].t < t - keep) trueTrail.shift();
+  while (modelTrail.length && modelTrail[0].t < t - keep) modelTrail.shift();
+}
+
+function frame(ts) {
+  if (lastTs === null) lastTs = ts;
+  const dt = Math.min((ts - lastTs) / 1000, 0.1);
+  lastTs = ts;
+  if (!paused) {
+    t += dt * parseFloat(speedInput.value);
+    pushTrails();
+  }
+  draw();
+  requestAnimationFrame(frame);
+}
+
+// ---------- UI ----------
+
+function resetTrails() {
+  trueTrail = [];
+  modelTrail = [];
+}
+
+planetSel.addEventListener('change', () => {
+  planet = PLANETS[planetSel.value];
+  fTerms = buildTerms();
+  updateFormulas();
+  document.getElementById('legendPlanet').style.background = planet.color;
+  document.getElementById('legendPlanetName').textContent = planet.name;
+  resetTrails();
+});
+
+speedInput.addEventListener('input', () => {
+  document.getElementById('speedVal').textContent = parseFloat(speedInput.value).toFixed(2);
+});
+
+trailInput.addEventListener('input', () => {
+  document.getElementById('trailVal').textContent = trailInput.value;
+});
+
+epiInput.addEventListener('input', () => {
+  document.getElementById('epiVal').textContent = epiInput.value;
+  equantInput.disabled = parseInt(epiInput.value, 10) !== 2;  // equant is a 2-circle device
+  modelTrail = [];   // the model curve changes, so restart its trail
+});
+
+equantInput.addEventListener('input', () => {
+  document.getElementById('equantVal').textContent =
+    Math.round(parseFloat(equantInput.value) * 100) + '%';
+  modelTrail = [];   // the model curve changes, so restart its trail
+});
+
+epiInput.addEventListener('change', updateFormulas);
+equantInput.addEventListener('change', updateFormulas);
+
+pauseBtn.addEventListener('click', () => {
+  paused = !paused;
+  pauseBtn.textContent = paused ? 'Play' : 'Pause';
+});
+
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  planetSel.value = 'mars';
+  planet = PLANETS.mars;
+  fTerms = buildTerms();
+  document.getElementById('legendPlanet').style.background = planet.color;
+  document.getElementById('legendPlanetName').textContent = planet.name;
+  speedInput.value = '0.30';
+  document.getElementById('speedVal').textContent = '0.30';
+  trailInput.value = '8';
+  document.getElementById('trailVal').textContent = '8';
+  epiInput.value = '2';
+  document.getElementById('epiVal').textContent = '2';
+  equantInput.value = '0';
+  equantInput.disabled = false;
+  document.getElementById('equantVal').textContent = '0%';
+  showCircles.checked = true;
+  showModel.checked = true;
+  paused = false;
+  pauseBtn.textContent = 'Pause';
+  t = 0;
+  resetTrails();
+  updateFormulas();
+});
+
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
