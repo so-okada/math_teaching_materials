@@ -1,0 +1,527 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>An arc-length approximation (會圓術) from Mengxi Bitan (夢渓筆談) of Shen Kuo (沈括)</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;  /* arc s */
+    --series-2: #eb6834;  /* chord a */
+    --series-3: #1baf7a;  /* sagitta c */
+    --accent: #2a78d6;
+    --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --accent: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body.viz-root {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.65;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 64px; }
+  header h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  header .sub { color: var(--text-secondary); font-size: 0.95rem; margin: 0 0 20px; }
+
+  .panel {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .grid2 { display: grid; grid-template-columns: minmax(360px, 1.5fr) 1fr; gap: 20px; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+
+  canvas { width: 100%; height: auto; display: block; touch-action: none; }
+  #geom { cursor: grab; }
+
+  .controls { margin-top: 10px; }
+  .controls label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 2px; }
+  .controls input[type=range] { width: 100%; accent-color: var(--series-1); }
+  .ctlrow { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 14px; }
+  .tile {
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
+    background: var(--surface-1);
+  }
+  .tile .k { font-size: 0.78rem; color: var(--muted); }
+  .tile .v { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: baseline; }
+
+  .formula-hero { text-align: center; font-size: 1.15rem; padding: 10px 0 2px; }
+  .note { color: var(--text-secondary); font-size: 0.9rem; }
+
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  h3 { font-size: 1.0rem; margin: 18px 0 6px; }
+  .charttitle { font-size: 0.95rem; margin: 0 0 2px; }
+  .chartsub { font-size: 0.82rem; color: var(--muted); margin: 0 0 8px; }
+
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 9px; font-size: 0.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    display: none; font-variant-numeric: tabular-nums;
+  }
+  details { margin-top: 10px; font-size: 0.85rem; }
+  details summary { cursor: pointer; color: var(--text-secondary); }
+  table.datatable { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  table.datatable th, table.datatable td {
+    border-bottom: 1px solid var(--grid); padding: 3px 12px 3px 0; text-align: right;
+    font-weight: 400; font-size: 0.85rem;
+  }
+  table.datatable th { color: var(--muted); font-size: 0.78rem; }
+  .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+  footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
+  a { color: var(--series-1); }
+</style>
+</head>
+<body class="viz-root">
+<div class="wrap">
+
+<header>
+  <h1>An arc-length approximation (會圓術) from Mengxi Bitan (夢渓筆談) of Shen Kuo (沈括)</h1>
+</header>
+
+<!-- ============ Interactive demo ============ -->
+<section class="panel">
+  <div class="formula-hero">
+    $$ s \;\approx\; \frac{2c^{2}}{d} + a $$
+    <p class="note">arc \(s\), chord \(a\), sagitta \(c\), diameter \(d\)</p>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <p class="charttitle">Geometry</p>
+      <canvas id="geom" width="440" height="440" aria-label="Diagram of circle, chord, sagitta, and arc"></canvas>
+    </div>
+    <div>
+      <div class="controls">
+        <div class="ctlrow">
+          <div>
+            <label for="angle">central angle&nbsp; <span id="angleval" style="color:var(--text-primary)"></span></label>
+            <input type="range" id="angle" min="5" max="180" value="110" step="0.5">
+          </div>
+          <div>
+            <label for="diam">diameter \(d\)&nbsp; <span id="diamval" style="color:var(--text-primary)"></span></label>
+            <input type="range" id="diam" min="1" max="20" value="10" step="0.5">
+          </div>
+        </div>
+      </div>
+
+      <div class="tiles">
+        <div class="tile"><div class="k"><span class="dot" style="background:var(--series-2)"></span>chord \(a\)</div><div class="v" id="t-a"></div></div>
+        <div class="tile"><div class="k"><span class="dot" style="background:var(--series-3)"></span>sagitta \(c\)</div><div class="v" id="t-c"></div></div>
+        <div class="tile"><div class="k"><span class="dot" style="background:var(--series-1)"></span>true arc \(s\)</div><div class="v" id="t-s"></div></div>
+        <div class="tile"><div class="k">"intersecting circles" \(2c^2/d + a\)</div><div class="v" id="t-approx"></div></div>
+        <div class="tile"><div class="k">signed error (approximation − true arc)</div><div class="v" id="t-err"></div></div>
+        <div class="tile"><div class="k">signed relative error</div><div class="v" id="t-rel"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Error chart ============ -->
+<section class="panel">
+  <p class="charttitle">Signed relative error of \(2c^{2}/d + a\)</p>
+  <p class="chartsub">Signed relative error (%) as a function of the central angle \(2\theta\). It is independent of \(d\). Hover for values; the marker tracks the slider.</p>
+  <canvas id="errchart" width="920" height="300" aria-label="Graph of signed relative error"></canvas>
+  <details>
+    <summary>Table view</summary>
+    <table class="datatable" id="errtable">
+      <thead><tr><th>central angle 2θ</th><th>s (d=1)</th><th>approximation</th><th>signed relative error</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </details>
+</section>
+
+<!-- ============ Explanation ============ -->
+<section class="panel">
+  <h2>Explanation by Taylor expansion</h2>
+
+  <p>Let \(d\) be the diameter (radius \(r=d/2\)) and \(2\theta\) the central angle (\(0<\theta\le\pi/2\)). The arc, chord, and sagitta are</p>
+  $$ s = d\,\theta, \qquad a = d\sin\theta, \qquad c = \frac{d}{2}\bigl(1-\cos\theta\bigr). $$
+
+  <p>Taylor expansion around \(\theta=0\) gives</p>
+  $$ a = d\Bigl(\theta - \frac{\theta^{3}}{6} + \frac{\theta^{5}}{120} - \cdots\Bigr), \qquad
+     1-\cos\theta = \frac{\theta^{2}}{2} - \frac{\theta^{4}}{24} + \cdots $$
+
+  <p>so the correction term is</p>
+  $$ \frac{2c^{2}}{d} = \frac{d}{2}\bigl(1-\cos\theta\bigr)^{2}
+     = \frac{d\,\theta^{4}}{8} - \frac{d\,\theta^{6}}{48} + \cdots $$
+
+  <p>and the "technique of intersecting circles" formula becomes</p>
+  $$ \frac{2c^{2}}{d} + a
+     = d\Bigl(\theta - \frac{\theta^{3}}{6} + \frac{\theta^{4}}{8} + \frac{\theta^{5}}{120} - \cdots\Bigr). $$
+
+  <p>The signed error against the true arc length \(s=d\theta\) is</p>
+  $$ \Bigl(\frac{2c^{2}}{d}+a\Bigr) - s
+     = -\frac{d\,\theta^{3}}{6} + \frac{d\,\theta^{4}}{8} + O(\theta^{5}),
+     \qquad
+     \frac{\text{error}}{s} = -\frac{\theta^{2}}{6} + \frac{\theta^{3}}{8} + O(\theta^{4}). $$
+
+  <h3>Historical background</h3>
+  <p>
+    The arc-length approximation appears in <em>Mengxi Bitan</em>
+    (『夢渓筆談』, c. 1088) of
+    <a href="https://en.wikipedia.org/wiki/Shen_Kuo">Shen Kuo</a>
+    (沈括, 1031–1095).
+    <a href="https://en.wikipedia.org/wiki/Guo_Shoujing">Guo Shoujing</a>
+    (郭守敬) and their collaborators used the method for the
+    <a href="https://en.wikipedia.org/wiki/Chinese_calendar#Yuan_dynasty_Sh%C3%B2ush%C3%AD_calendar"><em>Shoushi</em> calendar</a>
+    (授時曆), which was adopted in 1281 as the official Chinese calendar.
+  </p>
+
+  <p class="note">Other Sources:<br>
+  J.-P. J. Chen, <a href="https://www.sciencedirect.com/science/article/pii/S0315086009000329">"The evolution of transformation media in spherical trigonometry in 17th- and 18th-century China, and its relation to 'Western learning'"</a>, <em>Historia Mathematica</em> 37 (2010) 62–109;<br>
+  D. B. Wagner, <a href="https://donwagner.dk/Shen-Gua-arc.htm">"Shen Gua and an ignorant editor on the length of an arc"</a>, research note (2012);<br>
+  H. Shinkai, <a href="https://www.oit.ac.jp/labs/is/system/shinkai/Papers/202607_SekiJujiHatumei.pdf">"Deciphering Seki Takakazu's <em>Juji Hatsumei</em> (<em>Shoushi Hatsumei</em>)"</a> (2026).</p>
+</section>
+
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/">Back to Collection</a></p>
+
+<div id="tooltip"></div>
+
+<script>
+"use strict";
+/* ---------- state ---------- */
+const state = {
+  angleDeg: 110,   // full central angle 2θ in degrees
+  d: 10            // diameter
+};
+
+/* ---------- helpers ---------- */
+function css(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+function values(angleDeg, d) {
+  const theta = (angleDeg * Math.PI / 180) / 2;   // half central angle
+  const s = d * theta;
+  const a = d * Math.sin(theta);
+  const c = (d / 2) * (1 - Math.cos(theta));
+  const approx = a + 2 * c * c / d;
+  return { theta, s, a, c, approx, err: approx - s, rel: (approx - s) / s };
+}
+function fmt(x, digits = 4) {
+  return Number(x).toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
+
+/* ---------- HiDPI canvas setup ---------- */
+function setupCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = cv.getBoundingClientRect();
+
+  // Capture the CSS dimensions before changing the intrinsic dimensions.
+  const w = rect.width;
+  const h = rect.height;
+
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  return { ctx, w, h };
+}
+
+/* ---------- geometry drawing ---------- */
+const geom = document.getElementById("geom");
+function drawGeometry() {
+  const { ctx, w, h } = setupCanvas(geom);
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h / 2 - h * 0.02;
+  const D_MAX = +document.getElementById("diam").max || 20;
+  const R = Math.max(14, Math.min(w, h) * 0.44 * (state.d / D_MAX));  // figure scales with d
+  const th = (state.angleDeg * Math.PI / 180) / 2;
+
+  // circle
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = css("--baseline");
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke();
+
+  // endpoints of the chord: angle measured from downward vertical
+  const p1 = [cx - R * Math.sin(th), cy + R * Math.cos(th)];
+  const p2 = [cx + R * Math.sin(th), cy + R * Math.cos(th)];
+  const mid = [cx, cy + R * Math.cos(th)];   // chord midpoint
+  const bot = [cx, cy + R];                  // arc midpoint (bottom)
+
+  // diameter through sagitta (dashed, muted)
+  ctx.save();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = css("--grid");
+  ctx.beginPath(); ctx.moveTo(cx, cy - R); ctx.lineTo(cx, cy + R); ctx.stroke();
+  ctx.restore();
+
+  // radii to endpoints (hairline)
+  ctx.strokeStyle = css("--grid");
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(p1[0], p1[1]);
+  ctx.moveTo(cx, cy); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+
+  // arc s (series-1, thick)
+  ctx.lineWidth = 3; ctx.lineCap = "round";
+  ctx.strokeStyle = css("--series-1");
+  ctx.beginPath();
+  ctx.arc(cx, cy, R, Math.PI / 2 - th, Math.PI / 2 + th);
+  ctx.stroke();
+
+  // chord a (series-2)
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = css("--series-2");
+  ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke();
+
+  // sagitta c (series-3)
+  ctx.strokeStyle = css("--series-3");
+  ctx.beginPath(); ctx.moveTo(mid[0], mid[1]); ctx.lineTo(bot[0], bot[1]); ctx.stroke();
+
+  // center
+  ctx.fillStyle = css("--muted");
+  ctx.beginPath(); ctx.arc(cx, cy, 2.5, 0, 2 * Math.PI); ctx.fill();
+
+  // endpoint handles
+  ctx.fillStyle = css("--series-1");
+  [p1, p2].forEach(p => { ctx.beginPath(); ctx.arc(p[0], p[1], 5, 0, 2 * Math.PI); ctx.fill(); });
+
+  // labels (text in ink colors; identity is carried by the geometry itself)
+  // hide detailed labels when the figure is too small for them
+  if (R > 70) {
+    ctx.font = "13px system-ui, sans-serif";
+    ctx.fillStyle = css("--text-primary");
+    ctx.textAlign = "center";
+    // arc label below the arc, outside the circle
+    ctx.fillText("arc s", cx + R * Math.sin(th) * 0.6, cy + R + 16);
+    // chord label above chord center
+    ctx.fillText("chord a", cx - Math.max(48, R * Math.sin(th) * 0.5), mid[1] - 7);
+    // sagitta label
+    ctx.textAlign = "left";
+    ctx.fillText("sagitta c", cx + 7, (mid[1] + bot[1]) / 2 + 4);
+    // center + angle label
+    ctx.textAlign = "center";
+    ctx.fillStyle = css("--text-secondary");
+    ctx.fillText("O", cx, cy - 8);
+    ctx.fillText("2θ = " + state.angleDeg.toFixed(1) + "°", cx, cy + 22);
+  }
+  // diameter label
+  ctx.font = "13px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillStyle = css("--muted");
+  ctx.fillText("d = " + Number(state.d).toFixed(1), cx, cy - R - 8);
+}
+
+/* drag interaction on geometry */
+function geomPointerAngle(ev) {
+  const rect = geom.getBoundingClientRect();
+  const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+  const cx = rect.width / 2, cy = rect.height / 2 - rect.height * 0.02;
+  // angle from downward vertical
+  let phi = Math.atan2(Math.abs(x - cx), y - cy); // 0..π
+  let full = 2 * phi * 180 / Math.PI;
+  return Math.min(180, Math.max(5, full));
+}
+let dragging = false;
+geom.addEventListener("pointerdown", ev => {
+  dragging = true; geom.setPointerCapture(ev.pointerId);
+  state.angleDeg = geomPointerAngle(ev); syncControls(); update();
+});
+geom.addEventListener("pointermove", ev => {
+  if (!dragging) return;
+  state.angleDeg = geomPointerAngle(ev); syncControls(); update();
+});
+geom.addEventListener("pointerup", () => { dragging = false; });
+
+/* ---------- error chart ---------- */
+const errcv = document.getElementById("errchart");
+const tooltip = document.getElementById("tooltip");
+const PAD = { l: 52, r: 16, t: 14, b: 34 };
+const X_MIN = 0, X_MAX = 180, Y_MIN = -6, Y_MAX = 0.5;
+let chartGeomCache = null;
+let hoverX = null; // hovered angle in degrees
+
+function relPercent(angleDeg) {
+  if (angleDeg <= 0) return 0;
+  return values(angleDeg, 1).rel * 100;
+}
+function drawErrChart() {
+  const { ctx, w, h } = setupCanvas(errcv);
+  ctx.clearRect(0, 0, w, h);
+  const plotW = w - PAD.l - PAD.r, plotH = h - PAD.t - PAD.b;
+  const X = deg => PAD.l + (deg - X_MIN) / (X_MAX - X_MIN) * plotW;
+  const Y = pct => PAD.t + (Y_MAX - pct) / (Y_MAX - Y_MIN) * plotH;
+  chartGeomCache = { X, Y, w, h };
+
+  ctx.font = "11px system-ui, sans-serif";
+  // gridlines + y labels
+  for (let p = 0; p >= -6; p--) {
+    ctx.strokeStyle = p === 0 ? css("--baseline") : css("--grid");
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD.l, Y(p)); ctx.lineTo(w - PAD.r, Y(p)); ctx.stroke();
+    ctx.fillStyle = css("--muted");
+    ctx.textAlign = "right";
+    ctx.fillText(p + "%", PAD.l - 8, Y(p) + 3.5);
+  }
+  // x ticks
+  ctx.textAlign = "center";
+  for (let a = 0; a <= 180; a += 30) {
+    ctx.fillStyle = css("--muted");
+    ctx.fillText(a + "°", X(a), h - PAD.b + 18);
+    ctx.strokeStyle = css("--grid");
+    ctx.beginPath(); ctx.moveTo(X(a), h - PAD.b); ctx.lineTo(X(a), h - PAD.b + 4); ctx.stroke();
+  }
+  // axis titles
+  ctx.fillStyle = css("--muted");
+  ctx.fillText("central angle 2θ", PAD.l + plotW / 2, h - 4);
+
+  // error curve
+  ctx.strokeStyle = css("--series-1");
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let a = X_MIN; a <= X_MAX; a += 0.5) {
+    const x = X(a), y = Y(relPercent(a));
+    a === X_MIN ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // hover crosshair
+  if (hoverX !== null) {
+    const hx = X(hoverX), hy = Y(relPercent(hoverX));
+    ctx.strokeStyle = css("--baseline");
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(hx, PAD.t); ctx.lineTo(hx, h - PAD.b); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = css("--series-1");
+    ctx.beginPath(); ctx.arc(hx, hy, 4, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = css("--surface-1"); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(hx, hy, 4, 0, 2 * Math.PI); ctx.stroke();
+  }
+
+  // marker synced with the slider (2px surface ring)
+  const mx = X(state.angleDeg), my = Y(relPercent(state.angleDeg));
+  ctx.fillStyle = css("--series-1");
+  ctx.beginPath(); ctx.arc(mx, my, 5, 0, 2 * Math.PI); ctx.fill();
+  ctx.strokeStyle = css("--surface-1"); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(mx, my, 5, 0, 2 * Math.PI); ctx.stroke();
+  // direct label for the current point (ink, not series color)
+  ctx.fillStyle = css("--text-primary");
+  ctx.textAlign = mx > w - 130 ? "right" : "left";
+  ctx.fillText(
+    state.angleDeg.toFixed(1) + "°: " + relPercent(state.angleDeg).toFixed(2) + "%",
+    mx + (mx > w - 130 ? -10 : 10), my - 8
+  );
+}
+errcv.addEventListener("pointermove", ev => {
+  const rect = errcv.getBoundingClientRect();
+  const x = ev.clientX - rect.left;
+  if (!chartGeomCache) return;
+  const { w } = chartGeomCache;
+  const deg = X_MIN + (x - PAD.l) / (w - PAD.l - PAD.r) * (X_MAX - X_MIN);
+  if (deg < X_MIN || deg > X_MAX) { hoverX = null; tooltip.style.display = "none"; drawErrChart(); return; }
+  hoverX = deg;
+  const v = values(deg, 1);
+  tooltip.innerHTML =
+    "2θ = " + deg.toFixed(1) + "°<br>" +
+    "s = " + fmt(v.s) + " · approx " + fmt(v.approx) + " (d=1)<br>" +
+    "signed relative error " + (v.rel * 100).toFixed(3) + "%";
+  tooltip.style.display = "block";
+  tooltip.style.left = (ev.clientX + 14) + "px";
+  tooltip.style.top = (ev.clientY - 10) + "px";
+  drawErrChart();
+});
+errcv.addEventListener("pointerleave", () => {
+  hoverX = null; tooltip.style.display = "none"; drawErrChart();
+});
+
+/* ---------- table view ---------- */
+function buildTable() {
+  const tb = document.querySelector("#errtable tbody");
+  tb.innerHTML = "";
+  for (let a = 15; a <= 180; a += 15) {
+    const v = values(a, 1);
+    const tr = document.createElement("tr");
+    tr.innerHTML = "<td>" + a + "°</td><td>" + fmt(v.s) + "</td><td>" + fmt(v.approx) + "</td><td>" +
+      (v.rel * 100).toFixed(3) + "%</td>";
+    tb.appendChild(tr);
+  }
+}
+
+/* ---------- readouts & sync ---------- */
+const $ = id => document.getElementById(id);
+function syncControls() {
+  $("angle").value = state.angleDeg;
+  $("diam").value = state.d;
+}
+function update() {
+  const v = values(state.angleDeg, state.d);
+  $("angleval").textContent = "2θ = " + Number(state.angleDeg).toFixed(1) + "°";
+  $("diamval").textContent = "d = " + Number(state.d).toFixed(1);
+  $("t-a").textContent = fmt(v.a);
+  $("t-c").textContent = fmt(v.c);
+  $("t-s").textContent = fmt(v.s);
+  $("t-approx").textContent = fmt(v.approx);
+  $("t-err").textContent = fmt(v.err);
+  $("t-rel").textContent = (v.rel * 100).toFixed(3) + "%";
+  drawGeometry();
+  drawErrChart();
+}
+$("angle").addEventListener("input", e => { state.angleDeg = +e.target.value; update(); });
+$("diam").addEventListener("input", e => { state.d = +e.target.value; update(); });
+
+window.addEventListener("resize", update);
+if (window.matchMedia) {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", update);
+}
+
+/* ---------- init ---------- */
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof renderMathInElement === "function") {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "\\(", right: "\\)", display: false }
+      ]
+    });
+  }
+  buildTable();
+  syncControls();
+  update();
+});
+</script>
+</body>
+</html>
