@@ -581,7 +581,7 @@ where $R$ is the circumradius (radius of the circumscribed circle).
 ### [Shen Kuo's Arc-Length Approximation (會圓術)](https://so-okada.github.io/math_teaching_materials/shen_kuo_huiyuan_method_demo.html)
 **File:** `shen_kuo_huiyuan_method_demo.html`
 
-Interactive demo of the arc-length approximation $s \approx 2c^2/d + a$ (arc $s$, chord $a$, sagitta $c$, diameter $d$) from Shen Kuo's *Mengxi Bitan* (『夢渓筆談』, c. 1088), with a signed relative-error chart and a Taylor-expansion analysis.
+Interactive demo of the arc-length approximation $s \approx 2c^2/d + a$ (arc $s$, chord $a$, sagitta $c$, diameter $d$) from Shen Kuo's *Dream Pool Essays/Mengxi Bitan* (『夢渓筆談』, c. 1088), with a signed relative-error chart and a Taylor-expansion analysis.
 
 **Mathematical Background:**
 With central angle $2\theta$, we have $s = d\theta$, $a = d\sin\theta$, and $c = \tfrac{d}{2}(1-\cos\theta)$, so
