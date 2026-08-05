@@ -29,6 +29,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
 | [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html) | Trigonometry | Triangle geometry, cosine rule |
 | [Law of Sines](https://so-okada.github.io/math_teaching_materials/sine_theorem.html) | Trigonometry | Sine rule, circumscribed circle |
+| [Shen Kuo's Arc-Length Approximation](https://so-okada.github.io/math_teaching_materials/shen_kuo_huiyuan_method_demo.html) | Trigonometry | Arc, chord, sagitta, Taylor series |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
 | [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html) | Numerical Analysis | Root finding, tangent line iteration |
@@ -577,6 +578,20 @@ where $R$ is the circumradius (radius of the circumscribed circle).
 
 ---
 
+### [Shen Kuo's Arc-Length Approximation (會圓術)](https://so-okada.github.io/math_teaching_materials/shen_kuo_huiyuan_method_demo.html)
+**File:** `shen_kuo_huiyuan_method_demo.html`
+
+Interactive demo of the arc-length approximation $s \approx 2c^2/d + a$ (arc $s$, chord $a$, sagitta $c$, diameter $d$) from Shen Kuo's *Mengxi Bitan* (『夢渓筆談』, c. 1088), with a signed relative-error chart and a Taylor-expansion analysis.
+
+**Mathematical Background:**
+With central angle $2\theta$, we have $s = d\theta$, $a = d\sin\theta$, and $c = \tfrac{d}{2}(1-\cos\theta)$, so
+
+$$\frac{2c^{2}}{d} + a = d\Bigl(\theta - \frac{\theta^{3}}{6} + \frac{\theta^{4}}{8} + \frac{\theta^{5}}{120} - \cdots\Bigr),$$
+
+giving a signed relative error of $-\theta^{2}/6 + O(\theta^{3})$. [Guo Shoujing](https://en.wikipedia.org/wiki/Guo_Shoujing) (郭守敬) and their collaborators used the method for the *Shoushi* calendar (授時曆), adopted in 1281 as the official Chinese calendar.
+
+---
+
 ## Calculus
 
 ### [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html)
@@ -846,6 +861,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `arrows_impossibility_theorem.html`: Uses MathJax (CDN)
 - `pinhole_camera.html`: Uses MathJax (CDN)
 - `gomboc.html`: Uses Three.js and OrbitControls (CDN)
+- `shen_kuo_huiyuan_method_demo.html`: Uses KaTeX (CDN)
 
 ---
 
