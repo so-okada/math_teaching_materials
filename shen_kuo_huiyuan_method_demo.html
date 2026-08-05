@@ -113,7 +113,7 @@
 <div class="wrap">
 
 <header>
-  <h1>An arc-length approximation (會圓術) from Mengxi Bitan (夢渓筆談) of Shen Kuo (沈括)</h1>
+  <h1>An arc-length approximation (會圓術) from Dream Pool Essays/Mengxi Bitan (夢渓筆談) of Shen Kuo (沈括)</h1>
 </header>
 
 <!-- ============ Interactive demo ============ -->
@@ -146,7 +146,7 @@
         <div class="tile"><div class="k"><span class="dot" style="background:var(--series-2)"></span>chord \(a\)</div><div class="v" id="t-a"></div></div>
         <div class="tile"><div class="k"><span class="dot" style="background:var(--series-3)"></span>sagitta \(c\)</div><div class="v" id="t-c"></div></div>
         <div class="tile"><div class="k"><span class="dot" style="background:var(--series-1)"></span>true arc \(s\)</div><div class="v" id="t-s"></div></div>
-        <div class="tile"><div class="k">"intersecting circles" \(2c^2/d + a\)</div><div class="v" id="t-approx"></div></div>
+        <div class="tile"><div class="k">\(2c^2/d + a\)</div><div class="v" id="t-approx"></div></div>
         <div class="tile"><div class="k">signed error (approximation − true arc)</div><div class="v" id="t-err"></div></div>
         <div class="tile"><div class="k">signed relative error</div><div class="v" id="t-rel"></div></div>
       </div>
@@ -183,7 +183,7 @@
   $$ \frac{2c^{2}}{d} = \frac{d}{2}\bigl(1-\cos\theta\bigr)^{2}
      = \frac{d\,\theta^{4}}{8} - \frac{d\,\theta^{6}}{48} + \cdots $$
 
-  <p>and the "technique of intersecting circles" formula becomes</p>
+  <p>and the arc-length approximation formula becomes</p>
   $$ \frac{2c^{2}}{d} + a
      = d\Bigl(\theta - \frac{\theta^{3}}{6} + \frac{\theta^{4}}{8} + \frac{\theta^{5}}{120} - \cdots\Bigr). $$
 
