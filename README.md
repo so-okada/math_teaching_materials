@@ -559,7 +559,7 @@ For small $x\approx 0$, the higher-order terms become negligible, yielding $\sin
 ### [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html)
 **File:** `simple_sea_waves.html`
 
-Animated visualization of layered sine waves and the parameters that control wave behavior.
+Animated visualization of layered sine waves and the parameters that control wave behavior. 
 
 **Mathematical Background:**
 Each wave layer $i$ is computed using:
