@@ -1,0 +1,535 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Probability of a Defective Product — Interactive Demo of the Law of Total Probability</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-a: #2a78d6;       /* factory a : blue slot 1 */
+    --series-a-dark: #1c5cab;  /* defectives from a (darker step) */
+    --series-b: #eb6834;       /* factory b : orange slot 2 */
+    --series-b-dark: #b0431c;  /* defectives from b (darker step) */
+    --accent: #2a78d6;
+    --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-a: #3987e5;
+      --series-a-dark: #86b6ef;
+      --series-b: #d95926;
+      --series-b-dark: #f0906a;
+      --accent: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.35rem; margin: 0 0 18px; }
+  .subtitle { color: var(--text-secondary); font-size: .92rem; margin: 0 0 18px; }
+  a { color: var(--accent); }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .problem { font-size: .95rem; }
+  .problem em { font-style: italic; font-family: Georgia, "Times New Roman", serif; }
+  .problem .live { font-weight: 600; }
+  h2 { font-size: 1.02rem; margin: 0 0 12px; }
+  /* ---- controls ---- */
+  .controls { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-end; }
+  .ctrl { flex: 1 1 220px; min-width: 200px; }
+  .ctrl label { display: block; font-size: .85rem; color: var(--text-secondary); margin-bottom: 2px; }
+  .ctrl .val { font-weight: 600; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--series-a); }
+  #ratioSlider { accent-color: var(--muted); }
+  .ratio-note { font-size: .8rem; color: var(--muted); }
+  /* ---- layout ---- */
+  .two-col { display: flex; flex-wrap: wrap; gap: 18px; }
+  .two-col > .card { flex: 1 1 400px; margin-bottom: 0; }
+  /* ---- mosaic ---- */
+  #mosaic { width: 100%; height: auto; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: .82rem; color: var(--text-secondary); }
+  .legend .key { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  /* ---- formula ---- */
+  .formula {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.02rem;
+    overflow-x: auto;
+    padding: 6px 0;
+  }
+  .formula .row { margin: 6px 0; white-space: nowrap; }
+  .formula i { font-style: italic; }
+  .formula .num { font-variant-numeric: tabular-nums; }
+  .hero {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--grid);
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  }
+  .hero .big { font-size: 2.1rem; font-weight: 650; }
+  .hero .lbl { color: var(--text-secondary); font-size: .85rem; }
+  .frac { display: inline-block; vertical-align: middle; text-align: center; line-height: 1.15; }
+  .frac .top { display: block; padding: 0 4px; border-bottom: 1px solid currentColor; }
+  .frac .bot { display: block; padding: 0 4px; }
+  .ext { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--grid); }
+  .ext h3 { font-size: .9rem; margin: 0 0 6px; color: var(--text-secondary); font-weight: 600; }
+  /* ---- simulation ---- */
+  .simbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  button {
+    font: inherit; font-size: .85rem;
+    background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--baseline); border-radius: 7px;
+    padding: 5px 14px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button.primary { background: var(--series-a); border-color: var(--series-a); color: #fff; }
+  #dots { width: 100%; height: auto; display: block; border: 1px solid var(--grid); border-radius: 6px; }
+  .sim-stats { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 12px; align-items: flex-start; }
+  table { border-collapse: collapse; font-size: .85rem; }
+  th, td { border: 1px solid var(--grid); padding: 4px 12px; text-align: right; font-variant-numeric: tabular-nums; }
+  th { color: var(--text-secondary); font-weight: 500; text-align: center; }
+  td.rowhead { text-align: left; color: var(--text-secondary); }
+  .conv { flex: 1 1 260px; min-width: 240px; }
+  .conv .lbl { font-size: .82rem; color: var(--text-secondary); margin-bottom: 4px; }
+  .track { position: relative; height: 22px; background: var(--page); border: 1px solid var(--grid); border-radius: 5px; overflow: hidden; }
+  .track .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--series-a); border-radius: 4px 0 0 4px; }
+  .track.theory .fill { background: var(--muted); }
+  .track.split { display: flex; }
+  .track .seg { height: 100%; }
+  .seg.segA { background: var(--series-a); }
+  .seg.segB { background: var(--series-b); border-left: 2px solid var(--surface-1); }
+  .track .tag {
+    position: absolute; top: 0; bottom: 0; display: flex; align-items: center;
+    padding-left: 8px; font-size: .78rem; color: var(--text-primary);
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .note { font-size: .8rem; color: var(--muted); margin-top: 10px; }
+  /* ---- tooltip ---- */
+  #tip {
+    position: fixed; pointer-events: none; z-index: 10; display: none;
+    background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--baseline); border-radius: 7px;
+    padding: 6px 10px; font-size: .8rem; box-shadow: 0 2px 10px rgba(0,0,0,.15);
+    font-variant-numeric: tabular-nums;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Probability of a Defective Product — the Law of Total Probability</h1>
+  </header>
+
+  <div class="card problem">
+    <strong>Problem.</strong>
+    A certain product is made by two factories <em>a</em> and <em>b</em>.
+    Suppose <span class="live" id="pRAtext">18%</span> of the products of factory <em>a</em>
+    and <span class="live" id="pRBtext">12%</span> of the products of factory <em>b</em> are defective.
+    The products of the two factories are mixed in the ratio
+    <em>a</em> : <em>b</em> = <span class="live" id="pMixtext">4 : 6</span> into a very large batch,
+    and one product is drawn at random from it. What is the probability that it is defective?
+  </div>
+
+  <div class="card">
+    <h2>Move the parameters</h2>
+    <div class="note" style="margin: -6px 0 12px;">Let <em>A</em> be the event that the product is from factory <em>a</em>,
+    <em>B</em> the event that it is from factory <em>b</em>, and <em>C</em> the event that it is defective;
+    compute <em>P</em>(<em>C</em>) using <em>A</em> and <em>B</em>.</div>
+    <div class="controls">
+      <div class="ctrl">
+        <label>Defect rate of factory a &nbsp;<i>P</i>(<i>C</i>|<i>A</i>) = <span class="val" id="vRA">18%</span></label>
+        <input type="range" id="rA" min="0" max="50" step="1" value="18">
+      </div>
+      <div class="ctrl">
+        <label>Defect rate of factory b &nbsp;<i>P</i>(<i>C</i>|<i>B</i>) = <span class="val" id="vRB">12%</span></label>
+        <input type="range" id="rB" min="0" max="50" step="1" value="12">
+      </div>
+      <div class="ctrl">
+        <label>Mixing ratio &nbsp;a : b = <span class="val" id="vMix">40 : 60</span></label>
+        <input type="range" id="ratioSlider" min="0" max="100" step="5" value="40">
+        <div class="ratio-note">P(A) = <span id="vPA">0.40</span>, P(B) = <span id="vPB">0.60</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h2>Area diagram — probabilities as areas</h2>
+      <svg id="mosaic" viewBox="0 0 440 330" role="img" aria-label="Area diagram of the law of total probability"></svg>
+      <div class="legend">
+        <span class="key"><span class="swatch" style="background:var(--series-a);opacity:.28"></span>factory a, good</span>
+        <span class="key"><span class="swatch" style="background:var(--series-a-dark)"></span>factory a, defective <i>P</i>(<i>A</i>∩<i>C</i>)</span>
+        <span class="key"><span class="swatch" style="background:var(--series-b);opacity:.28"></span>factory b, good</span>
+        <span class="key"><span class="swatch" style="background:var(--series-b-dark)"></span>factory b, defective <i>P</i>(<i>B</i>∩<i>C</i>)</span>
+      </div>
+      <div class="note">Column widths are the mixing proportions <i>P</i>(<i>A</i>), <i>P</i>(<i>B</i>); the heights of the dark bands are the defect rates. The total area of the two dark rectangles is <i>P</i>(<i>C</i>).</div>
+    </div>
+
+    <div class="card">
+      <h2>Computation — the law of total probability</h2>
+      <div class="formula" id="formulaMain"></div>
+      <div class="hero">
+        <span class="big" id="heroPC">0.144</span>
+        <span class="lbl">= probability that the drawn product is defective, <i>P</i>(<i>C</i>)</span>
+      </div>
+      <div class="ext">
+        <h3>Extension (Bayes' theorem): given that the product is defective, which factory did it come from?</h3>
+        <div class="formula" id="formulaBayes"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h2>Simulation — check it by actually drawing products</h2>
+    <div class="simbar">
+      <button class="primary" id="draw1">Draw 1</button>
+      <button id="draw100">Draw 100</button>
+      <button id="draw1000">Draw 1000</button>
+      <button id="reset">Reset</button>
+      <span class="ratio-note" id="drawCount">0 products drawn</span>
+    </div>
+    <canvas id="dots" width="900" height="240"></canvas>
+    <div class="sim-stats">
+      <table id="tally">
+        <thead><tr><th></th><th>good</th><th>defective</th><th>total</th></tr></thead>
+        <tbody>
+          <tr><td class="rowhead">factory a</td><td id="tAG">0</td><td id="tAD">0</td><td id="tA">0</td></tr>
+          <tr><td class="rowhead">factory b</td><td id="tBG">0</td><td id="tBD">0</td><td id="tB">0</td></tr>
+          <tr><td class="rowhead">total</td><td id="tG">0</td><td id="tD">0</td><td id="tN">0</td></tr>
+        </tbody>
+      </table>
+      <div class="conv">
+        <div class="lbl">Observed fraction of defectives</div>
+        <div class="track"><div class="fill" id="empFill" style="width:0%"></div><div class="tag" id="empTag">—</div></div>
+        <div class="lbl" style="margin-top:10px">Theoretical value <i>P</i>(<i>C</i>)</div>
+        <div class="track theory"><div class="fill" id="thFill" style="width:0%"></div><div class="tag" id="thTag">0.144</div></div>
+        <div style="border-top:1px solid var(--grid); margin:14px 0 10px"></div>
+        <div class="lbl">Origin of the <em>defective</em> draws (observed) → <i>P</i>(<i>A</i>|<i>C</i>), <i>P</i>(<i>B</i>|<i>C</i>)</div>
+        <div class="track split"><div class="seg segA" id="empACseg"></div><div class="seg segB" id="empBCseg"></div></div>
+        <div class="ratio-note" id="empACtext">—</div>
+        <div class="lbl" style="margin-top:10px">Theoretical values (Bayes' theorem)</div>
+        <div class="track split"><div class="seg segA" id="thACseg"></div><div class="seg segB" id="thBCseg"></div></div>
+        <div class="ratio-note" id="thACtext"></div>      </div>
+    </div>
+  </div>
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/">Back to Collection</a></p>
+
+<div id="tip"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- state ----------
+  const state = { rA: 0.18, rB: 0.12, wA: 0.40 };
+  let draws = [];   // {fromA: bool, def: bool}
+
+  const $ = id => document.getElementById(id);
+  const f3 = x => x.toFixed(3);
+  const f2 = x => x.toFixed(2);
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  function pc() { return state.wA * state.rA + (1 - state.wA) * state.rB; }
+
+  // ---------- header texts ----------
+  function ratioText() {
+    const a = Math.round(state.wA * 100), b = 100 - a;
+    if (a % 10 === 0) return (a / 10) + ' : ' + (b / 10);
+    return a + ' : ' + b;
+  }
+
+  // ---------- mosaic ----------
+  const SVG = 'http://www.w3.org/2000/svg';
+  const mosaic = $('mosaic');
+  const tip = $('tip');
+  const M = { l: 46, r: 12, t: 26, b: 44, w: 440, h: 330 };
+
+  function rect(x, y, w, h, fill, opacity, extra) {
+    const r = document.createElementNS(SVG, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', y);
+    r.setAttribute('width', Math.max(w, 0)); r.setAttribute('height', Math.max(h, 0));
+    r.setAttribute('fill', fill);
+    if (opacity != null) r.setAttribute('opacity', opacity);
+    r.setAttribute('rx', 2);
+    if (extra) for (const k in extra) r.setAttribute(k, extra[k]);
+    return r;
+  }
+  function text(x, y, s, opts) {
+    const t = document.createElementNS(SVG, 'text');
+    t.setAttribute('x', x); t.setAttribute('y', y);
+    t.setAttribute('font-size', (opts && opts.size) || 12);
+    t.setAttribute('fill', (opts && opts.fill) || 'var(--text-secondary)');
+    if (opts && opts.anchor) t.setAttribute('text-anchor', opts.anchor);
+    if (opts && opts.weight) t.setAttribute('font-weight', opts.weight);
+    t.textContent = s;
+    return t;
+  }
+  function attachTip(el, html) {
+    el.addEventListener('pointermove', e => {
+      tip.innerHTML = html();
+      tip.style.display = 'block';
+      tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 180) + 'px';
+      tip.style.top = (e.clientY + 14) + 'px';
+    });
+    el.addEventListener('pointerleave', () => { tip.style.display = 'none'; });
+  }
+
+  function drawMosaic() {
+    mosaic.innerHTML = '';
+    const iw = M.w - M.l - M.r, ih = M.h - M.t - M.b;
+    const x0 = M.l, y0 = M.t;
+    const wa = iw * state.wA, wb = iw - wa;
+    const GAP = 2;
+
+    // y axis (defect-rate scale, 0 at bottom; top of plot = 50%)
+    for (const v of [0, .1, .2, .3, .4, .5]) {
+      const y = y0 + ih - ih * v * 2;
+      if (y < y0 - 1) continue;
+      const ln = document.createElementNS(SVG, 'line');
+      ln.setAttribute('x1', x0); ln.setAttribute('x2', x0 + iw);
+      ln.setAttribute('y1', y); ln.setAttribute('y2', y);
+      ln.setAttribute('stroke', v === 0 ? 'var(--baseline)' : 'var(--grid)');
+      ln.setAttribute('stroke-width', 1);
+      mosaic.appendChild(ln);
+      mosaic.appendChild(text(x0 - 6, y + 4, (v * 100) + '%', { anchor: 'end', size: 10, fill: 'var(--muted)' }));
+    }
+
+    // columns: light full column = factory share; dark bottom band = defectives
+    const cols = [
+      { x: x0, w: Math.max(wa - GAP / 2, 0), rate: state.rA, share: state.wA,
+        light: 'var(--series-a)', dark: 'var(--series-a-dark)', name: 'a', ev: 'A' },
+      { x: x0 + wa + GAP / 2, w: Math.max(wb - GAP / 2, 0), rate: state.rB, share: 1 - state.wA,
+        light: 'var(--series-b)', dark: 'var(--series-b-dark)', name: 'b', ev: 'B' }
+    ];
+    for (const c of cols) {
+      if (c.w <= 0) continue;
+      const hDef = ih * Math.min(c.rate * 2, 1);
+      const body = rect(c.x, y0, c.w, ih, c.light, 0.28);
+      mosaic.appendChild(body);
+      const defRect = rect(c.x, y0 + ih - hDef, c.w, hDef, c.dark, null,
+        { stroke: 'var(--surface-1)', 'stroke-width': 2 });
+      mosaic.appendChild(defRect);
+      const joint = c.share * c.rate;
+      attachTip(body, () =>
+        '<b>factory ' + c.name + '</b><br>P(' + c.ev + ') = ' + f2(c.share) +
+        '<br>defect rate P(C|' + c.ev + ') = ' + f2(c.rate));
+      attachTip(defRect, () =>
+        '<b>defectives from factory ' + c.name + '</b><br>P(' + c.ev + '∩C) = ' +
+        f2(c.share) + ' × ' + f2(c.rate) + ' = ' + f3(joint));
+      // column top label
+      mosaic.appendChild(text(c.x + c.w / 2, y0 - 8,
+        'factory ' + c.name + '  P(' + c.ev + ') = ' + f2(c.share),
+        { anchor: 'middle', size: 11.5, weight: 600, fill: 'var(--text-primary)' }));
+      // joint-probability label (ink chosen for contrast: dark-mode "dark" steps are light)
+      const darkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const insideInk = darkMode ? '#0b0b0b' : '#ffffff';
+      if (c.w > 56) {
+        const inside = hDef > 24;
+        mosaic.appendChild(text(c.x + c.w / 2,
+          inside ? y0 + ih - hDef + 16 : y0 + ih - hDef - 6,
+          'P(' + c.ev + '∩C) = ' + f3(joint),
+          { anchor: 'middle', size: 11, weight: 600,
+            fill: inside ? insideInk : 'var(--text-primary)' }));
+      }
+      // bottom share label
+      mosaic.appendChild(text(c.x + c.w / 2, y0 + ih + 18, f2(c.share),
+        { anchor: 'middle', size: 10, fill: 'var(--muted)' }));
+    }
+    mosaic.appendChild(text(x0 + iw / 2, y0 + ih + 34, 'mixing proportion (width)', { anchor: 'middle', size: 10.5, fill: 'var(--muted)' }));
+  }
+
+  // ---------- formulas ----------
+  function P(ev) { return '<i>P</i>(' + ev + ')'; }
+  function drawFormulas() {
+    const pA = state.wA, pB = 1 - state.wA;
+    const jA = pA * state.rA, jB = pB * state.rB, p = pc();
+    $('formulaMain').innerHTML =
+      '<div class="row">' + P('<i>C</i>') + ' = ' + P('<i>A</i>∩<i>C</i>') + ' + ' + P('<i>B</i>∩<i>C</i>') + '</div>' +
+      '<div class="row" style="padding-left:2.6em">= ' + P('<i>A</i>') + '&thinsp;' + P('<i>C</i>|<i>A</i>') +
+        ' + ' + P('<i>B</i>') + '&thinsp;' + P('<i>C</i>|<i>B</i>') + '</div>' +
+      '<div class="row num" style="padding-left:2.6em">= ' + f2(pA) + ' × ' + f2(state.rA) +
+        ' + ' + f2(pB) + ' × ' + f2(state.rB) + '</div>' +
+      '<div class="row num" style="padding-left:2.6em">= ' + f3(jA) + ' + ' + f3(jB) +
+        ' = <b>' + f3(p) + '</b></div>';
+    $('heroPC').textContent = f3(p);
+    $('formulaBayes').innerHTML = p > 0 ?
+      '<div class="row">' + P('<i>A</i>|<i>C</i>') + ' = ' +
+      '<span class="frac"><span class="top">' + P('<i>A</i>∩<i>C</i>') + '</span><span class="bot">' + P('<i>C</i>') + '</span></span>' +
+      ' = <span class="frac num"><span class="top">' + f3(jA) + '</span><span class="bot">' + f3(p) + '</span></span>' +
+      ' = <b class="num">' + f3(jA / p) + '</b></div>' +
+      '<div class="row">' + P('<i>B</i>|<i>C</i>') + ' = ' +
+      '<span class="frac"><span class="top">' + P('<i>B</i>∩<i>C</i>') + '</span><span class="bot">' + P('<i>C</i>') + '</span></span>' +
+      ' = <span class="frac num"><span class="top">' + f3(jB) + '</span><span class="bot">' + f3(p) + '</span></span>' +
+      ' = <b class="num">' + f3(jB / p) + '</b></div>' +
+      '<div class="row" style="font-family:inherit;font-size:.85rem;color:var(--text-secondary)">' +
+      'The probability that a product known to be defective came from factory a (resp. b). Note P(A|C) + P(B|C) = 1.</div>'
+      : '<div class="row num">Undefined, since P(C) = 0.</div>';
+  }
+
+  // ---------- simulation ----------
+  const canvas = $('dots'), ctx = canvas.getContext('2d');
+  const MAXSHOW = 2000;
+
+  function drawDots() {
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || 900;
+    const cssH = 240;
+    canvas.width = cssW * dpr; canvas.height = cssH * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, cssW, cssH);
+
+    const n = Math.min(draws.length, MAXSHOW);
+    if (n === 0) {
+      ctx.fillStyle = css('--muted');
+      ctx.font = '13px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Press a button to draw products', cssW / 2, cssH / 2);
+      return;
+    }
+    // grid layout
+    const pad = 10;
+    const cols = Math.ceil(Math.sqrt(n * (cssW - 2 * pad) / (cssH - 2 * pad)));
+    const rows = Math.ceil(n / cols);
+    const cell = Math.min((cssW - 2 * pad) / cols, (cssH - 2 * pad) / rows);
+    const r = Math.max(Math.min(cell * 0.38, 7), 1.2);
+    const colA = css('--series-a'), colAd = css('--series-a-dark');
+    const colB = css('--series-b'), colBd = css('--series-b-dark');
+    const surf = css('--surface-1');
+    const start = draws.length - n;
+    for (let i = 0; i < n; i++) {
+      const d = draws[start + i];
+      const x = pad + (i % cols) * cell + cell / 2;
+      const y = pad + Math.floor(i / cols) * cell + cell / 2;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      if (d.def) {                       // defective: solid fill (darker step)
+        ctx.fillStyle = d.fromA ? colAd : colBd;
+        ctx.fill();
+      } else {                           // good: open circle
+        ctx.fillStyle = surf;
+        ctx.fill();
+        ctx.lineWidth = Math.max(r * 0.35, 1);
+        ctx.strokeStyle = d.fromA ? colA : colB;
+        ctx.stroke();
+      }
+    }
+  }
+
+  function tallyUpdate() {
+    let aG = 0, aD = 0, bG = 0, bD = 0;
+    for (const d of draws) {
+      if (d.fromA) { d.def ? aD++ : aG++; } else { d.def ? bD++ : bG++; }
+    }
+    const N = draws.length, D = aD + bD;
+    $('tAG').textContent = aG; $('tAD').textContent = aD; $('tA').textContent = aG + aD;
+    $('tBG').textContent = bG; $('tBD').textContent = bD; $('tB').textContent = bG + bD;
+    $('tG').textContent = aG + bG; $('tD').textContent = D; $('tN').textContent = N;
+    $('drawCount').textContent = N + ' product' + (N === 1 ? '' : 's') + ' drawn' +
+      (N > MAXSHOW ? ' (showing the last ' + MAXSHOW + ')' : '');
+    const emp = N > 0 ? D / N : null;
+    const scale = v => Math.min(v / 0.5 * 100, 100);   // bar scale: 0–50%
+    $('empFill').style.width = emp == null ? '0%' : scale(emp) + '%';
+    $('empTag').textContent = emp == null ? '—' : f3(emp) + ' (' + D + ' / ' + N + ')';
+    $('thFill').style.width = scale(pc()) + '%';
+    $('thTag').textContent = f3(pc());
+    // Bayes: origin split of the defectives  (scale 0–1)
+    const jA = state.wA * state.rA, jB = (1 - state.wA) * state.rB, p = pc();
+    if (D > 0) {
+      const fa = aD / D;
+      $('empACseg').style.width = (fa * 100) + '%';
+      $('empBCseg').style.width = ((1 - fa) * 100) + '%';
+      $('empACtext').textContent = 'from a: ' + f3(fa) + ' (' + aD + ' / ' + D + ')   ·   from b: ' + f3(1 - fa) + ' (' + bD + ' / ' + D + ')';
+    } else {
+      $('empACseg').style.width = '0%';
+      $('empBCseg').style.width = '0%';
+      $('empACtext').textContent = '— (no defectives drawn yet)';
+    }
+    if (p > 0) {
+      $('thACseg').style.width = (jA / p * 100) + '%';
+      $('thBCseg').style.width = (jB / p * 100) + '%';
+      $('thACtext').textContent = 'P(A|C) = ' + f3(jA / p) + '   ·   P(B|C) = ' + f3(jB / p);
+    } else {
+      $('thACseg').style.width = '0%';
+      $('thBCseg').style.width = '0%';
+      $('thACtext').textContent = 'undefined (P(C) = 0)';
+    }
+  }
+
+  function drawN(k) {
+    for (let i = 0; i < k; i++) {
+      const fromA = Math.random() < state.wA;
+      const def = Math.random() < (fromA ? state.rA : state.rB);
+      draws.push({ fromA, def });
+    }
+    drawDots(); tallyUpdate();
+  }
+
+  // ---------- render all ----------
+  function renderAll() {
+    $('vRA').textContent = Math.round(state.rA * 100) + '%';
+    $('vRB').textContent = Math.round(state.rB * 100) + '%';
+    $('vMix').textContent = Math.round(state.wA * 100) + ' : ' + Math.round((1 - state.wA) * 100);
+    $('vPA').textContent = f2(state.wA);
+    $('vPB').textContent = f2(1 - state.wA);
+    // live values inside the problem statement
+    $('pRAtext').textContent = Math.round(state.rA * 100) + '%';
+    $('pRBtext').textContent = Math.round(state.rB * 100) + '%';
+    $('pMixtext').textContent = ratioText();
+    drawMosaic();
+    drawFormulas();
+    tallyUpdate();
+  }
+
+  // ---------- events ----------
+  $('rA').addEventListener('input', e => { state.rA = e.target.value / 100; renderAll(); });
+  $('rB').addEventListener('input', e => { state.rB = e.target.value / 100; renderAll(); });
+  $('ratioSlider').addEventListener('input', e => { state.wA = e.target.value / 100; renderAll(); });
+  $('draw1').addEventListener('click', () => drawN(1));
+  $('draw100').addEventListener('click', () => drawN(100));
+  $('draw1000').addEventListener('click', () => drawN(1000));
+  $('reset').addEventListener('click', () => { draws = []; drawDots(); tallyUpdate(); });
+  window.addEventListener('resize', drawDots);
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { renderAll(); drawDots(); });
+  }
+
+  renderAll();
+  drawDots();
+})();
+</script>
+</body>
+</html>
