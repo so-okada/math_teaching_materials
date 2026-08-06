@@ -14,6 +14,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Ellipse Billiard](https://so-okada.github.io/math_teaching_materials/ellipse_billiard.html) | Conic Sections | Focal properties, reflection law |
 | [Parabola](https://so-okada.github.io/math_teaching_materials/parabola.html) | Conic Sections | Focus, directrix, reflection of parallel rays |
 | [Rule of 72](https://so-okada.github.io/math_teaching_materials/rule_of_72.html) | Financial Mathematics | Compound interest, exponential growth |
+| [Costs and Profits](https://so-okada.github.io/math_teaching_materials/cost_profit_demo.html) | Economics | Simple monopoly model, quadratic profit, vertex maximum |
 | [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
 | [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
 | [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
@@ -219,6 +220,27 @@ This approximation works well for rates between 2% and 20%.
 - **Interest Rate** (0.1%–100%): Annual rate slider
 - Live comparison of Rule of 72 estimate vs. exact calculation
 - Growth curve visualization
+
+---
+
+## Economics
+
+### [Costs and Profits](https://so-okada.github.io/math_teaching_materials/cost_profit_demo.html)
+**File:** `cost_profit_demo.html`
+
+A simple monopoly model: when $x$ units are made, the unit price is $P(x) = a - bx$ yen and the production cost is $C(x) = F + cx$ yen.
+
+**Mathematical Background:**
+The profit is a downward parabola, maximized by completing the square:
+$$I(x) = x\,P(x) - C(x) = -b\left(x - \frac{a-c}{2b}\right)^2 + \frac{(a-c)^2}{4b} - F$$
+
+The vertex $x^* = \dfrac{a-c}{2b}$ is the marginal-revenue-equals-marginal-cost condition of the simple monopoly model.
+
+**Controls:**
+- **Sliders $a$, $b$, $F$, $c$**: Price and cost parameters, with live formulas
+- **Quantity $x$**: Slider, or hover/drag directly on the charts
+- **Worksheet presets**: $C(x) = 500 + 100x$ and $C(x) = 500 + 200x$, with step-by-step solutions
+- Revenue/cost and profit graphs with vertex, break-even points, and table view
 
 ---
 
