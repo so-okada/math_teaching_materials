@@ -22,6 +22,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Maxwell's Equations FDTD](https://so-okada.github.io/math_teaching_materials/maxwell.html) | Electromagnetism | Wave propagation, finite-difference methods |
 | [Binomial to Gaussian](https://so-okada.github.io/math_teaching_materials/binomialtogaussian.html) | Probability & Statistics | Central limit theorem, de Moivre-Laplace |
 | [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html) | Probability & Statistics | Normal distribution, random walks |
+| [Probability of a Defective Product](https://so-okada.github.io/math_teaching_materials/total_probability_demo.html) | Probability & Statistics | Law of total probability, Bayes' theorem, law of large numbers |
 | [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
 | [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html) | Geometry | Perspective projection, similar triangles, circle of confusion |
 | [Gömböc](https://so-okada.github.io/math_teaching_materials/gomboc.html) | Geometry | Mono-monostatic convex body, equilibrium points |
@@ -412,6 +413,24 @@ where $\mu = 0.5n$ and $\sigma = \sqrt{0.25n}$.
 - **Rows**: Number of peg rows (5–25)
 - **Drop Rate**: Speed of ball generation
 - **Show Bell Curve**: Overlay theoretical normal distribution
+
+---
+
+### [Probability of a Defective Product](https://so-okada.github.io/math_teaching_materials/total_probability_demo.html)
+**File:** `total_probability_demo.html`
+
+Products from two factories $a$ and $b$, with defect rates 18% and 12%, are mixed in the ratio $4:6$; one product is drawn at random. An area diagram, a live computation, and a sampling simulation show the probability that it is defective.
+
+**Mathematical Background:**
+With $A$, $B$ the factory events and $C$ the event "defective," the law of total probability gives
+$$P(C) = P(A)P(C|A) + P(B)P(C|B) = 0.4 \times 0.18 + 0.6 \times 0.12 = 0.144,$$
+and Bayes' theorem gives the origin of a defective product:
+$$P(A|C) = \frac{P(A \cap C)}{P(C)}, \qquad P(B|C) = \frac{P(B \cap C)}{P(C)}.$$
+
+**Controls:**
+- **Sliders**: Defect rates $P(C|A)$, $P(C|B)$ and the mixing ratio $a:b$, with the problem text, diagram, and formulas updating live
+- **Area diagram**: Column widths are $P(A)$, $P(B)$; dark-band heights are the defect rates, so $P(C)$ is a sum of areas
+- **Simulation**: Draw 1/100/1000 products; tally table and bars show the observed defective fraction and origin split converging to $P(C)$, $P(A|C)$, $P(B|C)$ (law of large numbers)
 
 ---
 
