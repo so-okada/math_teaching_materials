@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Costs and Profits — Interactive Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+    --accent:         #2a78d6;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --muted:          #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-rev:     #2a78d6;  /* slot 1 blue  : revenue */
+    --series-cost:    #eb6834;  /* slot 2 orange: cost    */
+    --series-profit:  #1baf7a;  /* slot 3 aqua  : profit  */
+    --accent-soft:    rgba(27,175,122,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted:          #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-rev:     #3987e5;
+      --series-cost:    #d95926;
+      --series-profit:  #199e70;
+      --accent-soft:    rgba(25,158,112,0.14);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 24px 20px 64px; }
+  header h1 { font-size: 1.5rem; margin: 0 0 2px; }
+  header p.sub { margin: 0 0 20px; color: var(--text-secondary); font-size: 0.95rem; }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .card h2 { font-size: 1.05rem; margin: 0 0 10px; }
+  .statement { font-size: 0.97rem; }
+  .statement em.q { color: var(--text-secondary); }
+
+  /* math typesetting (self-contained, no external libs) */
+  .m { font-family: Georgia, "Times New Roman", serif; font-style: italic; white-space: nowrap; }
+  .m sup { font-style: normal; font-size: 0.75em; }
+  .dmath {
+    display: block; text-align: center;
+    font-family: Georgia, "Times New Roman", serif; font-style: italic;
+    font-size: 1.05rem; margin: 8px 0;
+  }
+  .dmath .rm { font-style: normal; }
+  .m .rm { font-style: normal; }
+  .formula-block {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 1.02rem;
+    padding: 10px 14px;
+    border-left: 3px solid var(--series-profit);
+    background: var(--accent-soft);
+    border-radius: 0 8px 8px 0;
+    margin: 10px 0;
+    overflow-x: auto;
+  }
+  .formula-block .line { margin: 3px 0; font-style: italic; }
+  .formula-block .line .rm { font-style: normal; }
+
+  /* controls */
+  .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 24px; }
+  .ctrl label { display: flex; justify-content: space-between; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 2px; }
+  .ctrl label b { color: var(--text-primary); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .ctrl input[type=range] { width: 100%; accent-color: var(--series-profit); }
+  .presets { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .presets button {
+    font: inherit; font-size: 0.85rem;
+    padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent; color: var(--text-primary);
+    cursor: pointer;
+  }
+  .presets button:hover { background: var(--accent-soft); }
+  .presets button.active { border-color: var(--series-profit); background: var(--accent-soft); font-weight: 600; }
+
+  /* charts */
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 860px) { .charts { grid-template-columns: 1fr; } }
+  .chartbox h3 { font-size: 0.95rem; margin: 0 0 4px; }
+  .chartbox p.hint { margin: 0 0 6px; font-size: 0.8rem; color: var(--muted); }
+  .legend { display: flex; gap: 16px; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 4px; flex-wrap: wrap; }
+  .legend .key { display: inline-flex; align-items: center; gap: 6px; }
+  .legend .swatch { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+  svg { width: 100%; height: auto; display: block; cursor: crosshair; touch-action: none; }
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 8px 10px; font-size: 0.8rem;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    display: none; min-width: 170px;
+  }
+  .tooltip .tt-x { font-weight: 600; margin-bottom: 4px; }
+  .tooltip .row { display: flex; justify-content: space-between; gap: 12px; }
+  .tooltip .row .val { font-variant-numeric: tabular-nums; }
+
+  /* readout tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 14px; }
+  .tile { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .tile .t-label { font-size: 0.78rem; color: var(--muted); }
+  .tile .t-value { font-size: 1.15rem; font-weight: 650; }
+  .tile .t-sub { font-size: 0.75rem; color: var(--text-secondary); }
+  .tile.profit-pos .t-value { color: var(--series-profit); }
+  .tile.profit-neg .t-value { color: var(--series-cost); }
+
+  /* solutions */
+  details { margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+  details summary { cursor: pointer; font-weight: 600; font-size: 0.92rem; }
+  details[open] summary { margin-bottom: 8px; }
+  details p { margin: 6px 0; font-size: 0.93rem; }
+  .note { font-size: 0.82rem; color: var(--muted); margin-top: 10px; }
+  table.tbl { border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+  table.tbl th, table.tbl td { border: 1px solid var(--grid); padding: 4px 10px; text-align: right; font-variant-numeric: tabular-nums; }
+  table.tbl th { color: var(--text-secondary); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Costs and Profits</h1>
+    <p class="sub">A simple monopoly model</p>
+  </header>
+
+  <!-- ===== Setup ===== -->
+  <section class="card">
+    <h2>1. The model</h2>
+    <div class="statement">
+      <p>When <span class="m">x</span> units are made, suppose Product&nbsp;A sells at a unit price of</p>
+      <span class="dmath">P(x) = a − bx <span class="rm">yen.</span></span>
+      <p>The cost of producing the <span class="m">x</span> units is</p>
+      <span class="dmath">C(x) = F + cx <span class="rm">yen.</span></span>
+      <p>The revenue is</p>
+      <span class="dmath">R(x) = x·P(x).</span>
+      <p>The <b>profit</b> is</p>
+      <span class="dmath">I(x) = R(x) − C(x).</span>
+    </div>
+    <div class="controls">
+      <div class="ctrl">
+        <label>base price <span class="m">a</span> (yen) <b id="lab-a"></b></label>
+        <input type="range" id="in-a" min="500" max="1500" step="50" value="1000">
+      </div>
+      <div class="ctrl">
+        <label>price drop per unit <span class="m">b</span> (yen/unit) <b id="lab-b"></b></label>
+        <input type="range" id="in-b" min="0.05" max="0.5" step="0.05" value="0.2">
+      </div>
+      <div class="ctrl">
+        <label>fixed cost <span class="m">F</span> (yen) <b id="lab-F"></b></label>
+        <input type="range" id="in-F" min="0" max="5000" step="100" value="500">
+      </div>
+      <div class="ctrl">
+        <label>unit cost <span class="m">c</span> (yen/unit) <b id="lab-c"></b></label>
+        <input type="range" id="in-c" min="0" max="400" step="10" value="100">
+      </div>
+      <div class="ctrl">
+        <label>production quantity <span class="m">x</span> (units) <b id="lab-x"></b></label>
+        <input type="range" id="in-x" min="0" max="5000" step="10" value="1000">
+      </div>
+    </div>
+    <div class="presets">
+      <button id="preset-ab">Worksheet (a)(b): C(x) = 500 + 100x</button>
+      <button id="preset-c">Worksheet (c): C(x) = 500 + 200x</button>
+      <button id="btn-goopt">Jump x to the optimum</button>
+    </div>
+    <div class="formula-block" id="formulas"></div>
+  </section>
+
+  <!-- ===== Charts ===== -->
+  <section class="card">
+    <h2>2. Explore the graphs</h2>
+    <div class="charts">
+      <div class="chartbox">
+        <h3>Revenue and cost</h3>
+        <p class="hint">Hover or drag on a chart to move x. Profit is the vertical gap R(x) − C(x); the shaded band is where profit is positive.</p>
+        <div class="legend">
+          <span class="key"><span class="swatch" style="background:var(--series-rev)"></span>Revenue R(x)</span>
+          <span class="key"><span class="swatch" style="background:var(--series-cost)"></span>Cost C(x)</span>
+        </div>
+        <svg id="chart-rc" viewBox="0 0 480 340" role="img" aria-label="Graph of revenue and cost versus quantity"></svg>
+      </div>
+      <div class="chartbox">
+        <h3>Profit</h3>
+        <p class="hint">The profit curve is a downward parabola; its vertex is the maximum profit.</p>
+        <div class="legend">
+          <span class="key"><span class="swatch" style="background:var(--series-profit)"></span>Profit I(x)</span>
+        </div>
+        <svg id="chart-p" viewBox="0 0 480 340" role="img" aria-label="Graph of profit versus quantity"></svg>
+      </div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <details>
+      <summary>Table view (every 500 units)</summary>
+      <table class="tbl" id="tbl"></table>
+    </details>
+  </section>
+
+  <!-- ===== Worksheet ===== -->
+  <section class="card">
+    <h2>3. The worksheet questions</h2>
+    <p class="statement">
+      With <span class="m">P(x) = 1000 − 0.2x</span> and <span class="m">C(x) = 500 + 100x</span>
+      (press the first preset button above):
+    </p>
+    <details>
+      <summary>(a) Find the profit I(x) when x units of Product A are made.</summary>
+      <p>Revenue is quantity × unit price:</p>
+      <div class="formula-block">
+        <div class="line">R(x) = x·P(x) = x(1000 − 0.2x) = 1000x − 0.2x<sup>2</sup></div>
+        <div class="line">I(x) = R(x) − C(x) = (1000x − 0.2x<sup>2</sup>) − (500 + 100x)</div>
+        <div class="line"><span class="rm">so&nbsp;&nbsp;</span>I(x) = −0.2x<sup>2</sup> + 900x − 500.</div>
+      </div>
+    </details>
+    <details>
+      <summary>(b) How many units maximize the profit, and what is that maximum profit?</summary>
+      <p>Complete the square (or use the vertex formula <span class="m">x = −B/2A</span> for <span class="m">Ax<sup>2</sup> + Bx + C</span>):</p>
+      <div class="formula-block">
+        <div class="line">I(x) = −0.2(x<sup>2</sup> − 4500x) − 500</div>
+        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= −0.2(x − 2250)<sup>2</sup> + 0.2·2250<sup>2</sup> − 500</div>
+        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= −0.2(x − 2250)<sup>2</sup> + 1&#8239;012&#8239;000.</div>
+      </div>
+      <p>The coefficient of <span class="m">x<sup>2</sup></span> is negative, so the parabola opens downward and the vertex is the maximum:
+      producing <b>2250 units</b> gives the maximum profit of <b>1,012,000 yen</b>.
+      Check it on the profit chart above — the marked vertex sits exactly there.</p>
+    </details>
+    <details>
+      <summary>(c) Find the maximum profit if instead C(x) = 500 + 200x.</summary>
+      <p>Press the second preset button and watch the vertex move. Now</p>
+      <div class="formula-block">
+        <div class="line">I(x) = (1000x − 0.2x<sup>2</sup>) − (500 + 200x) = −0.2x<sup>2</sup> + 800x − 500</div>
+        <div class="line">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= −0.2(x − 2000)<sup>2</sup> + 799&#8239;500.</div>
+      </div>
+      <p>The maximum profit is <b>799,500 yen</b>, attained at <b>x = 2000 units</b>.
+      A higher unit cost shifts the best quantity down (from 2250 to 2000) and cuts the peak profit.</p>
+    </details>
+    <p class="note">
+      In general, for <span class="m">P(x) = a − bx</span> and <span class="m">C(x) = F + cx</span> with <span class="m">a &gt; c</span>, the profit
+      <span class="m">I(x) = −bx<sup>2</sup> + (a − c)x − F</span> is maximized at
+      <span class="m">x* = (a − c)/(2b)</span> with
+      <span class="m">I(x*) = (a − c)<sup>2</sup>/(4b) − F</span>.
+      Since x counts units, if x* is not a whole number the best integer quantity is one of the neighbors of x* — the demo checks both.
+    </p>
+  </section>
+
+  <!-- ===== Sources ===== -->
+  <section class="card">
+    <h2>Other source(s)</h2>
+    <p class="statement">
+      <a href="https://sites.duke.edu/collardwexler/files/2015/01/Monopoly_1.pdf" style="color:var(--accent);">https://sites.duke.edu/collardwexler/files/2015/01/Monopoly_1.pdf</a><br>
+      <a href="https://openstax.org/books/principles-microeconomics-3e/pages/9-2-how-a-profit-maximizing-monopoly-chooses-output-and-price" style="color:var(--accent);">https://openstax.org/books/principles-microeconomics-3e/pages/9-2-how-a-profit-maximizing-monopoly-chooses-output-and-price</a>
+    </p>
+  </section>
+</div>
+
+<div class="tooltip" id="tt">
+  <div class="tt-x" id="tt-x"></div>
+  <div class="row"><span style="color:var(--series-rev)">Revenue</span><span class="val" id="tt-r"></span></div>
+  <div class="row"><span style="color:var(--series-cost)">Cost</span><span class="val" id="tt-c"></span></div>
+  <div class="row"><span style="color:var(--series-profit)">Profit</span><span class="val" id="tt-i"></span></div>
+</div>
+
+<script>
+'use strict';
+// ---------- state ----------
+const S = { a: 1000, b: 0.2, F: 500, c: 100, x: 1000 };
+
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+const yen = v => Math.round(v).toLocaleString('en-US') + ' yen';
+const fmt = v => Math.round(v).toLocaleString('en-US');
+
+// model
+const P = x => S.a - S.b * x;
+const R = x => x * P(x);
+const C = x => S.F + S.c * x;
+const I = x => R(x) - C(x);
+const xMax = () => S.a / S.b;                 // where price reaches 0
+function optimum() {
+  const xv = (S.a - S.c) / (2 * S.b);         // real vertex
+  const cand = [Math.floor(xv), Math.ceil(xv)].filter(x => x >= 0);
+  let best = cand[0];
+  for (const x of cand) if (I(x) > I(best)) best = x;
+  return { xv, xInt: best, Iv: I(xv), IInt: I(best) };
+}
+function breakEven() {                        // roots of I(x)=0
+  const B = S.a - S.c, D = B * B - 4 * S.b * S.F;
+  if (D < 0) return null;
+  const s = Math.sqrt(D);
+  return [(B - s) / (2 * S.b), (B + s) / (2 * S.b)];
+}
+
+// ---------- number → pretty coefficient strings ----------
+const co = v => (+v.toFixed(4)).toString();
+
+function renderFormulas() {
+  const B = S.a - S.c, opt = optimum();
+  const sq = `−${co(S.b)}(x − ${co(opt.xv)})<sup>2</sup> ${opt.Iv - 0 >= 0 ? '+' : '−'} ${fmt(Math.abs(opt.Iv))}`;
+  $('formulas').innerHTML = `
+    <div class="line">P(x) = ${co(S.a)} − ${co(S.b)}x, &nbsp; C(x) = ${co(S.F)} + ${co(S.c)}x</div>
+    <div class="line">R(x) = x·P(x) = ${co(S.a)}x − ${co(S.b)}x<sup>2</sup></div>
+    <div class="line">I(x) = R(x) − C(x) = −${co(S.b)}x<sup>2</sup> ${B >= 0 ? '+' : '−'} ${co(Math.abs(B))}x − ${co(S.F)} = ${sq}</div>`;
+}
+
+// ---------- chart plumbing ----------
+const M = { l: 64, r: 14, t: 14, b: 40 }, W = 480, H = 340;
+function makeScales(yMin, yMax) {
+  const xm = xMax();
+  return {
+    sx: x => M.l + (x / xm) * (W - M.l - M.r),
+    sy: y => H - M.b - ((y - yMin) / (yMax - yMin)) * (H - M.t - M.b),
+    xm, yMin, yMax
+  };
+}
+function el(tag, attrs, parent, text) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (text !== undefined) e.textContent = text;
+  parent.appendChild(e);
+  return e;
+}
+function niceTicks(min, max, n) {
+  const span = max - min, raw = span / n, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => span / s <= n) || 10 * mag;
+  const t = [];
+  for (let v = Math.ceil(min / step) * step; v <= max + 1e-9; v += step) t.push(v);
+  return t;
+}
+function drawFrame(svg, sc, yLabel) {
+  svg.innerHTML = '';
+  const g = el('g', {}, svg);
+  // gridlines + y ticks
+  for (const v of niceTicks(sc.yMin, sc.yMax, 6)) {
+    const y = sc.sy(v);
+    el('line', { x1: M.l, x2: W - M.r, y1: y, y2: y, stroke: 'var(--grid)', 'stroke-width': 1 }, g);
+    el('text', { x: M.l - 8, y: y + 4, 'text-anchor': 'end', 'font-size': 11, fill: 'var(--muted)' }, g,
+       Math.abs(v) >= 1000 ? (v / 1000) + 'k' : v);
+  }
+  // x ticks
+  for (const v of niceTicks(0, sc.xm, 6)) {
+    const x = sc.sx(v);
+    el('line', { x1: x, x2: x, y1: H - M.b, y2: H - M.b + 4, stroke: 'var(--baseline)' }, g);
+    el('text', { x, y: H - M.b + 17, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' }, g, fmt(v));
+  }
+  // axes
+  el('line', { x1: M.l, x2: W - M.r, y1: H - M.b, y2: H - M.b, stroke: 'var(--baseline)', 'stroke-width': 1 }, g);
+  el('line', { x1: M.l, x2: M.l, y1: M.t, y2: H - M.b, stroke: 'var(--baseline)', 'stroke-width': 1 }, g);
+  el('text', { x: (M.l + W - M.r) / 2, y: H - 4, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)' }, g, 'x (units)');
+  el('text', { x: 14, y: (M.t + H - M.b) / 2, 'text-anchor': 'middle', 'font-size': 11, fill: 'var(--muted)',
+               transform: `rotate(-90 14 ${(M.t + H - M.b) / 2})` }, g, yLabel);
+  return g;
+}
+function pathOf(fn, sc, n) {
+  let d = '';
+  for (let i = 0; i <= n; i++) {
+    const x = sc.xm * i / n;
+    d += (i ? 'L' : 'M') + sc.sx(x).toFixed(1) + ',' + sc.sy(fn(x)).toFixed(1);
+  }
+  return d;
+}
+
+// ---------- draw both charts ----------
+let scRC, scP; // current scales, for hover
+function draw() {
+  renderFormulas();
+  ['a','b','F','c','x'].forEach(k => $('lab-' + k).textContent =
+    k === 'b' ? S.b.toFixed(2) : fmt(S[k]));
+  $('in-x').max = Math.round(xMax());
+  if (S.x > xMax()) S.x = Math.round(xMax());
+  $('in-x').value = S.x;
+
+  const opt = optimum(), be = breakEven();
+
+  // --- chart 1: R and C ---
+  {
+    const top = Math.max(R(opt.xv), C(xMax()), C(0)) * 1.08;
+    scRC = makeScales(0, top);
+    const g = drawFrame($('chart-rc'), scRC, 'yen');
+    if (be) { // shade profitable region
+      el('rect', { x: scRC.sx(Math.max(0, be[0])), y: M.t,
+                   width: Math.max(0, scRC.sx(Math.min(scRC.xm, be[1])) - scRC.sx(Math.max(0, be[0]))),
+                   height: H - M.t - M.b, fill: 'var(--accent-soft)' }, g);
+    }
+    el('path', { d: pathOf(C, scRC, 2), fill: 'none', stroke: 'var(--series-cost)', 'stroke-width': 2 }, g);
+    el('path', { d: pathOf(R, scRC, 120), fill: 'none', stroke: 'var(--series-rev)', 'stroke-width': 2 }, g);
+    // direct labels
+    el('text', { x: scRC.sx(scRC.xm * 0.66), y: scRC.sy(R(scRC.xm * 0.66)) - 10, 'font-size': 11,
+                 fill: 'var(--series-rev)', 'font-weight': 600 }, g, 'R(x)');
+    el('text', { x: scRC.sx(scRC.xm * 0.86), y: scRC.sy(C(scRC.xm * 0.86)) - 8, 'font-size': 11,
+                 fill: 'var(--series-cost)', 'font-weight': 600 }, g, 'C(x)');
+    // current-x markers: vertical gap
+    const cx = scRC.sx(S.x);
+    el('line', { x1: cx, x2: cx, y1: scRC.sy(R(S.x)), y2: scRC.sy(C(S.x)),
+                 stroke: 'var(--series-profit)', 'stroke-width': 2, 'stroke-dasharray': '4 3' }, g);
+    for (const [fn, col] of [[R, 'var(--series-rev)'], [C, 'var(--series-cost)']]) {
+      el('circle', { cx, cy: scRC.sy(fn(S.x)), r: 5, fill: col, stroke: 'var(--surface-1)', 'stroke-width': 2 }, g);
+    }
+  }
+
+  // --- chart 2: profit parabola ---
+  {
+    const yTop = Math.max(opt.Iv, 0) * 1.15 || 1000;
+    const yBot = Math.min(I(0), 0) * 1.15;
+    scP = makeScales(yBot, yTop);
+    const g = drawFrame($('chart-p'), scP, 'profit (yen)');
+    // zero line
+    el('line', { x1: M.l, x2: W - M.r, y1: scP.sy(0), y2: scP.sy(0), stroke: 'var(--baseline)',
+                 'stroke-width': 1, 'stroke-dasharray': '2 3' }, g);
+    el('path', { d: pathOf(I, scP, 120), fill: 'none', stroke: 'var(--series-profit)', 'stroke-width': 2 }, g);
+    // vertex marker + guides
+    const vx = scP.sx(opt.xv), vy = scP.sy(opt.Iv);
+    el('line', { x1: vx, x2: vx, y1: vy, y2: H - M.b, stroke: 'var(--muted)', 'stroke-width': 1, 'stroke-dasharray': '3 3' }, g);
+    el('line', { x1: M.l, x2: vx, y1: vy, y2: vy, stroke: 'var(--muted)', 'stroke-width': 1, 'stroke-dasharray': '3 3' }, g);
+    el('circle', { cx: vx, cy: vy, r: 5, fill: 'var(--series-profit)', stroke: 'var(--surface-1)', 'stroke-width': 2 }, g);
+    const anchor = vx > W - 150 ? 'end' : 'start';
+    el('text', { x: vx + (anchor === 'end' ? -8 : 8), y: vy - 8, 'font-size': 11, fill: 'var(--text-secondary)',
+                 'text-anchor': anchor, 'font-weight': 600 }, g,
+       `max: (${fmt(opt.xv)}, ${fmt(opt.Iv)})`);
+    // current-x point
+    el('circle', { cx: scP.sx(S.x), cy: scP.sy(I(S.x)), r: 5, fill: 'var(--series-profit)',
+                   stroke: 'var(--surface-1)', 'stroke-width': 2, opacity: 0.65 }, g);
+  }
+
+  // --- tiles ---
+  const prof = I(S.x);
+  const intNote = Number.isInteger(opt.xv) ? '' :
+    ` (x* = ${co(opt.xv)} is not whole; best integer x = ${fmt(opt.xInt)}, I = ${yen(opt.IInt)})`;
+  $('tiles').innerHTML = `
+    <div class="tile"><div class="t-label">unit price P(x)</div><div class="t-value">${yen(P(S.x))}</div><div class="t-sub">at x = ${fmt(S.x)}</div></div>
+    <div class="tile"><div class="t-label">revenue R(x)</div><div class="t-value">${yen(R(S.x))}</div><div class="t-sub">x · P(x)</div></div>
+    <div class="tile"><div class="t-label">cost C(x)</div><div class="t-value">${yen(C(S.x))}</div><div class="t-sub">fixed + unit·x</div></div>
+    <div class="tile ${prof >= 0 ? 'profit-pos' : 'profit-neg'}"><div class="t-label">profit I(x)</div><div class="t-value">${yen(prof)}</div><div class="t-sub">R(x) − C(x)</div></div>
+    <div class="tile"><div class="t-label">maximum profit</div><div class="t-value">${yen(opt.Iv)}</div><div class="t-sub">at x = ${fmt(opt.xv)}${intNote}</div></div>
+    <div class="tile"><div class="t-label">break-even points</div><div class="t-value">${be ? fmt(Math.max(0, be[0])) + ' / ' + fmt(be[1]) : 'never profitable'}</div><div class="t-sub">where I(x) = 0</div></div>`;
+
+  // --- table ---
+  const rows = [];
+  const step = Math.max(100, Math.round(xMax() / 10 / 100) * 100);
+  rows.push('<tr><th>x</th><th>P(x)</th><th>R(x)</th><th>C(x)</th><th>I(x)</th></tr>');
+  for (let x = 0; x <= xMax() + 1e-9; x += step) {
+    rows.push(`<tr><td>${fmt(x)}</td><td>${fmt(P(x))}</td><td>${fmt(R(x))}</td><td>${fmt(C(x))}</td><td>${fmt(I(x))}</td></tr>`);
+  }
+  $('tbl').innerHTML = rows.join('');
+
+  // preset highlight
+  const isAB = S.a === 1000 && S.b === 0.2 && S.F === 500 && S.c === 100;
+  const isC  = S.a === 1000 && S.b === 0.2 && S.F === 500 && S.c === 200;
+  $('preset-ab').classList.toggle('active', isAB);
+  $('preset-c').classList.toggle('active', isC);
+}
+
+// ---------- interaction ----------
+for (const k of ['a','b','F','c','x']) {
+  $('in-' + k).addEventListener('input', e => { S[k] = +e.target.value; draw(); });
+}
+$('preset-ab').onclick = () => { Object.assign(S, { a: 1000, b: 0.2, F: 500, c: 100 }); syncInputs(); draw(); };
+$('preset-c').onclick  = () => { Object.assign(S, { a: 1000, b: 0.2, F: 500, c: 200 }); syncInputs(); draw(); };
+$('btn-goopt').onclick = () => { S.x = optimum().xInt; draw(); };
+function syncInputs() { for (const k of ['a','b','F','c','x']) $('in-' + k).value = S[k]; }
+
+// hover / drag on charts
+const tt = $('tt');
+function chartHover(svg, getScale) {
+  let dragging = false;
+  const xFromEvent = ev => {
+    const r = svg.getBoundingClientRect();
+    const px = (ev.clientX - r.left) / r.width * W;
+    const sc = getScale();
+    return Math.max(0, Math.min(sc.xm, (px - M.l) / (W - M.l - M.r) * sc.xm));
+  };
+  const show = ev => {
+    const x = Math.round(xFromEvent(ev) / 10) * 10;
+    $('tt-x').textContent = 'x = ' + fmt(x) + ' units';
+    $('tt-r').textContent = yen(R(x));
+    $('tt-c').textContent = yen(C(x));
+    $('tt-i').textContent = yen(I(x));
+    tt.style.display = 'block';
+    tt.style.left = Math.min(ev.clientX + 14, window.innerWidth - 200) + 'px';
+    tt.style.top = (ev.clientY + 14) + 'px';
+    if (dragging) { S.x = x; draw(); }
+  };
+  svg.addEventListener('pointerdown', ev => { dragging = true; svg.setPointerCapture(ev.pointerId); show(ev); });
+  svg.addEventListener('pointerup',   () => { dragging = false; });
+  svg.addEventListener('pointermove', show);
+  svg.addEventListener('pointerleave', () => { tt.style.display = 'none'; dragging = false; });
+}
+chartHover($('chart-rc'), () => scRC);
+chartHover($('chart-p'),  () => scP);
+
+draw();
+</script>
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/">Back to Collection</a></p>
+</body>
+</html>
