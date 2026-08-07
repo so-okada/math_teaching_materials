@@ -37,6 +37,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html) | Numerical Analysis | Root finding, tangent line iteration |
 | [Gradient Descent](https://so-okada.github.io/math_teaching_materials/gradient_descent.html) | Numerical Analysis | Steepest descent, learning rate, convergence |
 | [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html) | Analysis | Limit definition, series, compound interest |
+| [Sound & Harmonics](https://so-okada.github.io/math_teaching_materials/fourier_sound_harmonics.html) | Analysis | Fourier series, harmonics, timbre, Gibbs phenomenon |
 | [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
 | [Catenary Curve](https://so-okada.github.io/math_teaching_materials/catenary.html) | Differential Geometry | Hyperbolic cosine, hanging chain, curvature |
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
@@ -742,6 +743,19 @@ The number $e$ can be defined in several equivalent ways:
 - Convergence comparison: series vs limit (log scale)
 - Slope of $y = a^x$: adjust base to see when tangent slope equals 1
 - Compound interest interpretation
+
+---
+
+### [Sound & Harmonics](https://so-okada.github.io/math_teaching_materials/fourier_sound_harmonics.html)
+**File:** `fourier_sound_harmonics.html`
+
+Hearing Fourier analysis: drag the amplitudes of ten harmonics, watch the resulting waveform, and listen to the tone via the Web Audio API. A "theremin" pad plays the same recipe with continuous pitch and volume.
+
+**Mathematical Background:**
+The tone is a finite Fourier sine series at fundamental frequency $f$:
+$$y(t) = \sum_{n=1}^{10} a_n \sin(2\pi n f t)$$
+
+The amplitude recipe $(a_1, \ldots, a_{10})$ determines the waveform and the timbre, independently of pitch. Presets include square-wave (odd harmonics, $a_n = 1/n$, showing the Gibbs phenomenon) and sawtooth ($a_n = 1/n$ for all $n$) approximations; faster decay of high-frequency coefficients corresponds to smoother waveforms.
 
 ---
 
