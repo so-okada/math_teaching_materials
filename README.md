@@ -27,7 +27,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html) | Geometry | Perspective projection, similar triangles, circle of confusion |
 | [Gömböc](https://so-okada.github.io/math_teaching_materials/gomboc.html) | Geometry | Mono-monostatic convex body, equilibrium points |
 | [Epicycles vs. Heliocentric Ellipses](https://so-okada.github.io/math_teaching_materials/epicycle_vs_heliocentric.html) | Geometry | Kepler orbits, geocentric motion, Fourier series |
-| [Inscribed Angle Theorem](https://so-okada.github.io/math_teaching_materials/inscribed_angle_theorem.html) | Geometry | Central angle, inscribed angle, Thales' theorem |
+| [Inscribed Angle Theorem](https://so-okada.github.io/math_teaching_materials/inscribed_angle_theorem.html) | Geometry | Central angle, inscribed angle |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 | [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
 | [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html) | Trigonometry | Triangle geometry, cosine rule |
