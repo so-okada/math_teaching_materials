@@ -1,0 +1,1001 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fourier Analysis: Sound &amp; Harmonics — Interactive Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #65635f;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;   /* sum waveform / spectrum bars */
+    --series-2:       #eb6834;   /* highlighted harmonic */
+    --bar-dim:        #9ec5f4;   /* sequential step 200: non-hovered context */
+    --accent-bg:      #2a78d6;
+    --accent-fg:      #ffffff;
+    --accent:         #2a78d6;
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #aaa8a1;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --bar-dim:        #1c5cab;
+      --accent-bg:      #3987e5;
+      --accent-fg:      #ffffff;
+      --accent:         #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 20px; font-size: 0.95rem; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.02rem; margin: 0 0 2px; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 10px; }
+  .canvas-scroll {
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  canvas {
+    width: 100%; min-width: 720px; height: auto; display: block;
+    touch-action: none; border-radius: 6px;
+  }
+  .controls-row {
+    display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
+    margin-bottom: 4px;
+  }
+  .ctrl { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); }
+  .ctrl output { min-width: 4.2em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  input[type="range"] { accent-color: var(--series-1); width: 160px; }
+  input[type="checkbox"] { accent-color: var(--series-1); width: 16px; height: 16px; }
+  .ctrl.is-disabled { opacity: 0.58; }
+  #pad { cursor: crosshair; }
+  .amp-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px 14px;
+    margin-top: 12px;
+  }
+  .amp-ctrl {
+    display: grid;
+    grid-template-columns: 2.4em minmax(90px, 1fr) 3.2em;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+  }
+  .amp-ctrl input[type="range"] { width: 100%; }
+  .amp-ctrl output {
+    color: var(--text-primary);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  button:focus-visible,
+  input:focus-visible,
+  summary:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+  button {
+    font: inherit; font-size: 0.88rem;
+    padding: 7px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary);
+  }
+  button:hover { border-color: var(--baseline); }
+  button.primary { background: var(--accent-bg); color: var(--accent-fg); border-color: transparent; font-weight: 600; min-width: 92px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .preset-note { color: var(--text-secondary); font-size: 0.86rem; margin: 10px 0 0; min-height: 1.4em; }
+  .formula {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0 0; font-size: 0.95rem; overflow-x: auto;
+    color: var(--text-primary);
+  }
+  .formula i { font-family: Georgia, "Times New Roman", serif; }
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; font-size: 0.8rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    display: none; white-space: nowrap;
+  }
+  .tooltip b { font-variant-numeric: tabular-nums; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
+  details p { font-size: 0.9rem; color: var(--text-secondary); }
+  .legend { display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 14px; height: 3px;
+    border-radius: 2px; margin-right: 6px; vertical-align: middle;
+  }
+  .lg-sum::before { background: var(--series-1); }
+  .lg-part::before { background: var(--series-2); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Sound &amp; Harmonics: Hearing Fourier Analysis</h1>
+  </header>
+  <p class="subtitle">
+    A mixture of pure tones: a <b>base frequency</b> <i>f</i> and
+    <b>harmonics</b> at 2<i>f</i>, 3<i>f</i>, 4<i>f</i>, … .
+    Fourier analysis says the <em>recipe</em> — how loud each harmonic is — determines the
+    shape of the wave and the <em>timbre</em> (color) of the sound.
+    Drag the bars below to change the recipe, and listen.
+  </p>
+
+  <div class="card">
+    <h2>1. The recipe — harmonic amplitudes <i>a</i><sub>1</sub>, …, <i>a</i><sub>10</sub></h2>
+    <p class="hint">Drag a bar up or down, or use the sliders below, to set how loud each harmonic is. Set it to zero to remove it.</p>
+    <div class="canvas-scroll">
+      <canvas id="spec" width="1600" height="480" aria-label="Visual display of 10 harmonic amplitudes"></canvas>
+    </div>
+    <div class="amp-controls" id="ampControls" aria-label="Harmonic amplitude controls"></div>
+    <div class="presets">
+      <button data-preset="pure">Pure tone</button>
+      <button data-preset="square">Square-wave approximation</button>
+      <button data-preset="saw">Sawtooth approximation</button>
+      <button data-preset="soft">Soft (flute-like)</button>
+      <button data-preset="random">Random</button>
+      <button data-preset="clear">Clear</button>
+    </div>
+    <p class="preset-note" id="presetNote"></p>
+  </div>
+
+  <div class="card">
+    <h2>2. The resulting wave</h2>
+    <p class="hint">Two periods of the summed wave. Hover a bar above to see that single harmonic drawn on top.</p>
+    <div class="canvas-scroll">
+      <canvas id="wave" width="1600" height="480" aria-label="Waveform display of the harmonic sum"></canvas>
+    </div>
+    <div class="legend">
+      <span class="lg-sum">sum of harmonics</span>
+      <span class="lg-part" id="lgPart" style="display:none">single harmonic (hovered)</span>
+    </div>
+    <div class="formula">
+      <i>y</i>(<i>t</i>) &nbsp;=&nbsp;
+      <i>a</i><sub>1</sub> sin(2π·<i>f t</i>) +
+      <i>a</i><sub>2</sub> sin(2π·2<i>f t</i>) +
+      <i>a</i><sub>3</sub> sin(2π·3<i>f t</i>) + ⋯ +
+      <i>a</i><sub>10</sub> sin(2π·10<i>f t</i>)
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Listen</h2>
+    <div class="controls-row">
+      <button class="primary" id="playBtn">▶ Play</button>
+      <label class="ctrl">Fundamental <i>&nbsp;f&nbsp;</i>
+        <input type="range" id="freq" min="82" max="660" step="1" value="220">
+        <output id="freqOut">220 Hz</output>
+      </label>
+      <label class="ctrl">Volume
+        <input type="range" id="vol" min="0" max="100" step="1" value="40">
+        <output id="volOut">40 %</output>
+      </label>
+    </div>
+    <p class="hint" style="margin-top:8px">
+      The sound updates live while you drag the bars. Same recipe + different <i>f</i> = same timbre, different pitch.
+    </p>
+    <details>
+      <summary>What to try / what to notice</summary>
+      <p>
+        <b>Square-wave approximation</b> uses only odd harmonics (1, 3, 5, …) with amplitudes
+        1, 1/3, 1/5, … and sounds hollow, like a clarinet. Notice the ripples near the jumps of the
+        target square wave. As more harmonics are added, the overshoot becomes narrower but does not
+        disappear: this is the <em>Gibbs phenomenon</em>.
+        <b>Sawtooth approximation</b> uses every harmonic with amplitudes 1, 1/2, 1/3, … and sounds
+        bright and brassy. <b>Soft</b> makes the amplitudes decrease rapidly (like 1/<i>n</i>²), reducing
+        high-frequency content and making this finite sum look gentler. For infinite Fourier series,
+        faster decay of the high-frequency coefficients is closely connected with greater smoothness
+        of the waveform. That link between a wave and its harmonic recipe is exactly what Fourier
+        analysis studies.
+      </p>
+    </details>
+  </div>
+
+  <div class="card">
+    <h2>4. "Theremin" mode for the harmonic recipe</h2>
+    <p class="hint">
+      Press and glide on the pad: <b>left–right</b> changes the base frequency continuously,
+      <b>up–down</b> changes the volume. Release to stop.
+      The tone uses whatever harmonic recipe you set in section 1.
+    </p>
+    <div class="canvas-scroll">
+      <canvas id="pad" width="1600" height="560" aria-label="Theremin pad: horizontal position sets pitch, vertical position sets volume"></canvas>
+    </div>
+    <div class="controls-row" style="margin-top:10px">
+      <label class="ctrl"><input type="checkbox" id="beats"> White-noise beat</label>
+      <label class="ctrl is-disabled" id="beatRateCtrl">Beat frequency
+        <input type="range" id="beatRate" min="0.5" max="8" step="0.5" value="2" disabled>
+        <output id="beatRateOut">2.0 Hz</output>
+      </label>
+      <span class="ctrl">Now playing: <output id="noteOut" style="min-width:9em">—</output></span>
+    </div>
+    <p class="hint" style="margin-top:8px">
+      Turn on <b>White-noise beat</b> to add a simple repeating pulse behind the theremin.
+      Each pulse is synthesized as a fresh, short burst of white noise; no recorded beat sound is used.
+      The beat frequency is the number of pulses per second.
+      The pitch axis is <em>logarithmic</em>: each octave (a doubling of frequency) has the same width.
+      A real theremin controls pitch and volume with two antennas instead of two axes.
+    </p>
+  </div>
+
+  <p class="hint" style="text-align:center">Audio uses the Web Audio API — works in any modern browser. No data leaves your device.</p>
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">Back to Collection</a></p>
+
+<div class="tooltip" id="tip"></div>
+
+<script>
+"use strict";
+/* ---------- state ---------- */
+const N = 10;                       // number of harmonics
+let amps = new Array(N).fill(0);    // amplitudes in [0,1]
+amps[0] = 1;
+let hovered = -1;                   // hovered harmonic index, -1 = none
+let playing = false;
+
+/* ---------- palette from CSS ---------- */
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+let C = {};
+function refreshColors() {
+  C = {
+    surface:  cssVar('--surface-1'),
+    grid:     cssVar('--grid'),
+    baseline: cssVar('--baseline'),
+    muted:    cssVar('--text-muted'),
+    ink:      cssVar('--text-primary'),
+    sum:      cssVar('--series-1'),
+    part:     cssVar('--series-2'),
+    barDim:   cssVar('--bar-dim')
+  };
+}
+refreshColors();
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    refreshColors(); drawSpectrum(); drawWave(); drawPad();
+  });
+}
+
+/* ---------- canvases ---------- */
+const spec = document.getElementById('spec');
+const wave = document.getElementById('wave');
+const sctx = spec.getContext('2d');
+const wctx = wave.getContext('2d');
+const tip  = document.getElementById('tip');
+const ampControls = document.getElementById('ampControls');
+const ampInputs = [];
+const ampOutputs = [];
+
+function buildAmplitudeControls() {
+  for (let i = 0; i < N; i++) {
+    const label = document.createElement('label');
+    label.className = 'amp-ctrl';
+
+    const name = document.createElement('span');
+    name.innerHTML = '<i>a</i><sub>' + (i + 1) + '</sub>';
+
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.id = 'amp' + (i + 1);
+    input.min = '0';
+    input.max = '1';
+    input.step = '0.01';
+    input.value = String(amps[i]);
+    input.setAttribute('aria-label', 'Amplitude of harmonic ' + (i + 1));
+
+    const output = document.createElement('output');
+    output.htmlFor = input.id;
+    output.textContent = amps[i].toFixed(2);
+
+    input.addEventListener('input', () => {
+      amps[i] = Number(input.value);
+      hovered = i;
+      document.getElementById('lgPart').style.display = '';
+      setNote('');
+      update(true);
+    });
+    input.addEventListener('focus', () => {
+      hovered = i;
+      document.getElementById('lgPart').style.display = '';
+      drawSpectrum();
+      drawWave();
+    });
+    input.addEventListener('blur', () => {
+      hovered = -1;
+      document.getElementById('lgPart').style.display = 'none';
+      drawSpectrum();
+      drawWave();
+    });
+
+    label.append(name, input, output);
+    ampControls.appendChild(label);
+    ampInputs.push(input);
+    ampOutputs.push(output);
+  }
+}
+
+function syncAmplitudeControls() {
+  for (let i = 0; i < N; i++) {
+    const value = amps[i].toFixed(2);
+    if (ampInputs[i].value !== value) ampInputs[i].value = value;
+    ampOutputs[i].textContent = value;
+  }
+}
+
+/* spectrum layout (canvas coords) */
+const SP = { left: 90, right: 30, top: 90, bottom: 104 };
+function barGeom() {
+  const W = spec.width - SP.left - SP.right;
+  const slot = W / N;
+  const bw = slot * 0.62;
+  return { slot, bw, plotH: spec.height - SP.top - SP.bottom };
+}
+
+function drawSpectrum() {
+  const { slot, bw, plotH } = barGeom();
+  const H = spec.height;
+  sctx.clearRect(0, 0, spec.width, H);
+  sctx.fillStyle = C.surface;
+  sctx.fillRect(0, 0, spec.width, H);
+
+  /* gridlines at 0.25 steps */
+  sctx.strokeStyle = C.grid; sctx.lineWidth = 1;
+  sctx.fillStyle = C.muted;
+  sctx.font = '36px system-ui, sans-serif';
+  sctx.textAlign = 'right'; sctx.textBaseline = 'middle';
+  for (let v = 0; v <= 1.0001; v += 0.25) {
+    const y = SP.top + plotH * (1 - v);
+    sctx.beginPath(); sctx.moveTo(SP.left, y); sctx.lineTo(spec.width - SP.right, y); sctx.stroke();
+    sctx.fillText(v.toFixed(2), SP.left - 12, y);
+  }
+  /* baseline */
+  sctx.strokeStyle = C.baseline; sctx.lineWidth = 2;
+  sctx.beginPath();
+  sctx.moveTo(SP.left, SP.top + plotH);
+  sctx.lineTo(spec.width - SP.right, SP.top + plotH);
+  sctx.stroke();
+
+  /* bars */
+  for (let i = 0; i < N; i++) {
+    const cx = SP.left + slot * i + slot / 2;
+    const h = amps[i] * plotH;
+    const x = cx - bw / 2;
+    const y = SP.top + plotH - h;
+    const active = (i === hovered);
+    sctx.fillStyle = (hovered === -1) ? C.sum : (active ? C.part : C.barDim);
+    if (h > 1) {
+      const r = Math.min(6, h);            /* rounded top, flat baseline end */
+      sctx.beginPath();
+      sctx.moveTo(x, SP.top + plotH);
+      sctx.lineTo(x, y + r);
+      sctx.arcTo(x, y, x + r, y, r);
+      sctx.lineTo(x + bw - r, y);
+      sctx.arcTo(x + bw, y, x + bw, y + r, r);
+      sctx.lineTo(x + bw, SP.top + plotH);
+      sctx.closePath();
+      sctx.fill();
+    }
+    /* grab handle line so empty bars are still visible/discoverable */
+    if (h <= 1) {
+      sctx.strokeStyle = C.baseline; sctx.lineWidth = 3;
+      sctx.beginPath(); sctx.moveTo(x, SP.top + plotH - 1); sctx.lineTo(x + bw, SP.top + plotH - 1); sctx.stroke();
+    }
+    /* value label above bar (selective: only nonzero) */
+    if (amps[i] > 0.004) {
+      sctx.fillStyle = C.ink;
+      sctx.font = '32px system-ui, sans-serif';
+      sctx.textAlign = 'center'; sctx.textBaseline = 'bottom';
+      sctx.fillText(amps[i].toFixed(2), cx, y - 6);
+    }
+    /* x labels: harmonic number and frequency */
+    sctx.fillStyle = (active ? C.ink : C.muted);
+    sctx.font = (active ? 'bold 36px' : '36px') + ' system-ui, sans-serif';
+    sctx.textAlign = 'center'; sctx.textBaseline = 'top';
+    sctx.fillText(String(i + 1), cx, SP.top + plotH + 10);
+    sctx.font = '28px system-ui, sans-serif';
+    sctx.fillStyle = C.muted;
+    sctx.fillText(((i + 1) * getFreq()).toFixed(0) + ' Hz', cx, SP.top + plotH + 38);
+  }
+  /* axis titles */
+  sctx.fillStyle = C.muted;
+  sctx.font = '32px system-ui, sans-serif';
+  sctx.textAlign = 'left'; sctx.textBaseline = 'top';
+  sctx.fillText('amplitude aₙ', 10, 8);
+  sctx.textAlign = 'center';
+  sctx.fillText('harmonic n (frequency n·f)', SP.left + (spec.width - SP.left - SP.right) / 2, SP.top + plotH + 68);
+}
+
+/* ---------- waveform ---------- */
+function drawWave() {
+  const W = wave.width, H = wave.height;
+  const L = 70, R = 24, T = 24, B = 66;
+  const plotW = W - L - R, plotH = H - T - B;
+  wctx.clearRect(0, 0, W, H);
+  wctx.fillStyle = C.surface;
+  wctx.fillRect(0, 0, W, H);
+
+  /* vertical scale: fixed while dragging feels better; auto-fit to peak */
+  let peak = 0;
+  const samples = 900;
+  const vals = new Float64Array(samples);
+  for (let s = 0; s < samples; s++) {
+    const t = (s / samples) * 2;         /* two periods, t in units of 1/f */
+    let y = 0;
+    for (let i = 0; i < N; i++) y += amps[i] * Math.sin(2 * Math.PI * (i + 1) * t);
+    vals[s] = y;
+    peak = Math.max(peak, Math.abs(y));
+  }
+  const yMax = Math.max(1.1, peak * 1.08);
+  const yToPx = y => T + plotH / 2 - (y / yMax) * (plotH / 2);
+
+  /* grid: midline + period marks */
+  wctx.strokeStyle = C.grid; wctx.lineWidth = 1;
+  [0.5, 1, 1.5].forEach(p => {
+    const x = L + (p / 2) * plotW;
+    wctx.beginPath(); wctx.moveTo(x, T); wctx.lineTo(x, T + plotH); wctx.stroke();
+  });
+  wctx.strokeStyle = C.baseline; wctx.lineWidth = 1.5;
+  wctx.beginPath(); wctx.moveTo(L, yToPx(0)); wctx.lineTo(L + plotW, yToPx(0)); wctx.stroke();
+
+  /* axis labels */
+  wctx.fillStyle = C.muted;
+  wctx.font = '30px system-ui, sans-serif';
+  wctx.textAlign = 'center'; wctx.textBaseline = 'top';
+  wctx.fillText('0', L, T + plotH + 8);
+  wctx.fillText('T', L + plotW / 2, T + plotH + 8);
+  wctx.fillText('2T', L + plotW, T + plotH + 8);
+  wctx.textAlign = 'right'; wctx.textBaseline = 'top';
+  wctx.fillText(yMax.toFixed(1), L - 10, T + 4);
+  wctx.save();
+  wctx.translate(18, T + plotH / 2); wctx.rotate(-Math.PI / 2);
+  wctx.textAlign = 'center'; wctx.textBaseline = 'middle';
+  wctx.fillText('y(t)', 0, 0);
+  wctx.restore();
+  wctx.textAlign = 'center'; wctx.textBaseline = 'top';
+  wctx.fillText('time  (T = one period = 1/f)', L + plotW / 2, T + plotH + 34);
+
+  /* hovered single harmonic */
+  if (hovered >= 0 && amps[hovered] > 0.004) {
+    wctx.strokeStyle = C.part; wctx.lineWidth = 2.5;
+    wctx.beginPath();
+    for (let s = 0; s < samples; s++) {
+      const t = (s / samples) * 2;
+      const y = amps[hovered] * Math.sin(2 * Math.PI * (hovered + 1) * t);
+      const px = L + (s / (samples - 1)) * plotW;
+      const py = yToPx(y);
+      s === 0 ? wctx.moveTo(px, py) : wctx.lineTo(px, py);
+    }
+    wctx.stroke();
+  }
+
+  /* sum */
+  wctx.strokeStyle = C.sum; wctx.lineWidth = 3;
+  wctx.beginPath();
+  for (let s = 0; s < samples; s++) {
+    const px = L + (s / (samples - 1)) * plotW;
+    const py = yToPx(vals[s]);
+    s === 0 ? wctx.moveTo(px, py) : wctx.lineTo(px, py);
+  }
+  wctx.stroke();
+}
+
+/* ---------- spectrum interaction ---------- */
+let dragging = false;
+
+function specPos(ev) {
+  const r = spec.getBoundingClientRect();
+  const x = (ev.clientX - r.left) * (spec.width / r.width);
+  const y = (ev.clientY - r.top) * (spec.height / r.height);
+  return { x, y };
+}
+function barAt(x) {
+  const { slot } = barGeom();
+  if (x < SP.left || x > spec.width - SP.right) return -1;
+  const i = Math.floor((x - SP.left) / slot);
+  return (i >= 0 && i < N) ? i : -1;
+}
+function setFromPointer(ev) {
+  const { x, y } = specPos(ev);
+  const i = barAt(x);
+  if (i < 0) return;
+  const { plotH } = barGeom();
+  let v = 1 - (y - SP.top) / plotH;
+  v = Math.min(1, Math.max(0, v));
+  if (v < 0.02) v = 0;                       /* snap to zero near baseline */
+  amps[i] = Math.round(v * 100) / 100;
+  hovered = i;
+  update(true);
+}
+function showTip(ev, i) {
+  if (i < 0) { tip.style.display = 'none'; return; }
+  const f = getFreq();
+  tip.innerHTML = 'harmonic <b>n = ' + (i + 1) + '</b> · ' + ((i + 1) * f) + ' Hz · a = <b>' +
+                  amps[i].toFixed(2) + '</b>';
+  tip.style.display = 'block';
+  tip.style.left = (ev.clientX + 14) + 'px';
+  tip.style.top  = (ev.clientY - 34) + 'px';
+}
+
+spec.addEventListener('pointerdown', ev => {
+  dragging = true;
+  spec.setPointerCapture(ev.pointerId);
+  setFromPointer(ev);
+  showTip(ev, barAt(specPos(ev).x));
+  setNote('');
+});
+spec.addEventListener('pointermove', ev => {
+  const i = barAt(specPos(ev).x);
+  if (dragging) {
+    setFromPointer(ev);
+  } else if (i !== hovered) {
+    hovered = i;
+    drawSpectrum(); drawWave();
+    document.getElementById('lgPart').style.display = (i >= 0) ? '' : 'none';
+  }
+  showTip(ev, i);
+});
+function endDrag(ev) {
+  dragging = false;
+  tip.style.display = 'none';
+  if (!ev || ev.pointerType !== 'mouse') {
+    hovered = -1;
+    document.getElementById('lgPart').style.display = 'none';
+    drawSpectrum();
+    drawWave();
+  }
+}
+spec.addEventListener('pointerup', endDrag);
+spec.addEventListener('pointercancel', endDrag);
+spec.addEventListener('pointerleave', () => {
+  if (!dragging) {
+    hovered = -1; tip.style.display = 'none';
+    document.getElementById('lgPart').style.display = 'none';
+    drawSpectrum(); drawWave();
+  }
+});
+
+/* ---------- presets ---------- */
+const PRESETS = {
+  pure:   { note: 'A single pure sine — the simplest possible tone. One bar, one frequency.',
+            fn: n => (n === 1 ? 1 : 0) },
+  square: { note: 'A finite square-wave approximation using odd harmonics 1, 3, 5, … with amplitudes 1, 1/3, 1/5, … . Watch the ripples near the target wave’s jumps (Gibbs phenomenon).',
+            fn: n => (n % 2 === 1 ? 1 / n : 0) },
+  saw:    { note: 'A finite sawtooth approximation using every harmonic with amplitudes 1, 1/2, 1/3, … — a bright, brassy tone, like bowed strings.',
+            fn: n => 1 / n },
+  soft:   { note: 'Amplitudes fall off rapidly (≈1/n²), reducing high-frequency content and making this finite sum look gentler.',
+            fn: n => 1 / (n * n) },
+  random: { note: 'A random recipe — an instrument that has never existed. Roll again!',
+            fn: () => Math.round(Math.random() * Math.random() * 100) / 100 },
+  clear:  { note: 'Silence. Drag any bar up to begin.',
+            fn: () => 0 }
+};
+document.querySelectorAll('[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const p = PRESETS[btn.dataset.preset];
+    for (let i = 0; i < N; i++) amps[i] = Math.round(p.fn(i + 1) * 100) / 100;
+    setNote(p.note);
+    update(true);
+  });
+});
+function setNote(t) { document.getElementById('presetNote').textContent = t; }
+
+/* ---------- audio ---------- */
+let actx = null, osc = null, gain = null;
+const freqEl = document.getElementById('freq');
+const volEl = document.getElementById('vol');
+const playBtn = document.getElementById('playBtn');
+
+const AUDIO_COEFFICIENT_SCALE = 0.15;         /* fixed scale: bars retain their audible proportions */
+const MAX_PLAY_GAIN = 0.6;                    /* worst-case sum remains below full scale */
+
+function getFreq() { return Number(freqEl.value); }
+function getVol()  { return Number(volEl.value) / 100 * MAX_PLAY_GAIN; }
+
+function buildWaveTable() {
+  const real = new Float32Array(N + 1);
+  const imag = new Float32Array(N + 1);
+  for (let i = 0; i < N; i++) imag[i + 1] = AUDIO_COEFFICIENT_SCALE * amps[i];
+  return actx.createPeriodicWave(real, imag, { disableNormalization: true });
+}
+function isSilent() { return amps.every(a => a === 0); }
+
+function startAudio() {
+  if (isSilent()) {
+    setNote('Silence — raise at least one harmonic before playing.');
+    return;
+  }
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  actx.resume();
+  osc = actx.createOscillator();
+  gain = actx.createGain();
+  osc.frequency.value = getFreq();
+  osc.setPeriodicWave(buildWaveTable());
+  gain.gain.setValueAtTime(0, actx.currentTime);
+  gain.gain.linearRampToValueAtTime(getVol(), actx.currentTime + 0.04);
+  osc.connect(gain).connect(actx.destination);
+  osc.start();
+  playing = true;
+  playBtn.textContent = '■ Stop';
+}
+function stopAudio() {
+  if (osc && gain && actx) {
+    const t = actx.currentTime;
+    gain.gain.cancelScheduledValues(t);
+    gain.gain.setTargetAtTime(0, t, 0.03);
+    const o = osc;
+    setTimeout(() => { try { o.stop(); o.disconnect(); } catch (e) {} }, 200);
+  }
+  osc = null; gain = null;
+  playing = false;
+  playBtn.textContent = '▶ Play';
+}
+playBtn.addEventListener('click', () => { playing ? stopAudio() : startAudio(); });
+
+function updateAudio() {
+  if (!playing || !osc) return;
+  gain.gain.cancelScheduledValues(actx.currentTime);
+  if (isSilent()) {
+    gain.gain.setTargetAtTime(0, actx.currentTime, 0.02);
+  } else {
+    osc.setPeriodicWave(buildWaveTable());
+    gain.gain.setTargetAtTime(getVol(), actx.currentTime, 0.02);
+  }
+}
+
+freqEl.addEventListener('input', () => {
+  document.getElementById('freqOut').textContent = getFreq() + ' Hz';
+  if (osc) osc.frequency.setTargetAtTime(getFreq(), actx.currentTime, 0.02);
+  drawSpectrum();
+});
+volEl.addEventListener('input', () => {
+  document.getElementById('volOut').textContent = volEl.value + ' %';
+  if (playing && gain) gain.gain.setTargetAtTime(isSilent() ? 0 : getVol(), actx.currentTime, 0.02);
+});
+
+/* ---------- theremin pad ---------- */
+const pad = document.getElementById('pad');
+const pctx = pad.getContext('2d');
+const beatsEl = document.getElementById('beats');
+const beatRateEl = document.getElementById('beatRate');
+const beatRateOut = document.getElementById('beatRateOut');
+const beatRateCtrl = document.getElementById('beatRateCtrl');
+const noteOut = document.getElementById('noteOut');
+const PAD = { left: 44, right: 48, top: 16, bottom: 64 };
+const F_LO = 65.406, F_HI = 1046.5;          /* C2 … C6, log axis */
+const NOTE_NAMES = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#'];
+
+let padPointer = null;                        /* {x,y} in canvas coords, or null */
+let padActive = false;                        /* pressed = sounding */
+let tosc = null, tgain = null;
+
+/* The background beat is synthesized locally from fresh white-noise bursts. */
+const BEAT_BURST_SECONDS = 0.065;
+const BEAT_LEVEL = 0.12;
+const BEAT_LOOKAHEAD_MS = 25;
+const BEAT_SCHEDULE_AHEAD_SECONDS = 0.10;
+let beatTimer = null;
+let nextBeatTime = 0;
+const activeBeatSources = new Set();
+
+function padPlotW() { return pad.width - PAD.left - PAD.right; }
+function padPlotH() { return pad.height - PAD.top - PAD.bottom; }
+function xToFreq(x) {
+  const u = Math.min(1, Math.max(0, (x - PAD.left) / padPlotW()));
+  return F_LO * Math.pow(F_HI / F_LO, u);
+}
+function freqToX(f) {
+  return PAD.left + padPlotW() * (Math.log(f / F_LO) / Math.log(F_HI / F_LO));
+}
+function yToVol(y) {
+  const v = 1 - Math.min(1, Math.max(0, (y - PAD.top) / padPlotH()));
+  return v * v * 0.5;                         /* perceptual-ish curve, max 0.5 */
+}
+function freqToNote(f) {
+  const n = Math.round(12 * Math.log2(f / 440));        /* semitones from A4 */
+  const name = NOTE_NAMES[((n % 12) + 12) % 12];
+  const octave = 4 + Math.floor((n + 9) / 12);          /* A4 → 4, C5 → 5 */
+  const exact = 440 * Math.pow(2, n / 12);
+  const cents = Math.round(1200 * Math.log2(f / exact));
+  return { name: name + octave, exact, cents };
+}
+function getBeatFrequency() { return Number(beatRateEl.value); }
+function updateThereminReadout(f) {
+  const { name, cents } = freqToNote(f);
+  noteOut.textContent = f.toFixed(1) + ' Hz ≈ ' + name +
+    (cents === 0 ? '' : ' ' + (cents > 0 ? '+' : '') + cents + '¢');
+}
+function setThereminFrequency(f, glideTime) {
+  if (tosc && actx) {
+    tosc.frequency.setTargetAtTime(f, actx.currentTime, glideTime);
+  }
+}
+
+function createNoiseBurstBuffer() {
+  const sampleRate = actx.sampleRate;
+  const length = Math.max(1, Math.round(sampleRate * BEAT_BURST_SECONDS));
+  const attackLength = Math.max(1, Math.round(sampleRate * 0.002));
+  const buffer = actx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const attack = Math.min(1, i / attackLength);
+    const decay = Math.pow(1 - i / Math.max(1, length - 1), 3);
+    data[i] = (Math.random() * 2 - 1) * attack * decay;
+  }
+  return buffer;
+}
+
+function scheduleNoiseBeat(time) {
+  if (!actx || !beatsEl.checked) return;
+
+  const source = actx.createBufferSource();
+  const level = actx.createGain();
+  source.buffer = createNoiseBurstBuffer();
+  level.gain.value = BEAT_LEVEL;
+  source.connect(level).connect(actx.destination);
+
+  const entry = { source, level };
+  activeBeatSources.add(entry);
+  source.onended = () => {
+    activeBeatSources.delete(entry);
+    try { source.disconnect(); } catch (e) {}
+    try { level.disconnect(); } catch (e) {}
+  };
+  source.start(time);
+}
+
+function runBeatScheduler() {
+  if (!actx || !beatsEl.checked) return;
+
+  const period = 1 / getBeatFrequency();
+  const horizon = actx.currentTime + BEAT_SCHEDULE_AHEAD_SECONDS;
+  while (nextBeatTime < horizon) {
+    scheduleNoiseBeat(Math.max(nextBeatTime, actx.currentTime));
+    nextBeatTime += period;
+  }
+}
+
+function stopBackgroundBeat() {
+  if (beatTimer !== null) {
+    clearInterval(beatTimer);
+    beatTimer = null;
+  }
+  nextBeatTime = 0;
+
+  for (const { source, level } of Array.from(activeBeatSources)) {
+    try { source.stop(); } catch (e) {}
+    try { source.disconnect(); } catch (e) {}
+    try { level.disconnect(); } catch (e) {}
+  }
+  activeBeatSources.clear();
+}
+
+function startBackgroundBeat() {
+  if (!beatsEl.checked) return;
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  actx.resume();
+
+  stopBackgroundBeat();
+  nextBeatTime = actx.currentTime + 0.02;
+  runBeatScheduler();
+  beatTimer = setInterval(runBeatScheduler, BEAT_LOOKAHEAD_MS);
+}
+
+function refreshBeatControls() {
+  const enabled = beatsEl.checked;
+  beatRateEl.disabled = !enabled;
+  beatRateCtrl.classList.toggle('is-disabled', !enabled);
+  beatRateOut.textContent = getBeatFrequency().toFixed(1) + ' Hz';
+
+  if (enabled) startBackgroundBeat();
+  else stopBackgroundBeat();
+}
+
+function drawPad() {
+  const W = pad.width, H = pad.height, plotH = padPlotH();
+  pctx.clearRect(0, 0, W, H);
+  pctx.fillStyle = C.surface;
+  pctx.fillRect(0, 0, W, H);
+
+  /* semitone hairlines */
+  pctx.strokeStyle = C.grid; pctx.lineWidth = 1;
+  for (let m = Math.ceil(12 * Math.log2(F_LO / 440)); 440 * Math.pow(2, m / 12) <= F_HI + 1; m++) {
+    const f = 440 * Math.pow(2, m / 12);
+    if (f < F_LO - 1) continue;
+    const x = freqToX(f);
+    pctx.globalAlpha = 0.45;
+    pctx.beginPath(); pctx.moveTo(x, PAD.top); pctx.lineTo(x, PAD.top + plotH); pctx.stroke();
+    pctx.globalAlpha = 1;
+  }
+  /* octave lines (C) + A lines, labeled */
+  pctx.font = '30px system-ui, sans-serif';
+  pctx.textAlign = 'center'; pctx.textBaseline = 'top';
+  for (let m = Math.ceil(12 * Math.log2(F_LO / 440)); 440 * Math.pow(2, m / 12) <= F_HI + 1; m++) {
+    const f = 440 * Math.pow(2, m / 12);
+    if (f < F_LO - 1) continue;
+    const { name } = freqToNote(f);
+    const isC = name.startsWith('C') && !name.startsWith('C#');
+    const isA = name.startsWith('A') && !name.startsWith('A#');
+    if (!isC && !isA) continue;
+    const x = freqToX(f);
+    pctx.strokeStyle = isC ? C.baseline : C.grid;
+    pctx.lineWidth = isC ? 2 : 1;
+    pctx.beginPath(); pctx.moveTo(x, PAD.top); pctx.lineTo(x, PAD.top + plotH); pctx.stroke();
+    pctx.fillStyle = isC ? C.ink : C.muted;
+    pctx.fillText(name, x, PAD.top + plotH + 8);
+    pctx.fillStyle = C.muted;
+    pctx.font = '24px system-ui, sans-serif';
+    pctx.fillText(f.toFixed(0) + ' Hz', x, PAD.top + plotH + 32);
+    pctx.font = '30px system-ui, sans-serif';
+  }
+  /* volume arrow hint on left edge */
+  pctx.fillStyle = C.muted;
+  pctx.save();
+  pctx.translate(PAD.left + 14, PAD.top + plotH / 2);
+  pctx.rotate(-Math.PI / 2);
+  pctx.textAlign = 'center'; pctx.textBaseline = 'middle';
+  pctx.fillText('volume →', 0, 0);
+  pctx.restore();
+
+  /* pointer marker */
+  if (padPointer) {
+    const { x, y } = padPointer;
+    const fx = freqToX(xToFreq(x));
+    pctx.strokeStyle = padActive ? C.part : C.muted;
+    pctx.lineWidth = padActive ? 2.5 : 1.5;
+    pctx.beginPath(); pctx.moveTo(fx, PAD.top); pctx.lineTo(fx, PAD.top + plotH); pctx.stroke();
+    pctx.beginPath(); pctx.moveTo(PAD.left, y); pctx.lineTo(W - PAD.right, y); pctx.stroke();
+    pctx.beginPath();
+    pctx.arc(fx, y, padActive ? 14 : 9, 0, 2 * Math.PI);
+    pctx.fillStyle = padActive ? C.part : C.sum;
+    pctx.fill();
+    if (padActive) {
+      pctx.globalAlpha = 0.25;
+      pctx.beginPath(); pctx.arc(fx, y, 28, 0, 2 * Math.PI); pctx.fill();
+      pctx.globalAlpha = 1;
+    }
+  }
+}
+
+function padPos(ev) {
+  const r = pad.getBoundingClientRect();
+  return {
+    x: (ev.clientX - r.left) * (pad.width / r.width),
+    y: (ev.clientY - r.top) * (pad.height / r.height)
+  };
+}
+function thereminUpdate(ev, glideTime) {
+  const p = padPos(ev);
+  padPointer = p;
+  const f = xToFreq(p.x);
+  const v = isSilent() ? 0 : yToVol(p.y);
+  setThereminFrequency(f, glideTime);
+  if (tgain && actx) tgain.gain.setTargetAtTime(v, actx.currentTime, 0.03);
+  updateThereminReadout(f);
+  drawPad();
+}
+pad.addEventListener('pointerdown', ev => {
+  ev.preventDefault();
+  if (playing) stopAudio();                       /* pad takes over from the Play button */
+  if (isSilent()) {
+    padPointer = padPos(ev);
+    setNote('Silence — raise at least one harmonic before using the theremin.');
+    noteOut.textContent = '—';
+    drawPad();
+    return;
+  }
+  pad.setPointerCapture(ev.pointerId);
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  actx.resume();
+  tosc = actx.createOscillator();
+  tgain = actx.createGain();
+
+  const startFreq = xToFreq(padPos(ev).x);
+  tosc.setPeriodicWave(buildWaveTable());
+  tosc.frequency.value = startFreq;
+  tgain.gain.value = 0;
+
+  tosc.connect(tgain).connect(actx.destination);
+  tosc.start();
+  padActive = true;
+  thereminUpdate(ev, 0.001);
+});
+pad.addEventListener('pointermove', ev => {
+  if (padActive) thereminUpdate(ev, 0.02);
+  else { padPointer = padPos(ev); drawPad(); }
+});
+function padStop() {
+  if (tgain && actx) {
+    tgain.gain.cancelScheduledValues(actx.currentTime);
+    tgain.gain.setTargetAtTime(0, actx.currentTime, 0.04);
+    const thereminOsc = tosc;
+    const thereminGain = tgain;
+    setTimeout(() => {
+      try { thereminOsc.stop(); thereminOsc.disconnect(); } catch (e) {}
+      try { thereminGain.disconnect(); } catch (e) {}
+    }, 250);
+  }
+  tosc = null; tgain = null;
+  padActive = false;
+  noteOut.textContent = '—';
+  drawPad();
+}
+pad.addEventListener('pointerup', padStop);
+pad.addEventListener('pointercancel', padStop);
+pad.addEventListener('pointerleave', () => { if (!padActive) { padPointer = null; drawPad(); } });
+beatsEl.addEventListener('change', refreshBeatControls);
+beatRateEl.addEventListener('input', refreshBeatControls);
+window.addEventListener('pagehide', stopBackgroundBeat);
+
+/* live timbre change while theremin is sounding */
+function updateThereminWave() {
+  if (!padActive || !tosc || !tgain || !actx) return;
+
+  tgain.gain.cancelScheduledValues(actx.currentTime);
+  if (isSilent()) {
+    tgain.gain.setTargetAtTime(0, actx.currentTime, 0.02);
+    return;
+  }
+
+  tosc.setPeriodicWave(buildWaveTable());
+  const targetVolume = padPointer ? yToVol(padPointer.y) : 0;
+  tgain.gain.setTargetAtTime(targetVolume, actx.currentTime, 0.02);
+}
+
+/* ---------- update ---------- */
+function update(audioToo) {
+  syncAmplitudeControls();
+  drawSpectrum();
+  drawWave();
+  if (audioToo) { updateAudio(); updateThereminWave(); }
+}
+
+buildAmplitudeControls();
+setNote(PRESETS.pure.note);
+update(false);
+refreshBeatControls();
+</script>
+</body>
+</html>
