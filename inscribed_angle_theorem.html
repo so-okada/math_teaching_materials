@@ -1,0 +1,425 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscribed Angle Theorem — Interactive Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --accent: #2a78d6;      /* inscribed angle (P) */
+    --accent-2: #eb6834;    /* central angle (O)   */
+    --accent-3: #2f9e63;    /* second point (Q)    */
+    --chord: #52514e;
+    --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --accent: #3987e5;
+      --accent-2: #f0906a;
+      --accent-3: #4dbd85;
+      --chord: #c3c2b7;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.35rem; margin: 0 0 18px; }
+  h2 { font-size: 1.02rem; margin: 0 0 12px; }
+  header p.sub { margin: 0 0 20px; color: var(--text-secondary); font-size: 0.95rem; }
+  a { color: var(--accent); }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .two-col { display: flex; flex-wrap: wrap; gap: 18px; }
+  .two-col > .card { flex: 1 1 380px; margin-bottom: 0; }
+  #cv { width: 100%; height: auto; display: block; touch-action: none; cursor: grab; }
+  .simbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  button {
+    font: inherit; font-size: .85rem;
+    background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--baseline); border-radius: 7px;
+    padding: 5px 14px; cursor: pointer;
+  }
+  button:hover { border-color: var(--muted); }
+  button.on { background: var(--accent-3); border-color: var(--accent-3); color: #fff; }
+  .readout { font-size: .95rem; font-variant-numeric: tabular-nums; }
+  .readout table { border-collapse: collapse; width: 100%; }
+  .readout td { padding: 4px 8px; border-bottom: 1px solid var(--grid); }
+  .readout td:last-child { text-align: right; font-weight: 600; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 7px; vertical-align: baseline; }
+  .note { font-size: .8rem; color: var(--muted); margin-top: 10px; }
+  .thales { font-size: .85rem; color: var(--accent-2); margin-top: 10px; min-height: 1.4em; font-weight: 600; }
+  .math-block { margin: 8px 0; }
+</style>
+<script>
+  window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] } };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Inscribed Angle Theorem</h1>
+    <p class="sub">The inscribed angle is half of the corresponding central angle</p>
+  </header>
+
+  <div class="card">
+    <strong>Theorem.</strong>
+    Let $A$, $B$, and $P$ be distinct points on a circle with center $O$.
+    Let $\angle AOB$ denote the central angle, possibly reflex, subtending
+    the arc $AB$ that does not contain $P$. Then
+    <div class="math-block">
+      $$\angle APB \;=\; \tfrac{1}{2}\,\angle AOB.$$
+    </div>
+    In particular, if $P$ and $Q$ lie on the same arc from $A$ to $B$, then
+    $\angle APB=\angle AQB$; and if $AB$ is a diameter, then
+    $\angle APB=90^\circ$.
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <h2>Drag the points $A$, $B$, $P$ (and $Q$)</h2>
+      <div class="simbar">
+        <button id="btnQ">Show second point Q</button>
+        <button id="btnDiam">Make AB a diameter</button>
+      </div>
+      <canvas id="cv" width="640" height="560"></canvas>
+      <div class="note">
+        The highlighted arc is the arc $AB$ not containing $P$; it is intercepted
+        by $\angle APB$ and subtended at the center by $\angle AOB$.
+      </div>
+    </div>
+
+    <div class="card readout">
+      <h2>Live values</h2>
+      <table>
+        <tr>
+          <td><span class="swatch" id="swO"></span>Corresponding central angle $\angle AOB$ (possibly reflex)</td>
+          <td id="vC">—</td>
+        </tr>
+        <tr>
+          <td><span class="swatch" id="swP"></span>Inscribed angle $\angle APB$</td>
+          <td id="vP">—</td>
+        </tr>
+        <tr id="rowQ" style="display:none;">
+          <td><span class="swatch" id="swQ"></span>Inscribed angle $\angle AQB$</td>
+          <td id="vQ">—</td>
+        </tr>
+        <tr>
+          <td>Ratio $\angle AOB / \angle APB$</td>
+          <td id="vR">—</td>
+        </tr>
+      </table>
+      <div class="thales" id="thalesNote"></div>
+      <div class="note">
+        When $P$ passes from one arc to the other, the angle is momentarily undefined
+        at $A$ or $B$. Once $P$ is distinct from $A$ and $B$ again, the highlighted arc
+        switches, and the identity $\angle APB = \tfrac12 \angle AOB$ continues to hold;
+        inscribed angles on the two opposite arcs are supplementary.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Reference</h2>
+    <p style="font-size:.9rem; margin:0;">
+      <a href="https://en.wikipedia.org/wiki/Inscribed_angle" target="_blank" rel="noopener">Inscribed angle</a> —
+      Wikipedia; see also
+      <a href="https://mathworld.wolfram.com/InscribedAngle.html" target="_blank" rel="noopener">MathWorld: Inscribed Angle</a>.
+    </p>
+  </div>
+
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const cv = $('cv');
+  const ctx = cv.getContext('2d');
+  const TAU = 2 * Math.PI;
+  const cx = cv.width / 2, cy = cv.height / 2, R = Math.min(cx, cy) - 60;
+
+  // angles on the circle (radians, measured counterclockwise in math coords)
+  const state = {
+    a: 2.6,          // A
+    b: 0.55,         // B
+    p: 4.4,          // P
+    q: 3.7,          // Q
+    showQ: false
+  };
+
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  const mod = x => ((x % TAU) + TAU) % TAU;
+  const POINT_EPS = 0.005; // about one pixel on this circle
+  const angularDistance = (x, y) =>
+    Math.abs(Math.atan2(Math.sin(x - y), Math.cos(x - y)));
+  const samePoint = (x, y) => angularDistance(x, y) < POINT_EPS;
+  const validEndpoints = () => !samePoint(state.a, state.b);
+  const validVertex = t =>
+    validEndpoints() && !samePoint(t, state.a) && !samePoint(t, state.b);
+
+  // canvas y-axis points down; keep math orientation by negating y
+  const pos = t => ({ x: cx + R * Math.cos(t), y: cy - R * Math.sin(t) });
+
+  // measure (radians) of the arc from A to B *not* containing P
+  function subtendedArc() {
+    const dCCW = mod(state.b - state.a);              // ccw arc A -> B
+    const pOnCCW = mod(state.p - state.a) < dCCW;     // is P on that arc?
+    return pOnCCW ? TAU - dCCW : dCCW;                // arc not containing P
+  }
+
+  // angle at vertex V between rays V->A and V->B, in [0, pi]
+  function angleAt(V, A, B) {
+    const ux = A.x - V.x, uy = A.y - V.y, vx = B.x - V.x, vy = B.y - V.y;
+    if (Math.hypot(ux, uy) < 1e-9 || Math.hypot(vx, vy) < 1e-9) return null;
+    const dot = ux * vx + uy * vy;
+    const cr  = ux * vy - uy * vx;
+    return Math.abs(Math.atan2(cr, dot));
+  }
+
+  const deg = r => (r * 180 / Math.PI);
+  const fmt = r => Number.isFinite(r) ? deg(r).toFixed(1) + '\u00B0' : '\u2014';
+
+  // ---------- drawing ----------
+  function arcPath(t0, t1, radius, atX, atY) {
+    // Draw a counterclockwise arc in mathematical coordinates.
+    // The canvas counterclockwise flag is therefore true.
+    ctx.arc(atX, atY, radius, -t0, -t1, true);
+  }
+
+  function draw() {
+    const A = pos(state.a), B = pos(state.b), P = pos(state.p), Q = pos(state.q);
+    const validP = validVertex(state.p);
+    const validQ = validVertex(state.q);
+    const colP = css('--accent'), colO = css('--accent-2'), colQ = css('--accent-3');
+    const colChord = css('--chord'), colGrid = css('--grid'),
+          colText = css('--text-primary'), colMuted = css('--muted');
+
+    ctx.clearRect(0, 0, cv.width, cv.height);
+
+    // circle
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = colGrid;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, TAU);
+    ctx.stroke();
+
+    // Subtended arc (from A to B not containing P), highlighted when defined.
+    let t0 = null, t1 = null;
+    if (validP) {
+      const dCCW = mod(state.b - state.a);
+      const pOnCCW = mod(state.p - state.a) < dCCW;
+      // endpoints of highlighted arc in math coords, traversed ccw
+      t0 = pOnCCW ? state.b : state.a;
+      t1 = pOnCCW ? state.a + TAU : state.b;
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = colO;
+      ctx.beginPath();
+      arcPath(t0, t0 + mod(t1 - t0), R, cx, cy);
+      ctx.stroke();
+    }
+
+    // chords PA, PB and radii OA, OB
+    ctx.lineWidth = 1.8;
+    ctx.strokeStyle = colP;
+    ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(A.x, A.y);
+    ctx.moveTo(P.x, P.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+
+    ctx.strokeStyle = colO;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(A.x, A.y);
+    ctx.moveTo(cx, cy); ctx.lineTo(B.x, B.y); ctx.stroke();
+
+    if (state.showQ) {
+      ctx.strokeStyle = colQ;
+      ctx.beginPath(); ctx.moveTo(Q.x, Q.y); ctx.lineTo(A.x, A.y);
+      ctx.moveTo(Q.x, Q.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    }
+
+    // chord AB (dashed)
+    ctx.strokeStyle = colChord;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(B.x, B.y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // central-angle marker at O along the subtended arc
+    if (validP) {
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = colO;
+      ctx.beginPath();
+      arcPath(t0, t0 + mod(t1 - t0), 30, cx, cy);
+      ctx.stroke();
+    }
+
+    // inscribed-angle markers
+    if (validP) angleMarker(P, A, B, colP);
+    if (state.showQ && validQ) angleMarker(Q, A, B, colQ);
+
+    // points
+    dot(cx, cy, colMuted, 'O', 14, 16);
+    dot(A.x, A.y, colText, 'A', ...labelOffset(state.a));
+    dot(B.x, B.y, colText, 'B', ...labelOffset(state.b));
+    dot(P.x, P.y, colP, 'P', ...labelOffset(state.p), 7);
+    if (state.showQ) dot(Q.x, Q.y, colQ, 'Q', ...labelOffset(state.q), 7);
+  }
+
+  function labelOffset(t) {
+    return [22 * Math.cos(t), -22 * Math.sin(t)];
+  }
+
+  function dot(x, y, color, label, dx, dy, r = 5.5) {
+    ctx.fillStyle = color;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill();
+    ctx.font = '600 15px system-ui, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, x + dx, y + dy);
+  }
+
+  function angleMarker(V, A, B, color) {
+    const a1 = Math.atan2(-(A.y - V.y), A.x - V.x);   // math-coords direction V->A
+    const a2 = Math.atan2(-(B.y - V.y), B.x - V.x);
+    let d = mod(a2 - a1);
+    let s = a1, sweep = d;
+    if (d > Math.PI) { s = a2; sweep = TAU - d; }     // take the non-reflex side
+    ctx.lineWidth = 2.2;
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    arcPath(s, s + sweep, 26, V.x, V.y);
+    ctx.stroke();
+  }
+
+  // ---------- readouts ----------
+  function renderAll() {
+    const A = pos(state.a), B = pos(state.b), P = pos(state.p), Q = pos(state.q);
+    const validAB = validEndpoints();
+    const validP = validVertex(state.p);
+    const validQ = validVertex(state.q);
+    const central = validP ? subtendedArc() : null;
+    const inscribed = validP ? angleAt(P, A, B) : null;
+    const qAngle = validQ ? angleAt(Q, A, B) : null;
+
+    $('vC').textContent = fmt(central);
+    $('vP').textContent = fmt(inscribed);
+    $('vR').textContent = Number.isFinite(central) && Number.isFinite(inscribed) && inscribed > 1e-6
+      ? (central / inscribed).toFixed(3)
+      : '\u2014';
+    if (state.showQ) $('vQ').textContent = fmt(qAngle);
+
+    const dAB = mod(state.b - state.a);
+    const isDiameter = validAB && Math.abs(dAB - Math.PI) < 1e-8;
+    const messages = [];
+    if (!validAB) {
+      messages.push('The angles are undefined because A and B coincide.');
+    } else {
+      if (!validP) {
+        messages.push('\u2220APB is undefined because P coincides with A or B.');
+      }
+      if (state.showQ && !validQ) {
+        messages.push('\u2220AQB is undefined because Q coincides with A or B.');
+      }
+      if (isDiameter && validP) {
+        messages.push('AB is a diameter: \u2220APB = 90\u00B0 (Thales\u2019 theorem).');
+      }
+    }
+    $('thalesNote').textContent = messages.join(' ');
+
+    $('swO').style.background = css('--accent-2');
+    $('swP').style.background = css('--accent');
+    $('swQ').style.background = css('--accent-3');
+
+    draw();
+  }
+
+  // ---------- interaction ----------
+  let dragging = null;
+
+  function canvasCoords(ev) {
+    const r = cv.getBoundingClientRect();
+    return {
+      x: (ev.clientX - r.left) * cv.width / r.width,
+      y: (ev.clientY - r.top) * cv.height / r.height
+    };
+  }
+
+  function nearest(m) {
+    const cand = [['a', pos(state.a)], ['b', pos(state.b)], ['p', pos(state.p)]];
+    if (state.showQ) cand.push(['q', pos(state.q)]);
+    let best = null, bestD = 22 * 22;
+    for (const [k, pt] of cand) {
+      const d = (m.x - pt.x) ** 2 + (m.y - pt.y) ** 2;
+      if (d < bestD) { bestD = d; best = k; }
+    }
+    return best;
+  }
+
+  cv.addEventListener('pointerdown', ev => {
+    const k = nearest(canvasCoords(ev));
+    if (k) { dragging = k; cv.setPointerCapture(ev.pointerId); cv.style.cursor = 'grabbing'; }
+  });
+  cv.addEventListener('pointermove', ev => {
+    if (!dragging) return;
+    const m = canvasCoords(ev);
+    state[dragging] = mod(Math.atan2(-(m.y - cy), m.x - cx));
+    renderAll();
+  });
+  const stop = () => { dragging = null; cv.style.cursor = 'grab'; };
+  cv.addEventListener('pointerup', stop);
+  cv.addEventListener('pointercancel', stop);
+
+  $('btnQ').addEventListener('click', () => {
+    state.showQ = !state.showQ;
+    $('btnQ').classList.toggle('on', state.showQ);
+    $('rowQ').style.display = state.showQ ? '' : 'none';
+    renderAll();
+    if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([$('rowQ')]);
+  });
+
+  $('btnDiam').addEventListener('click', () => {
+    state.b = mod(state.a + Math.PI);
+    renderAll();
+  });
+
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderAll);
+  }
+
+  renderAll();
+})();
+</script>
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/">Back to Collection</a></p>
+</body>
+</html>

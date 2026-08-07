@@ -27,6 +27,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html) | Geometry | Perspective projection, similar triangles, circle of confusion |
 | [Gömböc](https://so-okada.github.io/math_teaching_materials/gomboc.html) | Geometry | Mono-monostatic convex body, equilibrium points |
 | [Epicycles vs. Heliocentric Ellipses](https://so-okada.github.io/math_teaching_materials/epicycle_vs_heliocentric.html) | Geometry | Kepler orbits, geocentric motion, Fourier series |
+| [Inscribed Angle Theorem](https://so-okada.github.io/math_teaching_materials/inscribed_angle_theorem.html) | Geometry | Central angle, inscribed angle, Thales' theorem |
 | [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html) | Trigonometry | x ≈ sin(x), Taylor series |
 | [Simple Sea Waves](https://so-okada.github.io/math_teaching_materials/simple_sea_waves.html) | Trigonometry | Sin waves, phases, frequencies |
 | [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html) | Trigonometry | Triangle geometry, cosine rule |
@@ -531,6 +532,21 @@ exhibits each term as a circle of radius $|c_j|$ turning at rate $\omega_j$. Thi
 
 ---
 
+### [Inscribed Angle Theorem](https://so-okada.github.io/math_teaching_materials/inscribed_angle_theorem.html)
+**File:** `inscribed_angle_theorem.html`
+
+Draggable points on a circle showing that an inscribed angle is half of the corresponding central angle.
+
+**Mathematical Background:**
+Let $A$, $B$, and $P$ be distinct points on a circle with center $O$.
+Let $\angle AOB$ denote the central angle, possibly reflex, subtending
+the arc $AB$ that does not contain $P$. Then
+
+
+$$\angle APB = \tfrac{1}{2}\,\angle AOB.$$
+
+---
+
 ## Trigonometry
 
 ### [Small Angle Approximation](https://so-okada.github.io/math_teaching_materials/xsinx.html)
@@ -913,6 +929,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `napier_number.html`: Uses MathJax (CDN)
 - `cosine_theorem.html`: Uses MathJax (CDN)
 - `sine_theorem.html`: Uses MathJax (CDN)
+- `inscribed_angle_theorem.html`: Uses MathJax (CDN)
 - `arrows_impossibility_theorem.html`: Uses MathJax (CDN)
 - `pinhole_camera.html`: Uses MathJax (CDN)
 - `gomboc.html`: Uses Three.js and OrbitControls (CDN)
