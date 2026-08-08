@@ -33,7 +33,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Law of Cosines](https://so-okada.github.io/math_teaching_materials/cosine_theorem.html) | Trigonometry | Triangle geometry, cosine rule |
 | [Law of Sines](https://so-okada.github.io/math_teaching_materials/sine_theorem.html) | Trigonometry | Sine rule, circumscribed circle |
 | [Shen Kuo's Arc-Length Approximation](https://so-okada.github.io/math_teaching_materials/shen_kuo_huiyuan_method_demo.html) | Trigonometry | Arc, chord, sagitta, Taylor series |
-| [The Chain Rule](https://so-okada.github.io/math_teaching_materials/chainrule.html) | Calculus | Chain rule, difference quotients, tangent slopes |
+| [The Chain Rule](https://so-okada.github.io/math_teaching_materials/chain-rule.html) | Calculus | Chain rule, difference quotients, tangent slopes |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
 | [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html) | Numerical Analysis | Root finding, tangent line iteration |
