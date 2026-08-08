@@ -1,0 +1,684 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<!-- Integer-exponent version: c = 1, 2, 3, 4, or 5. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Chain Rule — Interactive Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;   /* x-step Δx  / inner curve g */
+    --series-2:       #eb6834;   /* u-step Δu  / outer curve f */
+    --series-3:       #1baf7a;   /* y-step Δy  / composite curve */
+    --accent-bg:      #2a78d6;
+    --accent-fg:      #ffffff;
+    --accent:         #2a78d6;
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-3:       #199e70;
+      --accent-bg:      #3987e5;
+      --accent-fg:      #ffffff;
+      --accent:         #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 20px; font-size: 0.95rem; }
+  .disp {
+    text-align: center; font-size: 1.15rem; color: var(--text-primary);
+    margin: 14px 0; font-variant-numeric: tabular-nums;
+  }
+  .disp i { font-family: Georgia, "Times New Roman", serif; }
+  .frac {
+    display: inline-block; vertical-align: -0.9em; text-align: center;
+    font-size: 0.85em; line-height: 1.25; margin: 0 2px;
+  }
+  .frac > span { display: block; padding: 0 4px; }
+  .frac > span:last-child { border-top: 1.5px solid currentColor; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.02rem; margin: 0 0 2px; }
+  .formula-title { font-size: 0.95rem; margin: 14px 0 4px; text-align: center; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; display: block; touch-action: none; border-radius: 6px; }
+  .controls-row {
+    display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
+    margin: 8px 0 4px;
+  }
+  .ctrl { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); }
+  .ctrl output { min-width: 3.4em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  input[type="range"] { accent-color: var(--series-1); width: 150px; }
+  .formula {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0 0; font-size: 1.0rem; overflow-x: auto;
+    color: var(--text-primary); text-align: center;
+  }
+  .formula i, .rd i, .chain i, .ctrl i { font-family: Georgia, "Times New Roman", serif; }
+  .panels {
+    display: grid; gap: 12px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  @media (max-width: 760px) { .panels { grid-template-columns: 1fr; } }
+  .panel h3 { font-size: 0.9rem; margin: 0 0 6px; font-weight: 600; }
+  .panel h3 .dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+    margin-right: 6px; vertical-align: baseline;
+  }
+  .rd {
+    font-size: 0.95rem; color: var(--text-secondary); margin-top: 8px;
+    font-variant-numeric: tabular-nums; min-height: 5.2em; line-height: 1.8;
+    text-align: center;
+  }
+  .rd .rlab { font-size: 0.8rem; color: var(--text-muted); }
+  .rd .req  { font-size: 1.08rem; color: var(--text-primary); }
+  .evbar { font-size: 1.45em; font-weight: 300; vertical-align: -0.3em; }
+  .evbar + sub { font-size: 0.72em; }
+  .rd b { color: var(--text-primary); }
+  .legend { display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 10px; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 14px; height: 8px;
+    border-radius: 2px; margin-right: 6px; vertical-align: middle; opacity: 0.85;
+  }
+  .lg-dx::before { background: var(--series-1); }
+  .lg-du::before { background: var(--series-2); }
+  .lg-dy::before { background: var(--series-3); }
+  .chain {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 14px; margin-top: 12px; font-size: 0.98rem; overflow-x: auto;
+    font-variant-numeric: tabular-nums;
+  }
+  .chain .big { font-size: 1.06rem; }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 0.9rem; }
+  th, td {
+    text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid);
+    font-variant-numeric: tabular-nums;
+  }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; }
+  td.num { text-align: right; }
+  th.num { text-align: right; }
+  .warn { color: var(--series-2); font-size: 0.84rem; margin-top: 8px; min-height: 1.3em; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
+  details p { font-size: 0.9rem; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The Chain Rule: Rates of Change Multiply</h1>
+  </header>
+  <div class="card">
+    <h2>1. Choose the two stages: <i>u</i> = <i>ax</i> + <i>b</i> (<i>a</i> ≠ 0), &nbsp;<i>y</i> = <i>u</i><sup id="choiceC">2</sup></h2>
+    <div class="controls-row">
+      <label class="ctrl"><i>a</i>
+        <input type="range" id="aSl" min="0" max="999" step="1" value="699" autocomplete="off" aria-label="Nonzero value of a from minus 5 to 5">
+        <output id="aOut">2</output>
+      </label>
+      <label class="ctrl"><i>b</i>
+        <input type="range" id="bSl" min="-5" max="5" step="0.01" value="3" autocomplete="off">
+        <output id="bOut">3</output>
+      </label>
+      <label class="ctrl"><i>c</i>
+        <input type="range" id="cSl" min="1" max="5" step="1" value="2" autocomplete="off">
+        <output id="cOut">2</output>
+      </label>
+    </div>
+    <div class="formula" id="compFormula"></div>
+    <h3 class="formula-title">The Chain Rule</h3>
+    <div class="formula" id="derFormula"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. The composition machine — three graphs, three slopes</h2>
+    <div class="controls-row">
+      <label class="ctrl"><i>x</i>₀
+        <input type="range" id="x0" min="-1" max="1" step="0.01" value="0.5" autocomplete="off">
+        <output id="x0Out">0.50</output>
+      </label>
+    </div>
+    <div class="panels">
+      <div class="panel">
+        <h3><span class="dot" style="background:var(--series-1)"></span>Stage 1: <i>u</i> = <i>ax</i> + <i>b</i></h3>
+        <canvas id="cvG" width="640" height="520" aria-label="Graph of the inner affine function u = ax + b"></canvas>
+        <div class="rd" id="rdG"></div>
+      </div>
+      <div class="panel">
+        <h3 id="stageFTitle"><span class="dot" style="background:var(--series-2)"></span>Stage 2: <i>y</i> = <i>f</i>(<i>u</i>) = <i>u</i><sup><i>c</i></sup></h3>
+        <canvas id="cvF" width="640" height="520" aria-label="Graph of the outer power function y = u to the c with tangent line"></canvas>
+        <div class="rd" id="rdF"></div>
+      </div>
+      <div class="panel">
+        <h3 id="stageCTitle"><span class="dot" style="background:var(--series-3)"></span>Composite: <i>y</i> = (<i>ax</i> + <i>b</i>)<sup><i>c</i></sup></h3>
+        <canvas id="cvC" width="640" height="520" aria-label="Graph of the composite function with tangent line"></canvas>
+        <div class="rd" id="rdC"></div>
+      </div>
+    </div>
+    <div class="warn" id="flatNote"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. Why multiply? — the telescoping ratio</h2>
+    <p class="hint">
+      For an actual step <i>h</i> = Δ<i>x</i> ≠ 0, the difference quotients obey the identity
+    </p>
+    <p class="disp">
+      <span class="frac"><span>Δ<i>y</i></span><span>Δ<i>x</i></span></span> &nbsp;=&nbsp;
+      <span class="frac"><span>Δ<i>y</i></span><span>Δ<i>u</i></span></span> &nbsp;·&nbsp;
+      <span class="frac"><span>Δ<i>u</i></span><span>Δ<i>x</i></span></span>
+    </p>
+    <div class="controls-row">
+      <label class="ctrl">step <i>h</i>
+        <input type="range" id="hExp" min="0" max="3" step="0.05" value="0.6" autocomplete="off">
+        <output id="hOut"></output>
+      </label>
+    </div>
+    <table aria-label="Difference quotients converging to derivatives">
+      <thead>
+        <tr><th>ratio at step <i>h</i></th><th class="num">value</th><th>limit as <i>h</i> → 0</th><th class="num">value</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Δ<i>u</i> / Δ<i>x</i></td><td class="num" id="qGx"></td><td><i>g</i>′(<i>x</i>₀) = <i>a</i></td><td class="num" id="dGx"></td></tr>
+        <tr><td>Δ<i>y</i> / Δ<i>u</i></td><td class="num" id="qFu"></td><td id="dFuLabel"><i>f</i>′(<i>u</i>₀) = <i>c</i>·<i>u</i>₀<sup><i>c</i>−1</sup></td><td class="num" id="dFu"></td></tr>
+        <tr><td id="qCxLabel">Δ<i>y</i> / Δ<i>x</i> &nbsp;=&nbsp; product of the two</td><td class="num" id="qCx"></td><td id="dCxLabel"><i>f</i>′(<i>u</i>₀) · <i>g</i>′(<i>x</i>₀)</td><td class="num" id="dCx"></td></tr>
+      </tbody>
+    </table>
+    <div class="warn" id="zeroNote"></div>
+  </div>
+
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">Back to Collection</a></p>
+
+<script>
+"use strict";
+
+/* ---------- state ---------- */
+let a = 2, b = 3, c = 2;
+let x0 = 0.5;
+const XR = [-1, 1];          /* symmetric focus interval used to set the shared scale */
+const X0R = [-1, 1];         /* symmetric range of the movable point x₀ */
+const PAD = 0.06;
+
+/* ---------- functions ---------- */
+const gFn = x => a * x + b;
+const gD  = () => a;
+
+/* The exponent c is one of the integers 1, 2, 3, 4, 5. */
+function fFn(u) {
+  const v = Math.pow(u, c);
+  return Number.isFinite(v) ? v : NaN;
+}
+function fD(u) {
+  const v = c === 1 ? 1 : c * Math.pow(u, c - 1);
+  return Number.isFinite(v) ? v : NaN;
+}
+const Fc = x => fFn(gFn(x));
+
+/* ---------- palette from CSS ---------- */
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+let C = {};
+function refreshColors() {
+  C = {
+    surface:  cssVar('--surface-1'),
+    grid:     cssVar('--grid'),
+    baseline: cssVar('--baseline'),
+    muted:    cssVar('--text-muted'),
+    ink:      cssVar('--text-primary'),
+    s1:       cssVar('--series-1'),
+    s2:       cssVar('--series-2'),
+    s3:       cssVar('--series-3')
+  };
+}
+refreshColors();
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    refreshColors(); updateAll();
+  });
+}
+function withAlpha(hex, al) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + al + ')';
+}
+
+/* ---------- ranges (robust to poles: quantile clip when spread is extreme) ---------- */
+function sampleRange(fn, r, n) {
+  const vals = [];
+  for (let i = 0; i <= n; i++) {
+    const v = fn(r[0] + (r[1] - r[0]) * i / n);
+    if (Number.isFinite(v)) vals.push(v);
+  }
+  if (vals.length === 0) return [-1, 1];
+  vals.sort((p, q) => p - q);
+  let lo = vals[0], hi = vals[vals.length - 1];
+  const qlo = vals[Math.floor(0.03 * (vals.length - 1))];
+  const qhi = vals[Math.ceil(0.97 * (vals.length - 1))];
+  if ((hi - lo) > 6 * Math.max(qhi - qlo, 1e-9)) { lo = qlo; hi = qhi; }   /* pole taming */
+  if (!(lo < hi)) { lo -= 1; hi += 1; }
+  const p = (hi - lo) * PAD + 1e-9;
+  return [lo - p, hi + p];
+}
+let HR = [-5, 5], YV = [-1, 1];
+function recomputeRanges() {
+  /* Every figure uses the same horizontal range HR and the same vertical range YV.
+     Include both the x-domain and the full range of u = ax + b on that domain. */
+  const uLeft = gFn(XR[0]);
+  const uRight = gFn(XR[1]);
+  const hExtent = Math.max(
+    1, Math.abs(XR[0]), Math.abs(XR[1]), Math.abs(uLeft), Math.abs(uRight)
+  );
+  HR = [-hExtent, hExtent];
+  /* The three curves are drawn across HR, so determine the common vertical
+     range from their values across HR as well. */
+  const r1 = sampleRange(gFn, HR, 600);
+  const r2 = sampleRange(fFn, HR, 800);
+  const r3 = sampleRange(Fc, HR, 800);
+  const yMin = Math.min(r1[0], r2[0], r3[0]);
+  const yMax = Math.max(r1[1], r2[1], r3[1]);
+  const vExtent = Math.max(1, Math.abs(yMin), Math.abs(yMax));
+  YV = [-vExtent, vExtent];
+}
+
+/* ---------- generic graph drawing ---------- */
+const cvG = document.getElementById('cvG');
+const cvF = document.getElementById('cvF');
+const cvC = document.getElementById('cvC');
+const M = { l: 84, r: 18, t: 22, b: 56 };
+
+function niceStep(range) {
+  const raw = range / 7;
+  const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (m * pow >= raw) return m * pow;
+  return 10 * pow;
+}
+function makeMap(cv, xr, yr) {
+  const pw = cv.width - M.l - M.r, ph = cv.height - M.t - M.b;
+  return {
+    px: x => M.l + (x - xr[0]) / (xr[1] - xr[0]) * pw,
+    py: y => M.t + ph - (y - yr[0]) / (yr[1] - yr[0]) * ph,
+    pw, ph
+  };
+}
+
+/*
+ * spec = { cv, xr, yr, fn, color, xLab, yLab,
+ *          vBand:[a,b,color], hBand:[a,b,color], pt:[x,y], slope }
+ */
+function drawGraph(sp) {
+  const cv = sp.cv, ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const mp = makeMap(cv, sp.xr, sp.yr);
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = C.surface;
+  ctx.fillRect(0, 0, W, H);
+
+  /* grid */
+  const xs = niceStep(sp.xr[1] - sp.xr[0]);
+  const ys = niceStep(sp.yr[1] - sp.yr[0]);
+  ctx.lineWidth = 1;
+  ctx.font = '19px system-ui, sans-serif';
+  for (let v = Math.ceil(sp.xr[0] / xs) * xs; v <= sp.xr[1] + 1e-9; v += xs) {
+    const p = mp.px(v);
+    ctx.strokeStyle = Math.abs(v) < xs / 2 ? C.baseline : C.grid;
+    ctx.beginPath(); ctx.moveTo(p, M.t); ctx.lineTo(p, M.t + mp.ph); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(fmtTick(v), p, M.t + mp.ph + 8);
+  }
+  for (let v = Math.ceil(sp.yr[0] / ys) * ys; v <= sp.yr[1] + 1e-9; v += ys) {
+    const p = mp.py(v);
+    ctx.strokeStyle = Math.abs(v) < ys / 2 ? C.baseline : C.grid;
+    ctx.beginPath(); ctx.moveTo(M.l, p); ctx.lineTo(M.l + mp.pw, p); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ctx.fillText(fmtTick(v), M.l - 8, p);
+  }
+  /* axis titles */
+  ctx.fillStyle = C.muted;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.font = 'italic 21px Georgia, serif';
+  ctx.fillText(sp.xLab, M.l + mp.pw / 2, M.t + mp.ph + 32);
+  ctx.save();
+  ctx.translate(16, M.t + mp.ph / 2); ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(sp.yLab, 0, 0);
+  ctx.restore();
+
+  /* clip to plot area for bands + curve + tangent */
+  ctx.save();
+  ctx.beginPath(); ctx.rect(M.l, M.t, mp.pw, mp.ph); ctx.clip();
+
+  /* bands */
+  if (sp.vBand && Number.isFinite(sp.vBand[0]) && Number.isFinite(sp.vBand[1])) {
+    ctx.fillStyle = withAlpha(sp.vBand[2], 0.16);
+    const p1 = mp.px(sp.vBand[0]), p2 = mp.px(sp.vBand[1]);
+    ctx.fillRect(Math.min(p1, p2), M.t, Math.max(2, Math.abs(p2 - p1)), mp.ph);
+  }
+  if (sp.hBand && Number.isFinite(sp.hBand[0]) && Number.isFinite(sp.hBand[1])) {
+    ctx.fillStyle = withAlpha(sp.hBand[2], 0.16);
+    const p1 = mp.py(sp.hBand[0]), p2 = mp.py(sp.hBand[1]);
+    ctx.fillRect(M.l, Math.min(p1, p2), mp.pw, Math.max(2, Math.abs(p2 - p1)));
+  }
+
+  /* drop lines from the point to both axes */
+  if (sp.pt && Number.isFinite(sp.pt[0]) && Number.isFinite(sp.pt[1])) {
+    ctx.strokeStyle = C.baseline; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]);
+    const px = mp.px(sp.pt[0]), py = mp.py(sp.pt[1]);
+    ctx.beginPath();
+    ctx.moveTo(px, M.t + mp.ph); ctx.lineTo(px, py); ctx.lineTo(M.l, py);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* helper: line through sp.pt with a given slope */
+  function lineThrough(m, color, dash, width) {
+    if (!sp.pt || !Number.isFinite(sp.pt[1]) || !Number.isFinite(m)) return;
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.setLineDash(dash);
+    const span = (sp.xr[1] - sp.xr[0]);
+    const xA = sp.pt[0] - span, xB = sp.pt[0] + span;
+    ctx.beginPath();
+    ctx.moveTo(mp.px(xA), mp.py(sp.pt[1] + m * (xA - sp.pt[0])));
+    ctx.lineTo(mp.px(xB), mp.py(sp.pt[1] + m * (xB - sp.pt[0])));
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  /* auxiliary slope lines (e.g. g′ and f′ on the composite panel) */
+  if (sp.auxLines) sp.auxLines.forEach(L => lineThrough(L.m, L.color, [4, 6], 3));
+
+  /* tangent (under the curve, so the curve stays visible where they coincide) */
+  lineThrough(sp.slope, C.ink, [9, 7], 4);
+
+  /* curve */
+  ctx.strokeStyle = sp.color; ctx.lineWidth = 3;
+  ctx.beginPath();
+  let started = false;
+  const NPTS = 900;
+  const dom = sp.domain || sp.xr;
+  for (let i = 0; i <= NPTS; i++) {
+    const x = dom[0] + (dom[1] - dom[0]) * i / NPTS;
+    const y = sp.fn(x);
+    if (!Number.isFinite(y)) { started = false; continue; }
+    const px = mp.px(x), py = mp.py(y);
+    if (!started) { ctx.moveTo(px, py); started = true; } else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  /* point marker (skip if the point is outside the visible range) */
+  if (sp.pt && Number.isFinite(sp.pt[1]) &&
+      sp.pt[1] >= sp.yr[0] && sp.pt[1] <= sp.yr[1] &&
+      sp.pt[0] >= sp.xr[0] && sp.pt[0] <= sp.xr[1]) {
+    ctx.beginPath();
+    ctx.arc(mp.px(sp.pt[0]), mp.py(sp.pt[1]), 9, 0, 2 * Math.PI);
+    ctx.fillStyle = sp.color; ctx.fill();
+    ctx.lineWidth = 2.5; ctx.strokeStyle = C.surface; ctx.stroke();
+  }
+}
+
+/* ---------- formatting ---------- */
+function fmtTick(v) {
+  const av = Math.abs(v);
+  let r;
+  if (av >= 1000) r = v.toExponential(0);
+  else r = (Math.round(v * 100) / 100).toString();
+  return r === '-0' ? '0' : r;
+}
+function fmt(v, d) {
+  if (!Number.isFinite(v)) return '—';
+  if (Math.abs(v) >= 1e6) return v.toExponential(3);
+  const r = v.toFixed(d === undefined ? 2 : d);
+  return /^-0(\.0+)?$/.test(r) ? r.slice(1) : r;
+}
+function fmtNum(v) {           /* short number for formulas: 2, −1.5, 0.5 */
+  const s = (Math.round(v * 100) / 100).toString();
+  return s.replace('-', '−');
+}
+
+/* ---------- formula display ---------- */
+function innerHtml() {         /* "2x + 1" with clean coefficients */
+  let s = '';
+  if (a !== 0) {
+    if (a === 1) s = '<i>x</i>';
+    else if (a === -1) s = '−<i>x</i>';
+    else s = fmtNum(a) + '<i>x</i>';
+  }
+  if (b !== 0 || a === 0) {
+    if (s === '') s = fmtNum(b);
+    else s += (b > 0 ? ' + ' + fmtNum(b) : ' − ' + fmtNum(-b));
+  }
+  return s;
+}
+function powHtml(base, ex) {   /* (base)^ex, dropping ^1 */
+  if (ex === 1) return base.indexOf(' ') >= 0 ? base : base;
+  return '(' + base + ')<sup>' + fmtNum(ex) + '</sup>';
+}
+
+/* ---------- UI elements ---------- */
+const aEl = document.getElementById('aSl');
+const bEl = document.getElementById('bSl');
+const cEl = document.getElementById('cSl');
+const x0El = document.getElementById('x0');
+const hEl  = document.getElementById('hExp');
+
+/* The a-slider has 1000 positions, corresponding to
+   -5, -4.99, ..., -0.01, 0.01, ..., 4.99, 5; thus a = 0 is unavailable. */
+function aFromSlider(index) {
+  const i = Math.round(index);
+  return i < 500 ? -5 + i / 100 : 0.01 + (i - 500) / 100;
+}
+function sliderFromA(value) {
+  return value < 0
+    ? Math.round((value + 5) * 100)
+    : 500 + Math.round((value - 0.01) * 100);
+}
+
+/* Do not let a browser restore slider values from an older cached version. */
+aEl.value = String(sliderFromA(a));
+bEl.value = String(b);
+cEl.value = String(c);
+x0El.value = String(x0);
+
+aEl.addEventListener('input', () => {
+  a = aFromSlider(Number(aEl.value));
+  updateAll();
+});
+bEl.addEventListener('input', () => { b = Number(bEl.value); updateAll(); });
+cEl.addEventListener('input', () => {
+  c = Math.round(Number(cEl.value));
+  cEl.value = String(c);
+  updateAll();
+});
+x0El.addEventListener('input', () => { x0 = Number(x0El.value); updateAll(); });
+hEl.addEventListener('input', updateTable);
+
+/* ---------- dragging on canvases G and C ---------- */
+function attachDrag(cv) {
+  let drag = false;
+  const toX = ev => {
+    const r = cv.getBoundingClientRect();
+    const px = (ev.clientX - r.left) * (cv.width / r.width);
+    const x = HR[0] + (px - M.l) / (cv.width - M.l - M.r) * (HR[1] - HR[0]);
+    return Math.min(X0R[1], Math.max(X0R[0], x));
+  };
+  cv.style.cursor = 'ew-resize';
+  cv.addEventListener('pointerdown', ev => {
+    drag = true; cv.setPointerCapture(ev.pointerId);
+    x0 = toX(ev); x0El.value = x0; updateAll();
+  });
+  cv.addEventListener('pointermove', ev => {
+    if (!drag) return;
+    x0 = toX(ev); x0El.value = x0; updateAll();
+  });
+  const end = () => { drag = false; };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+}
+attachDrag(cvG);
+attachDrag(cvC);
+
+/* ---------- main update ---------- */
+function updateAll() {
+  recomputeRanges();
+
+  document.getElementById('aOut').textContent = fmtNum(a);
+  aEl.setAttribute('aria-valuetext', fmtNum(a));
+  document.getElementById('bOut').textContent = fmtNum(b);
+  document.getElementById('cOut').textContent = fmtNum(c);
+  document.getElementById('choiceC').textContent = fmtNum(c);
+  document.getElementById('x0Out').textContent = fmt(x0);
+
+  /* formulas */
+  const inner = innerHtml();
+  const dyDx = '<span class="frac"><span>d<i>y</i></span><span>d<i>x</i></span></span>';
+  const compFormula = document.getElementById('compFormula');
+  const derFormula = document.getElementById('derFormula');
+
+  compFormula.innerHTML =
+    '<i>y</i> = <i>f</i>(<i>g</i>(<i>x</i>)) = ' + powHtml(inner, c) +
+    ', &nbsp;&nbsp;where&nbsp; <i>u</i> = <i>g</i>(<i>x</i>) = ' + inner +
+    ' &nbsp;and&nbsp; <i>y</i> = <i>u</i><sup>' + fmtNum(c) + '</sup>';
+
+  derFormula.innerHTML =
+    dyDx + ' &nbsp;=&nbsp; <i>f</i>′(<i>u</i>) · <i>g</i>′(<i>x</i>)' +
+    ' &nbsp;=&nbsp; <i>c</i>(<i>ax</i> + <i>b</i>)<sup><i>c</i>−1</sup> · <i>a</i>' +
+    ' &nbsp;=&nbsp; ' + fmtNum(c) + '(' + inner + ')<sup>' + fmtNum(c - 1) + '</sup> · ' +
+    fmtNum(a);
+
+  document.getElementById('stageFTitle').innerHTML =
+    '<span class="dot" style="background:var(--series-2)"></span>Stage 2: <i>y</i> = <i>f</i>(<i>u</i>) = <i>u</i><sup><i>c</i></sup>';
+  document.getElementById('stageCTitle').innerHTML =
+    '<span class="dot" style="background:var(--series-3)"></span>Composite: <i>y</i> = (<i>ax</i> + <i>b</i>)<sup><i>c</i></sup>';
+
+  /* values at x0 */
+  const u0 = gFn(x0);
+  const y0 = fFn(u0);
+  const gp = gD();
+  const fp = fD(u0);
+  const compSlope = fp * gp;
+
+  drawGraph({
+    cv: cvG, xr: HR, yr: YV, fn: gFn, color: C.s1,
+    xLab: 'x', yLab: 'u', domain: HR,
+    pt: [x0, u0], slope: gp
+  });
+  drawGraph({
+    cv: cvF, xr: HR, yr: YV, fn: fFn, color: C.s2,
+    xLab: 'u', yLab: 'y',
+    pt: [u0, y0], slope: fp
+  });
+  drawGraph({
+    cv: cvC, xr: HR, yr: YV, fn: Fc, color: C.s3,
+    xLab: 'x', yLab: 'y', domain: HR,
+    pt: [x0, y0], slope: compSlope
+  });
+
+  /* readouts */
+  document.getElementById('rdG').innerHTML =
+    'at <i>x</i>₀ = ' + fmt(x0) + ': &nbsp;<i>u</i>₀ = <i>g</i>(<i>x</i>₀) = <b>' + fmt(u0) + '</b><br>' +
+    '<span class="rlab">tangent slope <i>g</i>′(<i>x</i>₀)</span><br>' +
+    '<span class="req"><i>a</i> = <b>' + fmt(gp, 3) + '</b></span>';
+  const outerSlopeHtml = c === 1
+    ? '<span class="req"><b>1</b></span>'
+    : '<span class="req"><i>c</i>·<i>u</i>₀<sup>' + fmtNum(c - 1) + '</sup> = <b>' + fmt(fp, 3) + '</b></span>';
+  document.getElementById('rdF').innerHTML =
+    'at <i>u</i>₀ = ' + fmt(u0) + ': &nbsp;<i>y</i>₀ = <i>u</i>₀<sup>' + fmtNum(c) + '</sup> = <b>' + fmt(y0) + '</b><br>' +
+    '<span class="rlab">tangent slope <i>f</i>′(<i>u</i>₀)</span><br>' +
+    outerSlopeHtml;
+
+  const compositeSlopeHtml =
+    '<span class="req"><i>f</i>′(<i>u</i>₀)·<i>g</i>′(<i>x</i>₀) = <b>' + fmt(compSlope, 3) + '</b></span>';
+  document.getElementById('rdC').innerHTML =
+    'at <i>x</i>₀ = ' + fmt(x0) + ': &nbsp;<i>y</i>₀ = ' + fmt(y0) + '<br>' +
+    '<span class="rlab">tangent slope <span class="frac"><span>d<i>y</i></span><span>d<i>x</i></span></span>' +
+    '<span class="evbar">|</span><sub><i>x</i>=<i>x</i>₀</sub></span><br>' +
+    compositeSlopeHtml;
+
+  let note = '';
+  if (!Number.isFinite(y0) || !Number.isFinite(fp)) {
+    note = 'The displayed value is outside the numerical plotting range.';
+  }
+  document.getElementById('flatNote').textContent = note;
+
+  updateTable();
+}
+
+/* ---------- convergence table ---------- */
+function updateTable() {
+  const h = Math.pow(10, -Number(hEl.value));
+  document.getElementById('hOut').textContent = h >= 0.01 ? fmt(h, 3) : h.toExponential(1);
+  const u0 = gFn(x0), y0 = fFn(u0);
+  const uh = gFn(x0 + h), yh = fFn(uh);
+  const du = uh - u0, dy = yh - y0;
+  const gp = gD(), fp = fD(u0);
+  const compSlope = fp * gp;
+
+  const qGx = du / h;
+  const qFu = dy / du;
+  const qCx = dy / h;
+
+  document.getElementById('qGx').textContent = fmt(qGx, 4);
+  document.getElementById('qFu').textContent = fmt(qFu, 4);
+  document.getElementById('qCx').textContent = fmt(qCx, 4);
+  document.getElementById('dGx').textContent = fmt(gp, 4);
+  document.getElementById('dFu').textContent = fmt(fp, 4);
+  document.getElementById('dCx').textContent = fmt(compSlope, 4);
+
+  document.getElementById('dFuLabel').innerHTML =
+    '<i>f</i>′(<i>u</i>₀) = <i>c</i>·<i>u</i>₀<sup><i>c</i>−1</sup>';
+  document.getElementById('qCxLabel').innerHTML =
+    'Δ<i>y</i> / Δ<i>x</i> &nbsp;=&nbsp; product of the two';
+  document.getElementById('dCxLabel').innerHTML =
+    '<i>f</i>′(<i>u</i>₀) · <i>g</i>′(<i>x</i>₀)';
+
+  let note = '';
+  if (!Number.isFinite(y0) || !Number.isFinite(yh)) {
+    note = 'The displayed value is outside the numerical plotting range.';
+  }
+  document.getElementById('zeroNote').textContent = note;
+}
+
+/* ---------- init ---------- */
+updateAll();
+</script>
+</body>
+</html>
