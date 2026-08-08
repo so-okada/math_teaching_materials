@@ -653,8 +653,8 @@ giving a signed relative error of $-\theta^{2}/6 + O(\theta^{3})$. [Guo Shoujing
 
 ## Calculus
 
-### [The Chain Rule](https://so-okada.github.io/math_teaching_materials/chainrule.html)
-**File:** `chainrule.html`
+### [The Chain Rule](https://so-okada.github.io/math_teaching_materials/chain-rule.html)
+**File:** `chain-rule.html`
 
 Interactive demo of the chain rule for $y = (ax + b)^c$ with integer exponents $c = 1, \ldots, 5$: three linked graphs (inner, outer, composite) with tangent lines, and a convergence table for the telescoping ratio.
 
