@@ -1,0 +1,675 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Multiplication — A Nutrition Calculator</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #6f6e69;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2369bd;   /* Food A */
+    --series-2:       #b84a1d;   /* Food B */
+    --series-3:       #087a55;   /* Food C */
+    --accent-bg:      #2369bd;
+    --accent-fg:      #ffffff;
+    --accent:         #2369bd;
+    --hl:             rgba(42,120,214,0.14);
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #da5b28;
+      --series-3:       #199e70;
+      --accent-bg:      #3987e5;
+      --accent-fg:      #ffffff;
+      --accent:         #3987e5;
+      --hl:             rgba(57,135,229,0.22);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 20px; font-size: 0.95rem; }
+  .disp {
+    text-align: center; font-size: 1.1rem; color: var(--text-primary);
+    margin: 14px 0; font-variant-numeric: tabular-nums; overflow-x: auto;
+  }
+  i { font-family: Georgia, "Times New Roman", serif; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.02rem; margin: 0 0 2px; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 10px; }
+  .dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+    margin-right: 6px; vertical-align: baseline;
+  }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- editable nutrient table ---------- */
+  .table-scroll {
+    width: 100%; max-width: 100%; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll--narrow { max-width: 480px; }
+  .table-scroll:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  table.nut { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  table.nut th, table.nut td {
+    padding: 7px 8px; border-bottom: 1px solid var(--grid);
+    font-variant-numeric: tabular-nums; text-align: center;
+  }
+  table.nut th { color: var(--text-muted); font-weight: 600; font-size: 0.82rem; }
+  table.nut td.rowlab, table.nut th.rowlab { text-align: left; white-space: nowrap; }
+  table.nut input[type="number"] {
+    width: 5.2em; padding: 4px 6px; font-size: 0.95rem; text-align: right;
+    background: var(--page); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+  table.nut td.hlc, table.nut th.hlc { background: var(--hl); }
+  table.nut input[type="number"][aria-invalid="true"] { border-color: #b42318; }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"]))
+    table.nut input[type="number"][aria-invalid="true"] {
+      border-color: #f04438;
+    }
+  }
+
+  /* ---------- amount sliders ---------- */
+  .amounts { display: grid; gap: 10px; }
+  .amt { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 0.9rem; }
+  .amt .who { min-width: 6.2em; font-weight: 600; }
+  .amt input[type="range"] { flex: 1 1 160px; min-width: 140px; }
+  .amt output { min-width: 12.5em; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .amt output b { color: var(--text-primary); }
+  #aSlA { accent-color: var(--series-1); }
+  #aSlB { accent-color: var(--series-2); }
+  #aSlC { accent-color: var(--series-3); }
+
+  /* ---------- matrix equation ---------- */
+  .mateq {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    flex-wrap: wrap; margin: 14px 0 6px; font-variant-numeric: tabular-nums;
+  }
+  .bracketed {
+    position: relative; padding: 8px 14px;
+    display: grid; gap: 4px 14px; align-items: center;
+  }
+  .bracketed::before, .bracketed::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 9px;
+    border: 2px solid var(--text-primary);
+  }
+  .bracketed::before { left: 0; border-right: none; border-radius: 3px 0 0 3px; }
+  .bracketed::after  { right: 0; border-left: none; border-radius: 0 3px 3px 0; }
+  .m3 { grid-template-columns: repeat(3, auto); }
+  .m1 { grid-template-columns: auto; }
+  .mateq .cell { text-align: right; padding: 2px 4px; border-radius: 4px; font-size: 1.02rem; }
+  .mateq button.cell {
+    appearance: none; background: transparent; border: 0; color: inherit;
+    font: inherit; font-variant-numeric: inherit;
+  }
+  .mateq .op { font-size: 1.3rem; color: var(--text-secondary); }
+  .mateq .cell.hl { background: var(--hl); }
+  .mateq .cell.res { cursor: pointer; }
+  .mateq .cell.res:focus-visible, .seg:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .veclab { font-size: 0.78rem; color: var(--text-muted); text-align: center; margin-top: 2px; }
+  .eqcols { display: flex; flex-direction: column; align-items: center; }
+  .cA { color: var(--series-1); font-weight: 600; }
+  .cB { color: var(--series-2); font-weight: 600; }
+  .cC { color: var(--series-3); font-weight: 600; }
+  #dispV .cell.hl,
+  .exp-line.hl .cA,
+  .exp-line.hl .cB,
+  .exp-line.hl .cC,
+  table.nut th.hlc {
+    color: var(--text-primary);
+  }
+
+  /* ---------- row / column picture expansions ---------- */
+  .formula {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0 0; font-size: 0.98rem; overflow-x: auto;
+    color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 2.0;
+  }
+  .exp-line { display: block; border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+  .exp-line.hl { background: var(--hl); }
+  .exp-line b { font-variant-numeric: tabular-nums; }
+  .rowlabel { display: inline-block; min-width: 5.4em; color: var(--text-secondary); }
+
+  /* ---------- stacked contribution bars ---------- */
+  .chart { margin-top: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+  .bar-label {
+    flex: 0 0 5.4em; font-size: 0.88rem; color: var(--text-secondary);
+    text-align: right;
+  }
+  .bar-track { flex: 1; display: flex; align-items: center; height: 26px; }
+  .seg {
+    height: 22px; margin-right: 0; border-radius: 0;
+    min-width: 0; transition: width 0.15s ease-out; cursor: default;
+  }
+  .seg:first-child { border-radius: 4px 0 0 4px; }
+  .seg:last-child { border-radius: 0 4px 4px 0; }
+  .seg:only-child { border-radius: 4px; }
+  .seg:hover, .seg:focus { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+  .bar-total {
+    flex: 0 0 5.5em; margin-left: 0; font-size: 0.9rem;
+    color: var(--text-primary); font-weight: 600;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .legend { display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 14px; height: 8px;
+    border-radius: 2px; margin-right: 6px; vertical-align: middle; opacity: 0.9;
+  }
+  .lg-A::before { background: var(--series-1); }
+  .lg-B::before { background: var(--series-2); }
+  .lg-C::before { background: var(--series-3); }
+  #tip {
+    position: fixed; pointer-events: none; z-index: 10; display: none;
+    background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    padding: 6px 10px; font-size: 0.82rem; font-variant-numeric: tabular-nums;
+    max-width: min(280px, calc(100vw - 16px));
+  }
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Matrix Multiplication: A Nutrition Calculator</h1>
+  </header>
+  <p class="subtitle">
+    A nutrition label is a <em>column of numbers</em>, and eating is a <em>matrix
+    multiplication</em>. Put the labels of three foods side by side to get a 3×3 matrix
+    <i>N</i>: each <b>column</b> is one food, each <b>row</b> is one nutrient
+    (grams per 100 g of that food). If a person eats amounts
+    <i>v</i><sub>A</sub>, <i>v</i><sub>B</sub>, <i>v</i><sub>C</sub>
+    (in units of 100 g), the total nutrients eaten are exactly the product
+  </p>
+  <p class="disp">
+    <i>N</i><i>v</i> &nbsp;=&nbsp; total grams of (carb, fat, protein), &nbsp;&nbsp;
+    (<i>N</i><i>v</i>)<sub><i>i</i></sub> = <i>N</i><sub><i>i</i>A</sub><i>v</i><sub>A</sub> + <i>N</i><sub><i>i</i>B</sub><i>v</i><sub>B</sub> + <i>N</i><sub><i>i</i>C</sub><i>v</i><sub>C</sub>
+  </p>
+
+  <div class="card">
+    <h2>1. The nutrient matrix <i>N</i> — three food labels, side by side</h2>
+    <p class="hint">Edit any entry (grams per 100 g of food). Column = food, row = nutrient.</p>
+    <div class="table-scroll" role="region" aria-label="Nutrient matrix table" tabindex="0">
+      <table class="nut" id="nutTable">
+        <caption class="sr-only">Nutrient values in grams per 100 grams for Foods A, B, and C</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="rowlab">g per 100 g</th>
+            <th scope="col" data-col="0"><span class="dot" aria-hidden="true" style="background:var(--series-1)"></span>Food A</th>
+            <th scope="col" data-col="1"><span class="dot" aria-hidden="true" style="background:var(--series-2)"></span>Food B</th>
+            <th scope="col" data-col="2"><span class="dot" aria-hidden="true" style="background:var(--series-3)"></span>Food C</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row" class="rowlab">Carbohydrate</th>
+            <td data-col="0"><input type="number" id="n00" aria-label="Carbohydrate in Food A, grams per 100 grams" min="0" max="100" step="0.5" value="37" required></td>
+            <td data-col="1"><input type="number" id="n01" aria-label="Carbohydrate in Food B, grams per 100 grams" min="0" max="100" step="0.5" value="0" required></td>
+            <td data-col="2"><input type="number" id="n02" aria-label="Carbohydrate in Food C, grams per 100 grams" min="0" max="100" step="0.5" value="9" required></td>
+          </tr>
+          <tr>
+            <th scope="row" class="rowlab">Fat</th>
+            <td data-col="0"><input type="number" id="n10" aria-label="Fat in Food A, grams per 100 grams" min="0" max="100" step="0.5" value="0.5" required></td>
+            <td data-col="1"><input type="number" id="n11" aria-label="Fat in Food B, grams per 100 grams" min="0" max="100" step="0.5" value="4" required></td>
+            <td data-col="2"><input type="number" id="n12" aria-label="Fat in Food C, grams per 100 grams" min="0" max="100" step="0.5" value="15" required></td>
+          </tr>
+          <tr>
+            <th scope="row" class="rowlab">Protein</th>
+            <td data-col="0"><input type="number" id="n20" aria-label="Protein in Food A, grams per 100 grams" min="0" max="100" step="0.5" value="3.5" required></td>
+            <td data-col="1"><input type="number" id="n21" aria-label="Protein in Food B, grams per 100 grams" min="0" max="100" step="0.5" value="22" required></td>
+            <td data-col="2"><input type="number" id="n22" aria-label="Protein in Food C, grams per 100 grams" min="0" max="100" step="0.5" value="2" required></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. The amount vector <i>v</i> — what the person eats</h2>
+    <p class="hint">Slide to choose how much of each food is eaten. The vector entry is the amount in units of 100 g.</p>
+    <div class="amounts">
+      <div class="amt">
+        <label class="who" for="aSlA"><span class="dot" aria-hidden="true" style="background:var(--series-1)"></span>Food A</label>
+        <input type="range" id="aSlA" min="0" max="500" step="10" value="200">
+        <output id="aOutA" for="aSlA" aria-live="polite"></output>
+      </div>
+      <div class="amt">
+        <label class="who" for="aSlB"><span class="dot" aria-hidden="true" style="background:var(--series-2)"></span>Food B</label>
+        <input type="range" id="aSlB" min="0" max="500" step="10" value="150">
+        <output id="aOutB" for="aSlB" aria-live="polite"></output>
+      </div>
+      <div class="amt">
+        <label class="who" for="aSlC"><span class="dot" aria-hidden="true" style="background:var(--series-3)"></span>Food C</label>
+        <input type="range" id="aSlC" min="0" max="500" step="10" value="50">
+        <output id="aOutC" for="aSlC" aria-live="polite"></output>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. The product <i>N</i><i>v</i> — total nutrients eaten</h2>
+    <p class="hint">Hover, tap, or focus a result entry to see which numbers produced it: one <b>row of <i>N</i></b> meets the <b>whole vector <i>v</i></b>.</p>
+
+    <div class="mateq" id="mateq">
+      <div class="eqcols">
+        <div class="bracketed m3" id="dispN"></div>
+        <div class="veclab"><i>N</i> &nbsp;(3×3)</div>
+      </div>
+      <span class="op">·</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispV"></div>
+        <div class="veclab"><i>v</i> &nbsp;(3×1)</div>
+      </div>
+      <span class="op">=</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispR"></div>
+        <div class="veclab"><i>N</i><i>v</i> &nbsp;(3×1)</div>
+      </div>
+    </div>
+
+    <div class="formula" id="rowPicture"></div>
+  </div>
+
+  <div class="card">
+    <h2>4. Who contributed what? — the column picture</h2>
+    <p class="hint">
+      Each bar is one nutrient total, split by food. Hover or focus a segment for its term
+      <i>N</i><sub><i>ij</i></sub> · <i>v</i><sub><i>j</i></sub>.
+    </p>
+    <div class="chart" id="chart"></div>
+    <div class="legend">
+      <span class="lg-A">Food A</span>
+      <span class="lg-B">Food B</span>
+      <span class="lg-C">Food C</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5. Estimated food energy from carbohydrate, fat, and protein — an inner product</h2>
+    <p class="hint">
+      Assign an energy factor (kcal/g) to each of the three nutrients. Collect these factors
+      in a row vector <i>c</i> = (<i>c</i><sub>carb</sub>, <i>c</i><sub>fat</sub>,
+      <i>c</i><sub>prot</sub>). The estimated energy represented by this model is the inner
+      product of <i>c</i> with the nutrient-total vector <i>N</i><i>v</i>:
+      &nbsp;<i>c</i> · (<i>N</i><i>v</i>) = <i>c</i><sub>carb</sub>(<i>N</i><i>v</i>)<sub>1</sub> + <i>c</i><sub>fat</sub>(<i>N</i><i>v</i>)<sub>2</sub> + <i>c</i><sub>prot</sub>(<i>N</i><i>v</i>)<sub>3</sub>.
+    </p>
+    <div class="table-scroll table-scroll--narrow" role="region" aria-label="Energy-factor table" tabindex="0">
+      <table class="nut">
+        <caption class="sr-only">Energy factors in kilocalories per gram for the three nutrients</caption>
+        <thead>
+          <tr>
+            <th scope="col" class="rowlab">kcal per g</th>
+            <th scope="col">Carbohydrate</th>
+            <th scope="col">Fat</th>
+            <th scope="col">Protein</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row" class="rowlab"><i>c</i></th>
+            <td><input type="number" id="c0" aria-label="Carbohydrate energy factor, kilocalories per gram" min="0" max="20" step="0.5" value="4" required></td>
+            <td><input type="number" id="c1" aria-label="Fat energy factor, kilocalories per gram" min="0" max="20" step="0.5" value="9" required></td>
+            <td><input type="number" id="c2" aria-label="Protein energy factor, kilocalories per gram" min="0" max="20" step="0.5" value="4" required></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mateq">
+      <div class="eqcols">
+        <div class="bracketed m3" id="dispC"></div>
+        <div class="veclab"><i>c</i> &nbsp;(1×3)</div>
+      </div>
+      <span class="op">·</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispNv"></div>
+        <div class="veclab"><i>N</i><i>v</i> &nbsp;(3×1)</div>
+      </div>
+      <span class="op">=</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispKcal" aria-live="polite"></div>
+        <div class="veclab">kcal &nbsp;(1×1)</div>
+      </div>
+    </div>
+
+    <div class="formula" id="calExpansion"></div>
+    <p class="hint" style="margin-top:10px">
+      The default entries 4, 9, and 4 are the <a href="https://en.wikipedia.org/wiki/Atwater_system" style="color:var(--accent);">Atwater factors</a>.
+    </p>
+  </div>
+
+</div>
+
+<div id="tip" role="status"></div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">Back to Collection</a></p>
+
+<script>
+"use strict";
+
+/* ---------- constants ---------- */
+const NUTRIENTS = ["Carb", "Fat", "Protein"];
+const NUTRIENT_FULL = ["carbohydrate", "fat", "protein"];
+const FOODS = ["A", "B", "C"];
+const FOOD_CLASS = ["cA", "cB", "cC"];
+const FOOD_VAR = ["--series-1", "--series-2", "--series-3"];
+
+/* ---------- state ---------- */
+let N = [[37, 0, 9], [0.5, 4, 15], [3.5, 22, 2]];   /* g per 100 g: [nutrient][food] */
+let grams = [200, 150, 50];                          /* grams eaten of A, B, C */
+const v = () => grams.map(g => g / 100);             /* vector entries: units of 100 g */
+
+/* ---------- helpers ---------- */
+const $ = id => document.getElementById(id);
+function fmt(x, d = 3) {
+  return String(Number(x.toFixed(d)));
+}
+function gramWord(x) {
+  return Math.abs(x - 1) < 1e-9 ? "gram" : "grams";
+}
+function totals() {
+  return N.map(row => row.reduce((s, nij, j) => s + nij * v()[j], 0));
+}
+function bindNumberInput(input, getCurrent, setCurrent) {
+  const restore = () => {
+    input.value = String(getCurrent());
+    input.setAttribute("aria-invalid", "false");
+  };
+
+  input.setAttribute("aria-invalid", "false");
+  input.addEventListener("input", () => {
+    const val = input.valueAsNumber;
+    const isValid = Number.isFinite(val) && input.validity.valid;
+    input.setAttribute("aria-invalid", String(!isValid));
+    if (isValid) {
+      setCurrent(val);
+      updateAll();
+    }
+  });
+
+  input.addEventListener("blur", () => {
+    const val = input.valueAsNumber;
+    if (!Number.isFinite(val) || !input.validity.valid) restore();
+  });
+}
+
+/* ---------- matrix inputs ---------- */
+for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+  bindNumberInput(
+    $("n" + i + j),
+    () => N[i][j],
+    val => { N[i][j] = val; }
+  );
+}
+
+/* ---------- amount sliders ---------- */
+["A", "B", "C"].forEach((f, j) => {
+  $("aSl" + f).addEventListener("input", ev => {
+    grams[j] = Number(ev.target.value);
+    updateAll();
+  });
+});
+
+/* ---------- highlight coupling ---------- */
+let hlRow = -1;
+function focusedResultRow() {
+  const el = document.activeElement;
+  return el && el.matches("#dispR .cell")
+    ? Number(el.dataset.row)
+    : -1;
+}
+function setHlRow(i) {
+  hlRow = i;
+  /* equation display cells */
+  document.querySelectorAll("#dispN .cell").forEach(el => {
+    el.classList.toggle("hl", Number(el.dataset.row) === i);
+  });
+  document.querySelectorAll("#dispV .cell").forEach(el => {
+    el.classList.toggle("hl", i >= 0);
+  });
+  document.querySelectorAll("#dispR .cell").forEach(el => {
+    el.classList.toggle("hl", Number(el.dataset.row) === i);
+  });
+  /* expansion lines */
+  document.querySelectorAll("#rowPicture .exp-line").forEach(el => {
+    el.classList.toggle("hl", Number(el.dataset.row) === i);
+  });
+  /* editable table rows */
+  document.querySelectorAll("#nutTable tbody tr").forEach((tr, k) => {
+    tr.querySelectorAll("th, td").forEach(cell => {
+      cell.classList.toggle("hlc", k === i);
+    });
+  });
+}
+
+/* ---------- render the equation N · v = Nv ---------- */
+function renderEquation() {
+  const t = totals(), vv = v();
+  let h = "";
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    h += '<span class="cell" data-row="' + i + '">' + fmt(N[i][j]) + '</span>';
+  }
+  $("dispN").innerHTML = h;
+
+  h = "";
+  for (let j = 0; j < 3; j++) {
+    h += '<span class="cell ' + FOOD_CLASS[j] + '">' + fmt(vv[j]) + '</span>';
+  }
+  $("dispV").innerHTML = h;
+
+  h = "";
+  for (let i = 0; i < 3; i++) {
+    h += '<button type="button" class="cell res" data-row="' + i + '" ' +
+         'aria-label="' + NUTRIENT_FULL[i] + ' total: ' + fmt(t[i]) + ' ' +
+         gramWord(t[i]) + '. Highlight this row calculation."><b>' +
+         fmt(t[i]) + '</b></button>';
+  }
+  $("dispR").innerHTML = h;
+
+  /* Pointer, touch, and keyboard interaction drive the highlight. */
+  document.querySelectorAll('#dispN .cell').forEach(el => {
+    el.addEventListener("pointerenter", () => setHlRow(Number(el.dataset.row)));
+    el.addEventListener("pointerleave", () => setHlRow(focusedResultRow()));
+  });
+  document.querySelectorAll('#dispR .cell').forEach(el => {
+    const row = Number(el.dataset.row);
+    el.addEventListener("pointerenter", () => setHlRow(row));
+    el.addEventListener("pointerleave", () => setHlRow(focusedResultRow()));
+    el.addEventListener("focus", () => setHlRow(row));
+    el.addEventListener("blur", () => setHlRow(-1));
+    el.addEventListener("click", () => setHlRow(row));
+  });
+  setHlRow(hlRow);
+}
+
+/* ---------- row picture: dot-product expansion ---------- */
+function renderRowPicture() {
+  const t = totals(), vv = v();
+  let h = "";
+  for (let i = 0; i < 3; i++) {
+    const terms = FOODS.map((f, j) =>
+      '<span class="' + FOOD_CLASS[j] + '">' + fmt(N[i][j]) + '×' + fmt(vv[j]) + '</span>'
+    ).join(" + ");
+    h += '<span class="exp-line" data-row="' + i + '">' +
+         '<span class="rowlabel">' + NUTRIENTS[i] + ':</span> ' +
+         terms + ' = <b>' + fmt(t[i]) + ' g</b></span>';
+  }
+  $("rowPicture").innerHTML = h;
+  document.querySelectorAll("#rowPicture .exp-line").forEach(el => {
+    el.addEventListener("pointerenter", () => setHlRow(Number(el.dataset.row)));
+    el.addEventListener("pointerleave", () => setHlRow(focusedResultRow()));
+  });
+}
+
+/* ---------- calories: inner product ---------- */
+let cal = [4, 9, 4];   /* kcal per g of carb, fat, protein (Atwater factors) */
+for (let i = 0; i < 3; i++) {
+  bindNumberInput(
+    $("c" + i),
+    () => cal[i],
+    val => { cal[i] = val; }
+  );
+}
+function renderCalories() {
+  const t = totals();
+  const kcal = cal.reduce((s, ci, i) => s + ci * t[i], 0);
+
+  $("dispC").innerHTML = cal.map(ci =>
+    '<span class="cell">' + fmt(ci) + '</span>').join("");
+  $("dispNv").innerHTML = t.map(ti =>
+    '<span class="cell">' + fmt(ti) + '</span>').join("");
+  $("dispKcal").innerHTML = '<span class="cell"><b>' + fmt(kcal) + '</b></span>';
+
+  $("calExpansion").innerHTML =
+    '<span class="exp-line">' +
+    '<span class="rowlabel">Energy:</span> ' +
+    cal.map((ci, i) => fmt(ci) + '×' + fmt(t[i])).join(" + ") +
+    ' = <b>' + fmt(kcal) + ' kcal</b></span>';
+}
+
+/* ---------- stacked contribution bars ---------- */
+const tip = $("tip");
+function showTip(ev, html) {
+  tip.innerHTML = html;
+  tip.style.display = "block";
+  const pad = 14;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > window.innerWidth - 8) x = ev.clientX - r.width - pad;
+  if (y + r.height > window.innerHeight - 8) y = ev.clientY - r.height - pad;
+  x = Math.max(8, Math.min(x, window.innerWidth - r.width - 8));
+  y = Math.max(8, Math.min(y, window.innerHeight - r.height - 8));
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+}
+function showTipAtElement(el, html) {
+  tip.innerHTML = html;
+  tip.style.display = "block";
+  const pad = 10;
+  const er = el.getBoundingClientRect();
+  const tr = tip.getBoundingClientRect();
+  let x = er.left + er.width / 2 - tr.width / 2;
+  let y = er.bottom + pad;
+  x = Math.max(8, Math.min(x, window.innerWidth - tr.width - 8));
+  if (y + tr.height > window.innerHeight - 8) y = er.top - tr.height - pad;
+  y = Math.max(8, Math.min(y, window.innerHeight - tr.height - 8));
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Escape") hideTip();
+});
+
+function renderChart() {
+  const vv = v(), t = totals();
+  const maxT = Math.max(1e-9, ...t);
+  const chart = $("chart");
+  chart.innerHTML = "";
+  for (let i = 0; i < 3; i++) {
+    const row = document.createElement("div");
+    row.className = "bar-row";
+    const lab = document.createElement("div");
+    lab.className = "bar-label";
+    lab.textContent = NUTRIENTS[i];
+    row.appendChild(lab);
+    const track = document.createElement("div");
+    track.className = "bar-track";
+    for (let j = 0; j < 3; j++) {
+      const val = N[i][j] * vv[j];
+      if (val <= 0) continue;
+      const seg = document.createElement("div");
+      seg.className = "seg";
+      seg.style.width = (val / maxT * 100) + "%";
+      seg.style.background = "var(" + FOOD_VAR[j] + ")";
+      const html = "<b>Food " + FOODS[j] + "</b> → " + NUTRIENT_FULL[i] + "<br>" +
+        fmt(N[i][j]) + " g/100 g × " + fmt(vv[j]) + " (= " + fmt(grams[j], 0) + " g eaten)" +
+        "<br>= <b>" + fmt(val) + " g</b>";
+      seg.tabIndex = 0;
+      seg.setAttribute("role", "img");
+      seg.setAttribute(
+        "aria-label",
+        "Food " + FOODS[j] + " contributes " + fmt(val) + " " + gramWord(val) + " of " +
+        NUTRIENT_FULL[i] + ": " + fmt(N[i][j]) + " " + gramWord(N[i][j]) +
+        " per 100 grams times " + fmt(vv[j]) + "."
+      );
+      seg.addEventListener("pointermove", ev => showTip(ev, html));
+      seg.addEventListener("pointerleave", hideTip);
+      seg.addEventListener("focus", () => showTipAtElement(seg, html));
+      seg.addEventListener("blur", hideTip);
+      track.appendChild(seg);
+    }
+    row.appendChild(track);
+    const tot = document.createElement("div");
+    tot.className = "bar-total";
+    tot.textContent = fmt(t[i]) + " g";
+    row.appendChild(tot);
+    chart.appendChild(row);
+  }
+}
+
+/* ---------- main update ---------- */
+function updateAll() {
+  const vv = v();
+  ["A", "B", "C"].forEach((f, j) => {
+    $("aOut" + f).innerHTML =
+      "<b>" + grams[j] + " g</b> eaten &nbsp;→&nbsp; <i>v</i><sub>" + f + "</sub> = " + fmt(vv[j]);
+  });
+  renderEquation();
+  renderRowPicture();
+  renderChart();
+  renderCalories();
+}
+updateAll();
+</script>
+</body>
+</html>
