@@ -15,6 +15,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Parabola](https://so-okada.github.io/math_teaching_materials/parabola.html) | Conic Sections | Focus, directrix, reflection of parallel rays |
 | [Rule of 72](https://so-okada.github.io/math_teaching_materials/rule_of_72.html) | Financial Mathematics | Compound interest, exponential growth |
 | [Costs and Profits](https://so-okada.github.io/math_teaching_materials/cost_profit_demo.html) | Economics | Simple monopoly model, quadratic profit, vertex maximum |
+| [Matrix Multiplication: A Nutrition Calculator](https://so-okada.github.io/math_teaching_materials/matrix_multiplication_nutrition.html) | Linear Algebra | Matrix–vector product, row and column pictures, inner product |
 | [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
 | [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
 | [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
@@ -245,6 +246,24 @@ The vertex $x^* = \dfrac{a-c}{2b}$ is the marginal-revenue-equals-marginal-cost 
 - **Quantity $x$**: Slider, or hover/drag directly on the charts
 - **Worksheet presets**: $C(x) = 500 + 100x$ and $C(x) = 500 + 200x$, with step-by-step solutions
 - Revenue/cost and profit graphs with vertex, break-even points, and table view
+
+---
+
+## Linear Algebra
+
+### [Matrix Multiplication: A Nutrition Calculator](https://so-okada.github.io/math_teaching_materials/matrix_multiplication_nutrition.html)
+**File:** `matrix_multiplication_nutrition.html`
+
+Three food labels side by side form a 3×3 nutrient matrix $N$ (column = food, row = nutrient, in g per 100 g); the amounts eaten form a vector $v$. The total nutrients eaten are the matrix–vector product
+
+$$(Nv)_i = N_{iA}v_A + N_{iB}v_B + N_{iC}v_C,$$
+
+shown both as the row picture (dot-product expansion) and the column picture (stacked contribution bars).
+
+**Controls:**
+- **Editable matrix $N$**: Nutrient values (g per 100 g) for each food
+- **Amount sliders**: Grams eaten of each food, setting $v$
+- **Stacked bars**: Each nutrient total split by food, with per-term tooltips
 
 ---
 
