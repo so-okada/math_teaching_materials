@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser.
+A collection of interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
 
 ## Contents
 
@@ -976,7 +976,9 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `shen_kuo_huiyuan_method_demo.html`: Uses KaTeX (CDN)
 
 ---
-Currently, 41 demos.
+
+
+
 ## License
 
 This work is licensed under a [Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/).
