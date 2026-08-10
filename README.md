@@ -975,9 +975,8 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `gomboc.html`: Uses Three.js and OrbitControls (CDN)
 - `shen_kuo_huiyuan_method_demo.html`: Uses KaTeX (CDN)
 
-Currently, 41 demos.
 ---
-
+Currently, 41 demos.
 ## License
 
 This work is licensed under a [Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/).
