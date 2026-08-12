@@ -295,8 +295,8 @@ The columns of $A$ are the images of the standard basis vectors:
 $$A\begin{pmatrix}x\\ y\end{pmatrix} = x\,(A\vec e_1) + y\,(A\vec e_2).$$
 
 **Controls:**
-- **Drag $A\vec e_1$, $A\vec e_2$**
-- **Editable matrix entries** 
+- Drag $A\vec e_1$, $A\vec e_2$
+- Editable matrix entries 
 - Hover to see a point $p$ and its image $Ap$
 - Presets: Identity, rotation, scaling, shear, reflection, projection, each with a parameter slider and its exact matrix formula
 
