@@ -1,0 +1,852 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inverse Matrices: A Food Calculator</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;   /* Food A */
+    --series-2:       #eb6834;   /* Food B */
+    --series-3:       #1baf7a;   /* Food C */
+    --accent-bg:      #2a78d6;
+    --accent-fg:      #ffffff;
+    --accent:         #2a78d6;
+    --hl:             rgba(42,120,214,0.14);
+    --bad:            #c43d3d;
+    --bad-bg:         rgba(196,61,61,0.12);
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-3:       #199e70;
+      --accent-bg:      #3987e5;
+      --accent-fg:      #ffffff;
+      --accent:         #3987e5;
+      --hl:             rgba(57,135,229,0.22);
+      --bad:            #e05e5e;
+      --bad-bg:         rgba(224,94,94,0.18);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 20px; font-size: 0.95rem; }
+  .disp {
+    text-align: center; font-size: 1.1rem; color: var(--text-primary);
+    margin: 14px 0; font-variant-numeric: tabular-nums; overflow-x: auto;
+  }
+  i { font-family: Georgia, "Times New Roman", serif; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.02rem; margin: 0 0 2px; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 10px; }
+  .dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+    margin-right: 6px; vertical-align: baseline;
+  }
+
+  /* ---------- editable nutrient table ---------- */
+  table.nut { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  table.nut th, table.nut td {
+    padding: 7px 8px; border-bottom: 1px solid var(--grid);
+    font-variant-numeric: tabular-nums; text-align: center;
+  }
+  table.nut th { color: var(--text-muted); font-weight: 600; font-size: 0.82rem; }
+  table.nut td.rowlab, table.nut th.rowlab { text-align: left; white-space: nowrap; }
+  table.nut input[type="number"] {
+    width: 5.2em; padding: 4px 6px; font-size: 0.95rem; text-align: right;
+    background: var(--page); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 6px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- target sliders ---------- */
+  .amounts { display: grid; gap: 10px; }
+  .amt { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 0.9rem; }
+  .amt .who { min-width: 7.6em; font-weight: 600; }
+  .amt input[type="range"] { flex: 1 1 160px; min-width: 140px; accent-color: var(--accent); }
+  .amt output { min-width: 12.5em; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .amt output b { color: var(--text-primary); }
+
+  /* ---------- matrix equation ---------- */
+  .mateq {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    flex-wrap: wrap; margin: 14px 0 6px; font-variant-numeric: tabular-nums;
+  }
+  .bracketed {
+    position: relative; padding: 8px 14px;
+    display: grid; gap: 4px 14px; align-items: center;
+  }
+  .bracketed::before, .bracketed::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 9px;
+    border: 2px solid var(--text-primary);
+  }
+  .bracketed::before { left: 0; border-right: none; border-radius: 3px 0 0 3px; }
+  .bracketed::after  { right: 0; border-left: none; border-radius: 0 3px 3px 0; }
+  .m3 { grid-template-columns: repeat(3, auto); }
+  .m1 { grid-template-columns: auto; }
+  .mateq .cell { text-align: right; padding: 2px 4px; border-radius: 4px; font-size: 1.02rem; }
+  .inverse-factor {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 48px; padding: 4px 2px; font-size: 1.05rem;
+  }
+  .mateq .op { font-size: 1.3rem; color: var(--text-secondary); }
+  .mateq .cell.hl { background: var(--hl); }
+  .mateq .cell.res { cursor: default; }
+  .veclab { font-size: 0.78rem; color: var(--text-muted); text-align: center; margin-top: 2px; }
+  .eqcols { display: flex; flex-direction: column; align-items: center; }
+  .cA { color: var(--series-1); font-weight: 600; }
+  .cB { color: var(--series-2); font-weight: 600; }
+  .cC { color: var(--series-3); font-weight: 600; }
+  .neg { color: var(--bad); font-weight: 600; }
+
+  /* ---------- expansions ---------- */
+  .formula {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0 0; font-size: 0.98rem; overflow-x: auto;
+    color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 2.0;
+  }
+  .exp-line { display: block; border-radius: 4px; padding: 0 4px; white-space: nowrap; }
+  .exp-line.hl { background: var(--hl); }
+  .exp-line b { font-variant-numeric: tabular-nums; }
+  .rowlabel { display: inline-block; min-width: 5.4em; color: var(--text-secondary); }
+  .frac {
+    display: inline-flex; flex-direction: column; align-items: center;
+    vertical-align: middle; line-height: 1.02; margin: 0 0.08em;
+  }
+  .frac .num { border-bottom: 1px solid currentColor; padding: 0 0.12em 0.04em; }
+  .frac .den { padding: 0.04em 0.12em 0; }
+
+  /* ---------- singular warning ---------- */
+  .warnbox {
+    display: none;
+    background: var(--bad-bg); border: 1px solid var(--bad); border-radius: 8px;
+    color: var(--text-primary); padding: 12px 14px; margin: 10px 0 0;
+    font-size: 0.95rem;
+  }
+  .warnbox b.title { color: var(--bad); font-size: 1.05rem; }
+  body.singular .warnbox { display: block; }
+  body.singular .oksection { display: none; }
+  .inputwarn {
+    display: none;
+    background: var(--bad-bg); border: 1px solid var(--bad); border-radius: 8px;
+    color: var(--text-primary); padding: 10px 12px; margin: 10px 0 0;
+    font-size: 0.88rem;
+  }
+  body.invalid-input .inputwarn { display: block; }
+  body.invalid-input .calculation { display: none; }
+  body.invalid-input .matrix-display { display: none; }
+  table.nut input[aria-invalid="true"] {
+    border-color: var(--bad);
+    background: var(--bad-bg);
+  }
+  .badge-neg {
+    display: inline-block; background: var(--bad-bg); color: var(--bad);
+    border: 1px solid var(--bad); border-radius: 6px; padding: 0 6px;
+    font-size: 0.78rem; font-weight: 600; margin-left: 6px;
+  }
+
+  /* ---------- amount bars ---------- */
+  .chart { margin-top: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+  .bar-label { min-width: 5.4em; font-size: 0.88rem; color: var(--text-secondary); text-align: right; }
+  .bar-track { flex: 1; display: flex; align-items: center; height: 26px; }
+  .seg {
+    height: 22px; border-radius: 4px;
+    min-width: 0; transition: width 0.15s ease-out; cursor: default;
+  }
+  .seg:hover { outline: 2px solid var(--text-primary); outline-offset: 1px; }
+  .bar-total {
+    font-size: 0.9rem; color: var(--text-primary); font-weight: 600;
+    font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: 6px;
+  }
+  #tip {
+    position: fixed; pointer-events: none; z-index: 10; display: none;
+    background: var(--surface-1); color: var(--text-primary);
+    border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    padding: 6px 10px; font-size: 0.82rem; font-variant-numeric: tabular-nums;
+    max-width: 280px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Inverse Matrices: A Food Calculator</h1>
+  </header>
+  <p class="subtitle">
+    The <a href="https://so-okada.github.io/math_teaching_materials/matrix_multiplication_nutrition.html" style="color:var(--accent);">forward problem</a>
+    was: eat amounts <i>v</i> of foods A, B, C and compute the nutrient totals
+    <i>N</i><i>v</i>. This page solves the <em>inverse problem</em>: first choose the
+    nutrient totals <i>t</i> you want for carbohydrate, fat, and protein, then ask
+    <em>how much of each food should be eaten</em>. That is, solve
+    <i>N</i><i>v</i> = <i>t</i> for the unknown <i>v</i>. When <i>N</i> is invertible,
+    the answer is unique:
+  </p>
+  <p class="disp">
+    <i>N</i><i>v</i> = <i>t</i>
+    &nbsp;&nbsp;&#8658;&nbsp;&nbsp;
+    <i>v</i> = <i>N</i><sup>−1</sup><i>t</i>,
+    &nbsp;&nbsp;&nbsp;
+    <i>N</i><sup>−1</sup><i>N</i> = <i>N</i><i>N</i><sup>−1</sup> = <i>I</i>.
+  </p>
+
+  <div class="card">
+    <h2>1. The nutrient matrix <i>N</i> — three food labels, side by side</h2>
+    <p class="hint">Edit any entry (grams per 100 g of food). Column = food, row = nutrient.</p>
+    <table class="nut" id="nutTable">
+      <thead>
+        <tr>
+          <th class="rowlab">g per 100 g</th>
+          <th><span class="dot" style="background:var(--series-1)"></span>Food A</th>
+          <th><span class="dot" style="background:var(--series-2)"></span>Food B</th>
+          <th><span class="dot" style="background:var(--series-3)"></span>Food C</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="rowlab">Carbohydrate</td>
+          <td><input type="number" id="n00" min="0" max="100" step="0.5" required aria-label="Carbohydrate in Food A, grams per 100 grams" value="37"></td>
+          <td><input type="number" id="n01" min="0" max="100" step="0.5" required aria-label="Carbohydrate in Food B, grams per 100 grams" value="0"></td>
+          <td><input type="number" id="n02" min="0" max="100" step="0.5" required aria-label="Carbohydrate in Food C, grams per 100 grams" value="9"></td>
+        </tr>
+        <tr>
+          <td class="rowlab">Fat</td>
+          <td><input type="number" id="n10" min="0" max="100" step="0.5" required aria-label="Fat in Food A, grams per 100 grams" value="0.5"></td>
+          <td><input type="number" id="n11" min="0" max="100" step="0.5" required aria-label="Fat in Food B, grams per 100 grams" value="4"></td>
+          <td><input type="number" id="n12" min="0" max="100" step="0.5" required aria-label="Fat in Food C, grams per 100 grams" value="15"></td>
+        </tr>
+        <tr>
+          <td class="rowlab">Protein</td>
+          <td><input type="number" id="n20" min="0" max="100" step="0.5" required aria-label="Protein in Food A, grams per 100 grams" value="3.5"></td>
+          <td><input type="number" id="n21" min="0" max="100" step="0.5" required aria-label="Protein in Food B, grams per 100 grams" value="22"></td>
+          <td><input type="number" id="n22" min="0" max="100" step="0.5" required aria-label="Protein in Food C, grams per 100 grams" value="2"></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="inputwarn" id="matrixInputWarning" role="alert">
+      Enter a number from 0 to 100 in steps of 0.5 in every cell. Calculations
+      resume when all entries are valid.
+    </div>
+    <div class="mateq matrix-display">
+      <span class="op" style="color:var(--text-primary); font-size:1.1rem;"><i>N</i> &nbsp;=</span>
+      <div class="eqcols">
+        <div class="bracketed m3">
+          <span class="cell"><i>N</i><sub>1,1</sub></span><span class="cell"><i>N</i><sub>1,2</sub></span><span class="cell"><i>N</i><sub>1,3</sub></span>
+          <span class="cell"><i>N</i><sub>2,1</sub></span><span class="cell"><i>N</i><sub>2,2</sub></span><span class="cell"><i>N</i><sub>2,3</sub></span>
+          <span class="cell"><i>N</i><sub>3,1</sub></span><span class="cell"><i>N</i><sub>3,2</sub></span><span class="cell"><i>N</i><sub>3,3</sub></span>
+        </div>
+        <div class="veclab">entries <i>N</i><sub><i>i</i>,<i>j</i></sub> &nbsp;(row <i>i</i> = nutrient, column <i>j</i> = food)</div>
+      </div>
+      <span class="op">=</span>
+      <div class="eqcols">
+        <div class="bracketed m3" id="dispN1"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. The target vector <i>t</i> — the nutrients you want to eat</h2>
+    <p class="hint">Slide to choose the desired total grams of each nutrient for the meal.</p>
+    <div class="amounts">
+      <div class="amt">
+        <span class="who">Carbohydrate</span>
+        <input type="range" id="tSl0" aria-label="Target carbohydrate in grams" min="0" max="200" step="0.5" value="78.5">
+        <output id="tOut0"></output>
+      </div>
+      <div class="amt">
+        <span class="who">Fat</span>
+        <input type="range" id="tSl1" aria-label="Target fat in grams" min="0" max="100" step="0.5" value="14.5">
+        <output id="tOut1"></output>
+      </div>
+      <div class="amt">
+        <span class="who">Protein</span>
+        <input type="range" id="tSl2" aria-label="Target protein in grams" min="0" max="100" step="0.5" value="41">
+        <output id="tOut2"></output>
+      </div>
+    </div>
+    <div class="mateq">
+      <span class="op" style="color:var(--text-primary); font-size:1.1rem;"><i>t</i> &nbsp;=</span>
+      <div class="eqcols">
+        <div class="bracketed m1">
+          <span class="cell"><i>t</i><sub>1</sub></span>
+          <span class="cell"><i>t</i><sub>2</sub></span>
+          <span class="cell"><i>t</i><sub>3</sub></span>
+        </div>
+        <div class="veclab">entries <i>t</i><sub><i>i</i></sub> &nbsp;(row <i>i</i> = nutrient)</div>
+      </div>
+      <span class="op">=</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispT1"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card calculation">
+    <h2>3. Does <i>N</i><sup>−1</sup> exist? — the determinant decides</h2>
+    <p class="hint">
+      A 3×3 matrix is invertible exactly when det&nbsp;<i>N</i> ≠ 0, where
+    </p>
+    <p class="disp">
+      <span style="display:inline-block; text-align:left;">
+        det&nbsp;<i>N</i> = <i>N</i><sub>1,1</sub>(<i>N</i><sub>2,2</sub><i>N</i><sub>3,3</sub> − <i>N</i><sub>2,3</sub><i>N</i><sub>3,2</sub>)<br>
+        <span style="visibility:hidden;">det&nbsp;<i>N</i> = </span>− <i>N</i><sub>1,2</sub>(<i>N</i><sub>2,1</sub><i>N</i><sub>3,3</sub> − <i>N</i><sub>2,3</sub><i>N</i><sub>3,1</sub>)<br>
+        <span style="visibility:hidden;">det&nbsp;<i>N</i> = </span>+ <i>N</i><sub>1,3</sub>(<i>N</i><sub>2,1</sub><i>N</i><sub>3,2</sub> − <i>N</i><sub>2,2</sub><i>N</i><sub>3,1</sub>).
+      </span>
+    </p>
+    <div class="formula" id="detExpansion"></div>
+
+    <div class="warnbox">
+      <b class="title">det&nbsp;<i>N</i> = 0 — <i>N</i> is singular.</b><br>
+      Therefore, <i>N</i><sup>−1</sup> does not exist. Depending on <i>t</i>,
+      the system <i>N</i><i>v</i> = <i>t</i> has either no solution or infinitely
+      many solutions.
+    </div>
+
+    <div class="oksection">
+      <p class="hint" style="margin-top:12px">
+        Since det&nbsp;<i>N</i> ≠ 0, the inverse exists:
+      </p>
+      <div class="mateq">
+        <span class="op" style="color:var(--text-primary); font-size:1.1rem;"><i>N</i><sup>−1</sup> =</span>
+        <div class="eqcols">
+          <div class="inverse-factor" id="dispInvFactorOnly"></div>
+          <div class="veclab">1 / det&nbsp;<i>N</i></div>
+        </div>
+        <span class="op">·</span>
+        <div class="eqcols">
+          <div class="bracketed m3" id="dispInvOnly"></div>
+          <div class="veclab">adj(<i>N</i>)</div>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:8px">
+        Here adj(<i>N</i>) is the adjugate matrix of <i>N</i>.
+      </p>
+    </div>
+  </div>
+
+  <div class="card oksection calculation">
+    <h2>4. The solution <i>v</i> = <i>N</i><sup>−1</sup><i>t</i> — how much of each food to eat</h2>
+    <div class="mateq" id="mateq">
+      <div class="eqcols">
+        <div class="inverse-factor" id="dispInvFactor"></div>
+        <div class="veclab">1 / det&nbsp;<i>N</i></div>
+      </div>
+      <span class="op">·</span>
+      <div class="eqcols">
+        <div class="bracketed m3" id="dispInv"></div>
+        <div class="veclab">adj(<i>N</i>)</div>
+      </div>
+      <span class="op">·</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispT"></div>
+        <div class="veclab"><i>t</i></div>
+      </div>
+      <span class="op">=</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispV"></div>
+        <div class="veclab"><i>v</i> = <i>N</i><sup>−1</sup><i>t</i></div>
+      </div>
+    </div>
+
+    <div class="formula" id="rowPicture"></div>
+
+    <div class="chart" id="chart"></div>
+    <div class="formula" id="negNote" style="display:none; border-color:var(--bad);"></div>
+  </div>
+
+  <div class="card oksection calculation">
+    <h2>5. Check: <i>N</i><i>v</i> = <i>t</i> — undoing the inverse</h2>
+    <p class="hint">
+      Feed the computed amounts back into the forward problem. Multiplying by <i>N</i>
+      undoes multiplying by <i>N</i><sup>−1</sup>:
+      <i>N</i>(<i>N</i><sup>−1</sup><i>t</i>) = (<i>N</i><i>N</i><sup>−1</sup>)<i>t</i> = <i>I</i><i>t</i> = <i>t</i>.
+      The target vector is recovered exactly.
+    </p>
+    <div class="mateq">
+      <div class="eqcols">
+        <div class="bracketed m3" id="dispN2"></div>
+        <div class="veclab"><i>N</i></div>
+      </div>
+      <span class="op">·</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispV2"></div>
+        <div class="veclab"><i>v</i></div>
+      </div>
+      <span class="op">=</span>
+      <div class="eqcols">
+        <div class="bracketed m1" id="dispCheck"></div>
+        <div class="veclab"><i>N</i><i>v</i></div>
+      </div>
+    </div>
+    <div class="formula" id="checkLine"></div>
+  </div>
+
+</div>
+
+<div id="tip" role="status"></div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">Back to Collection</a></p>
+
+<script>
+"use strict";
+
+/* ---------- constants ---------- */
+const NUTRIENTS = ["Carb", "Fat", "Protein"];
+const FOODS = ["A", "B", "C"];
+const FOOD_CLASS = ["cA", "cB", "cC"];
+const FOOD_VAR = ["--series-1", "--series-2", "--series-3"];
+const N_DEFAULT = [[37, 0, 9], [0.5, 4, 15], [3.5, 22, 2]];
+
+/* ---------- state ---------- */
+let N = N_DEFAULT.map(r => r.slice());   /* g per 100 g: [nutrient][food] */
+let t = [78.5, 14.5, 41];                /* target grams of carbohydrate, fat, protein */
+
+/* ---------- exact rational arithmetic ---------- */
+const $ = id => document.getElementById(id);
+
+function absBigInt(x) {
+  return x < 0n ? -x : x;
+}
+function gcdBigInt(a, b) {
+  a = absBigInt(a);
+  b = absBigInt(b);
+  while (b !== 0n) {
+    const r = a % b;
+    a = b;
+    b = r;
+  }
+  return a;
+}
+function rat(n, d = 1n) {
+  n = BigInt(n);
+  d = BigInt(d);
+  if (d === 0n) throw new Error("A rational denominator cannot be zero.");
+  if (n === 0n) return { n: 0n, d: 1n };
+  if (d < 0n) {
+    n = -n;
+    d = -d;
+  }
+  const g = gcdBigInt(n, d);
+  return { n: n / g, d: d / g };
+}
+function ratFromHalfStep(x) {
+  return rat(BigInt(Math.round(x * 2)), 2n);
+}
+function addRat(a, b) {
+  return rat(a.n * b.d + b.n * a.d, a.d * b.d);
+}
+function subRat(a, b) {
+  return rat(a.n * b.d - b.n * a.d, a.d * b.d);
+}
+function mulRat(a, b) {
+  return rat(a.n * b.n, a.d * b.d);
+}
+function divRat(a, b) {
+  if (b.n === 0n) throw new Error("Division by zero.");
+  return rat(a.n * b.d, a.d * b.n);
+}
+function negRat(a) {
+  return rat(-a.n, a.d);
+}
+function absRat(a) {
+  return rat(absBigInt(a.n), a.d);
+}
+function dotRat(a, b) {
+  return a.reduce((sum, x, i) => addRat(sum, mulRat(x, b[i])), rat(0n));
+}
+function ratToNumber(a) {
+  return Number(a.n) / Number(a.d);
+}
+
+/* Return an exact terminating decimal when it is reasonably short. */
+function terminatingDecimalText(a, maxPlaces = 8) {
+  let d = a.d;
+  let twos = 0;
+  let fives = 0;
+  while (d % 2n === 0n) {
+    d /= 2n;
+    twos++;
+  }
+  while (d % 5n === 0n) {
+    d /= 5n;
+    fives++;
+  }
+  if (d !== 1n) return null;
+  const places = Math.max(twos, fives);
+  if (places > maxPlaces) return null;
+
+  let scaled = absBigInt(a.n);
+  scaled *= 2n ** BigInt(places - twos);
+  scaled *= 5n ** BigInt(places - fives);
+  let digits = scaled.toString();
+  let body;
+  if (places === 0) {
+    body = digits;
+  } else {
+    digits = digits.padStart(places + 1, "0");
+    body = digits.slice(0, -places) + "." + digits.slice(-places);
+  }
+  return (a.n < 0n ? "−" : "") + body;
+}
+function exactText(a) {
+  const decimal = terminatingDecimalText(a);
+  if (decimal !== null) return decimal;
+  return (a.n < 0n ? "−" : "") + absBigInt(a.n) + "/" + a.d;
+}
+function exactHTML(a) {
+  const decimal = terminatingDecimalText(a);
+  if (decimal !== null) return decimal;
+  const sign = a.n < 0n ? "−" : "";
+  return sign + '<span class="frac"><span class="num">' + absBigInt(a.n) +
+         '</span><span class="den">' + a.d + '</span></span>';
+}
+function reciprocalDetHTML(d) {
+  return '<span class="frac"><span class="num">1</span><span class="den">' +
+         exactHTML(d) + '</span></span>';
+}
+function signedMagnitudeHTML(a) {
+  return {
+    negative: a.n < 0n,
+    magnitude: exactHTML(absRat(a))
+  };
+}
+function joinSignedTerms(items) {
+  return items.map((item, i) => {
+    if (i === 0) return (item.negative ? "−" : "") + item.html;
+    return (item.negative ? " − " : " + ") + item.html;
+  }).join("");
+}
+
+/* ---------- 3×3 determinant and inverse (cofactor / adjugate) ---------- */
+function det3(M) {
+  return addRat(
+    subRat(
+      mulRat(M[0][0], subRat(mulRat(M[1][1], M[2][2]), mulRat(M[1][2], M[2][1]))),
+      mulRat(M[0][1], subRat(mulRat(M[1][0], M[2][2]), mulRat(M[1][2], M[2][0])))
+    ),
+    mulRat(M[0][2], subRat(mulRat(M[1][0], M[2][1]), mulRat(M[1][1], M[2][0])))
+  );
+}
+function adj3(M) {
+  /* adj[i][j] = cofactor C_{ji} */
+  return [
+    [ subRat(mulRat(M[1][1], M[2][2]), mulRat(M[1][2], M[2][1])),
+      negRat(subRat(mulRat(M[0][1], M[2][2]), mulRat(M[0][2], M[2][1]))),
+      subRat(mulRat(M[0][1], M[1][2]), mulRat(M[0][2], M[1][1])) ],
+    [ negRat(subRat(mulRat(M[1][0], M[2][2]), mulRat(M[1][2], M[2][0]))),
+      subRat(mulRat(M[0][0], M[2][2]), mulRat(M[0][2], M[2][0])),
+      negRat(subRat(mulRat(M[0][0], M[1][2]), mulRat(M[0][2], M[1][0]))) ],
+    [ subRat(mulRat(M[1][0], M[2][1]), mulRat(M[1][1], M[2][0])),
+      negRat(subRat(mulRat(M[0][0], M[2][1]), mulRat(M[0][1], M[2][0]))),
+      subRat(mulRat(M[0][0], M[1][1]), mulRat(M[0][1], M[1][0])) ]
+  ];
+}
+function inverseFromAdj(adj, d) {
+  return adj.map(row => row.map(entry => divRat(entry, d)));
+}
+function isSingular(d) {
+  return d.n === 0n;
+}
+
+/* ---------- matrix inputs ---------- */
+function syncMatrixInputs() {
+  const nextN = Array.from({ length: 3 }, () => Array(3));
+  let allValid = true;
+
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    const input = $("n" + i + j);
+    const val = input.valueAsNumber;
+    const valid = input.validity.valid && Number.isFinite(val);
+    input.setAttribute("aria-invalid", valid ? "false" : "true");
+    if (valid) nextN[i][j] = val;
+    else allValid = false;
+  }
+
+  document.body.classList.toggle("invalid-input", !allValid);
+  if (!allValid) return;
+
+  N = nextN;
+  updateAll();
+}
+for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+  $("n" + i + j).addEventListener("input", syncMatrixInputs);
+}
+
+/* ---------- target sliders ---------- */
+for (let i = 0; i < 3; i++) {
+  $("tSl" + i).addEventListener("input", ev => {
+    t[i] = Number(ev.target.value);
+    updateAll();
+  });
+}
+
+/* ---------- highlight coupling (rows of the inverse = foods) ---------- */
+let hlRow = -1;
+function setHlRow(i) {
+  hlRow = i;
+  document.querySelectorAll("#dispInv .cell").forEach(el => {
+    el.classList.toggle("hl", Number(el.dataset.row) === i);
+  });
+  document.querySelectorAll("#dispT .cell").forEach(el => {
+    el.classList.toggle("hl", i >= 0);
+  });
+  document.querySelectorAll("#dispV .cell").forEach(el => {
+    el.classList.toggle("hl", Number(el.dataset.row) === i);
+  });
+  document.querySelectorAll("#rowPicture .exp-line").forEach(el => {
+    el.classList.toggle("hl", Number(el.dataset.row) === i);
+  });
+}
+
+/* ---------- determinant expansion ---------- */
+function renderDet(M, d) {
+  const m0 = subRat(mulRat(M[1][1], M[2][2]), mulRat(M[1][2], M[2][1]));
+  const m1 = subRat(mulRat(M[1][0], M[2][2]), mulRat(M[1][2], M[2][0]));
+  const m2 = subRat(mulRat(M[1][0], M[2][1]), mulRat(M[1][1], M[2][0]));
+  $("detExpansion").innerHTML =
+    '<span class="exp-line">' +
+    '<span class="rowlabel">det <i>N</i>:</span> ' +
+    '&nbsp;&nbsp;&nbsp;' + exactHTML(M[0][0]) + '×(' + exactHTML(M[1][1]) + '×' + exactHTML(M[2][2]) + ' − ' + exactHTML(M[1][2]) + '×' + exactHTML(M[2][1]) + ')' +
+    '</span>' +
+    '<span class="exp-line">' +
+    '<span class="rowlabel"></span> ' +
+    '− ' + exactHTML(M[0][1]) + '×(' + exactHTML(M[1][0]) + '×' + exactHTML(M[2][2]) + ' − ' + exactHTML(M[1][2]) + '×' + exactHTML(M[2][0]) + ')' +
+    '</span>' +
+    '<span class="exp-line">' +
+    '<span class="rowlabel"></span> ' +
+    '+ ' + exactHTML(M[0][2]) + '×(' + exactHTML(M[1][0]) + '×' + exactHTML(M[2][1]) + ' − ' + exactHTML(M[1][1]) + '×' + exactHTML(M[2][0]) + ')' +
+    '</span>' +
+    '<span class="exp-line">' +
+    '<span class="rowlabel"></span> = ' +
+    exactHTML(M[0][0]) + '×(' + exactHTML(m0) + ') − ' + exactHTML(M[0][1]) + '×(' + exactHTML(m1) + ') + ' +
+    exactHTML(M[0][2]) + '×(' + exactHTML(m2) + ') = <b>' + exactHTML(d) + '</b></span>';
+}
+
+/* ---------- the solution v = N⁻¹ t ---------- */
+function renderSolution(adj, d, v, target) {
+  const factor = reciprocalDetHTML(d);
+  $("dispInvFactor").innerHTML = factor;
+  $("dispInvFactorOnly").innerHTML = factor;
+
+  let h = "";
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    h += '<span class="cell" data-row="' + i + '">' + exactHTML(adj[i][j]) + '</span>';
+  }
+  $("dispInv").innerHTML = h;
+  $("dispInvOnly").innerHTML = h.replace(/data-row/g, "data-r");
+
+  h = "";
+  for (let i = 0; i < 3; i++) {
+    h += '<span class="cell">' + exactHTML(target[i]) + '</span>';
+  }
+  $("dispT").innerHTML = h;
+
+  h = "";
+  for (let i = 0; i < 3; i++) {
+    const cls = v[i].n < 0n ? "neg" : FOOD_CLASS[i];
+    h += '<span class="cell res ' + cls + '" data-row="' + i + '"><b>' + exactHTML(v[i]) + '</b></span>';
+  }
+  $("dispV").innerHTML = h;
+
+  document.querySelectorAll('#dispV .cell, #dispInv .cell').forEach(el => {
+    el.addEventListener("mouseenter", () => setHlRow(Number(el.dataset.row)));
+    el.addEventListener("mouseleave", () => setHlRow(-1));
+  });
+  setHlRow(hlRow);
+
+  h = "";
+  for (let i = 0; i < 3; i++) {
+    const terms = joinSignedTerms(adj[i].map((coefficient, j) => {
+      const displayed = signedMagnitudeHTML(coefficient);
+      return {
+        negative: displayed.negative,
+        html: displayed.magnitude + '×' + exactHTML(target[j])
+      };
+    }));
+    const vLabel = '<i>v</i><sub>' + FOODS[i] + '</sub>';
+    const grams = mulRat(v[i], rat(100n));
+    h += '<span class="exp-line" data-row="' + i + '">' +
+         '<span class="rowlabel ' + FOOD_CLASS[i] + '">' + vLabel + ':</span> ' +
+         reciprocalDetHTML(d) + ' (' + terms + ') = <b>' + exactHTML(v[i]) + '</b><br>' +
+         '<span class="rowlabel ' + FOOD_CLASS[i] + '">Food ' + FOODS[i] + ' amount:</span> ' +
+         vLabel + ' × 100 g = <b>' + exactHTML(grams) + ' g</b>' +
+         (v[i].n < 0n ? ' <span class="badge-neg">negative</span>' : '') +
+         '</span>';
+  }
+  $("rowPicture").innerHTML = h;
+  document.querySelectorAll("#rowPicture .exp-line").forEach(el => {
+    el.addEventListener("mouseenter", () => setHlRow(Number(el.dataset.row)));
+    el.addEventListener("mouseleave", () => setHlRow(-1));
+  });
+}
+
+/* ---------- tooltip ---------- */
+const tip = $("tip");
+function showTip(ev, html) {
+  tip.innerHTML = html;
+  tip.style.display = "block";
+  const pad = 14;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width > window.innerWidth - 8) x = ev.clientX - r.width - pad;
+  if (y + r.height > window.innerHeight - 8) y = ev.clientY - r.height - pad;
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+
+/* ---------- amount bars ---------- */
+function renderChart(v) {
+  const grams = v.map(x => mulRat(x, rat(100n)));
+  const gramsAsNumbers = grams.map(ratToNumber);
+  const maxG = Math.max(1e-9, ...gramsAsNumbers.map(Math.abs));
+  const chart = $("chart");
+  chart.innerHTML = "";
+  let anyNeg = false;
+  for (let i = 0; i < 3; i++) {
+    const row = document.createElement("div");
+    row.className = "bar-row";
+    const lab = document.createElement("div");
+    lab.className = "bar-label";
+    lab.textContent = "Food " + FOODS[i];
+    row.appendChild(lab);
+    const track = document.createElement("div");
+    track.className = "bar-track";
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    seg.style.width = (Math.abs(gramsAsNumbers[i]) / maxG * 100) + "%";
+    const neg = grams[i].n < 0n;
+    if (neg) anyNeg = true;
+    seg.style.background = neg ? "var(--bad)" : "var(" + FOOD_VAR[i] + ")";
+    const html = "<b>Food " + FOODS[i] + "</b><br>" +
+      "<i>v</i><sub>" + FOODS[i] + "</sub> = " + exactHTML(v[i]) +
+      " (100-g portions)<br>Food amount = <b>" + exactHTML(grams[i]) + " g</b>" +
+      (neg ? "<br>negative — not edible!" : "");
+    seg.addEventListener("pointermove", ev => showTip(ev, html));
+    seg.addEventListener("pointerleave", hideTip);
+    track.appendChild(seg);
+    row.appendChild(track);
+    const tot = document.createElement("div");
+    tot.className = "bar-total";
+    tot.textContent = exactText(grams[i]) + " g";
+    if (neg) tot.style.color = "var(--bad)";
+    row.appendChild(tot);
+    chart.appendChild(row);
+  }
+  const note = $("negNote");
+  if (anyNeg) {
+    note.style.display = "block";
+    note.innerHTML =
+      '<span class="exp-line"><span class="neg">Note:</span> a solution containing a ' +
+      'negative component is mathematically valid for the linear system, but a negative ' +
+      'amount of food cannot be eaten. Because <i>N</i> is invertible, this is the unique ' +
+      'solution, so this target <i>t</i> is unreachable with nonnegative food amounts. ' +
+      'Move the sliders (or change <i>N</i>) until every amount is ≥ 0.</span>';
+  } else {
+    note.style.display = "none";
+  }
+}
+
+/* ---------- check N v = t ---------- */
+function renderCheck(matrix, target, v) {
+  const back = matrix.map(row => dotRat(row, v));
+  let h = "";
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+    h += '<span class="cell">' + exactHTML(matrix[i][j]) + '</span>';
+  }
+  $("dispN2").innerHTML = h;
+  $("dispV2").innerHTML = v.map((x, i) =>
+    '<span class="cell ' + FOOD_CLASS[i] + '">' + exactHTML(x) + '</span>').join("");
+  $("dispCheck").innerHTML = back.map(x =>
+    '<span class="cell"><b>' + exactHTML(x) + '</b></span>').join("");
+
+  h = "";
+  for (let i = 0; i < 3; i++) {
+    const terms = joinSignedTerms(matrix[i].map((nij, j) => {
+      const product = mulRat(nij, v[j]);
+      return {
+        negative: product.n < 0n,
+        html: '<span class="' + FOOD_CLASS[j] + '">' +
+              exactHTML(nij) + '×' + exactHTML(absRat(v[j])) + '</span>'
+      };
+    }));
+    h += '<span class="exp-line">' +
+         '<span class="rowlabel">' + NUTRIENTS[i] + ':</span> ' +
+         terms + ' = <b>' + exactHTML(back[i]) + ' g</b> &nbsp;(target: ' + exactHTML(target[i]) + ' g ✓)</span>';
+  }
+  $("checkLine").innerHTML = h;
+}
+
+/* ---------- main update ---------- */
+function updateAll() {
+  const matrix = N.map(row => row.map(ratFromHalfStep));
+  const target = t.map(ratFromHalfStep);
+
+  for (let i = 0; i < 3; i++) {
+    $("tOut" + i).innerHTML =
+      "<b>" + exactHTML(target[i]) + " g</b> wanted &nbsp;→&nbsp; <i>t</i><sub>" + (i + 1) + "</sub> = " + exactHTML(target[i]);
+  }
+  $("dispN1").innerHTML = matrix.map(row =>
+    row.map(x => '<span class="cell">' + exactHTML(x) + '</span>').join("")).join("");
+  $("dispT1").innerHTML = target.map(x =>
+    '<span class="cell">' + exactHTML(x) + '</span>').join("");
+
+  const d = det3(matrix);
+  renderDet(matrix, d);
+  if (isSingular(d)) {
+    document.body.classList.add("singular");
+    return;
+  }
+  document.body.classList.remove("singular");
+
+  const adj = adj3(matrix);
+  const inv = inverseFromAdj(adj, d);
+  const v = inv.map(row => dotRat(row, target));
+  renderSolution(adj, d, v, target);
+  renderChart(v);
+  renderCheck(matrix, target, v);
+}
+syncMatrixInputs();
+</script>
+</body>
+</html>
