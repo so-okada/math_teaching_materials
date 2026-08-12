@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
+A collection of 41 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
 
 ## Contents
 
@@ -16,6 +16,7 @@ A collection of interactive, browser-based visualizations for teaching mathemati
 | [Rule of 72](https://so-okada.github.io/math_teaching_materials/rule_of_72.html) | Financial Mathematics | Compound interest, exponential growth |
 | [Costs and Profits](https://so-okada.github.io/math_teaching_materials/cost_profit_demo.html) | Economics | Simple monopoly model, quadratic profit, vertex maximum |
 | [Matrix Multiplication: A Nutrition Calculator](https://so-okada.github.io/math_teaching_materials/matrix_multiplication_nutrition.html) | Linear Algebra | Matrix–vector product, row and column pictures, inner product |
+| [Inverse Matrices: A Food Calculator](https://so-okada.github.io/math_teaching_materials/inverse_matrices_food_calc.html) | Linear Algebra | Inverse matrix, determinant, adjugate, linear systems |
 | [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
 | [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
 | [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
@@ -264,6 +265,22 @@ shown both as the row picture (dot-product expansion) and the column picture (st
 - **Editable matrix $N$**: Nutrient values (g per 100 g) for each food
 - **Amount sliders**: Grams eaten of each food, setting $v$
 - **Stacked bars**: Each nutrient total split by food, with per-term tooltips
+
+---
+
+### [Inverse Matrices: A Food Calculator](https://so-okada.github.io/math_teaching_materials/inverse_matrices_food_calc.html)
+**File:** `inverse_matrices_food_calc.html`
+
+The inverse problem of the nutrition calculator: choose the target nutrient totals $t$ (carbohydrate, fat, protein) and solve $Nv = t$ for the food amounts. When $\det N \neq 0$,
+
+$$v = N^{-1}t, \qquad N^{-1} = \frac{1}{\det N}\,\operatorname{adj}(N),$$
+
+computed in rational arithmetic.
+
+**Controls:**
+- **Editable matrix $N$**: Nutrient values (g per 100 g) for each food, with a singular warning when $\det N = 0$
+- **Target sliders**: Desired total grams of each nutrient, setting $t$
+- **Amount bars**: Grams of each food to eat, flagging negative (unreachable) solutions
 
 ---
 
