@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of 41 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
+A collection of 42 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
 
 ## Contents
 
@@ -17,6 +17,7 @@ A collection of 41 interactive, browser-based visualizations for teaching mathem
 | [Costs and Profits](https://so-okada.github.io/math_teaching_materials/cost_profit_demo.html) | Economics | Simple monopoly model, quadratic profit, vertex maximum |
 | [Matrix Multiplication: A Nutrition Calculator](https://so-okada.github.io/math_teaching_materials/matrix_multiplication_nutrition.html) | Linear Algebra | Matrix–vector product, row and column pictures, inner product |
 | [Inverse Matrices: A Food Calculator](https://so-okada.github.io/math_teaching_materials/inverse_matrices_food_calc.html) | Linear Algebra | Inverse matrix, determinant, adjugate, linear systems |
+| [Linear Transformations of the Plane](https://so-okada.github.io/math_teaching_materials/linear_transformations_of_the_plane.html) | Linear Algebra | Matrix as a map of the plane, column picture, rotation, shear, reflection, projection |
 | [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
 | [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
 | [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
@@ -281,6 +282,23 @@ computed in rational arithmetic.
 - **Editable matrix $N$**: Nutrient values (g per 100 g) for each food, with a singular warning when $\det N = 0$
 - **Target sliders**: Desired total grams of each nutrient, setting $t$
 - **Amount bars**: Grams of each food to eat, flagging negative (unreachable) solutions
+
+---
+
+### [Linear Transformations of the Plane](https://so-okada.github.io/math_teaching_materials/linear_transformations_of_the_plane.html)
+**File:** `linear_transformations_of_the_plane.html`
+
+How a $2\times 2$ matrix $A$ moves every point of $\mathbb{R}^2$: an apple tree and the coordinate grid are redrawn under $\vec v \mapsto A\vec v$ in real time.
+
+**Mathematical Background:**
+The columns of $A$ are the images of the standard basis vectors:
+$$A\begin{pmatrix}x\\ y\end{pmatrix} = x\,(A\vec e_1) + y\,(A\vec e_2).$$
+
+**Controls:**
+- **Presets**: Identity, rotation, scaling, shear, reflection, projection, each with a parameter slider and its exact matrix formula
+- **Drag $A\vec e_1$, $A\vec e_2$**: Move the column tips directly on the plane
+- **Editable matrix entries**: Type any $a, b, c, d$
+- Hover to see a point $p$ and its image $Ap$
 
 ---
 
@@ -991,6 +1009,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `pinhole_camera.html`: Uses MathJax (CDN)
 - `gomboc.html`: Uses Three.js and OrbitControls (CDN)
 - `shen_kuo_huiyuan_method_demo.html`: Uses KaTeX (CDN)
+- `linear_transformations_of_the_plane.html`: Uses KaTeX (CDN)
 
 ---
 

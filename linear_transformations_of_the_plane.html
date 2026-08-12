@@ -1,0 +1,910 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Transformations of the Plane — Interactive Demo</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;  /* Ae1 */
+    --series-2: #eb6834;  /* Ae2 */
+    --series-3: #1baf7a;
+    --accent: #2a78d6;
+    --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --tree-trunk: #7a5230;
+    --tree-canopy: #4a9a55;
+    --tree-apple: #d1342f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-2: #d95926;
+      --series-3: #199e70;
+      --accent: #3987e5;
+      --tree-trunk: #8a6240;
+      --tree-canopy: #4a9a55;
+      --tree-apple: #d1342f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body.viz-root {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.65;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 24px 20px 64px; }
+  header h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  header .sub { color: var(--text-secondary); font-size: 0.95rem; margin: 0 0 20px; }
+
+  .panel {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .grid2 { display: grid; grid-template-columns: minmax(360px, 1.4fr) 1fr; gap: 20px; }
+  @media (max-width: 760px) { .grid2 { grid-template-columns: 1fr; } }
+
+  canvas { width: 100%; height: auto; display: block; touch-action: none; }
+  /* layout size is fixed by CSS, so resizing the bitmap never re-triggers layout */
+  #plane { cursor: crosshair; aspect-ratio: 1 / 1; }
+
+  .formula-hero { text-align: center; font-size: 1.12rem; padding: 8px 0 0; }
+  .note { color: var(--text-secondary); font-size: 0.9rem; }
+
+  .presets { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+  .presets button {
+    font: inherit; font-size: 0.85rem;
+    color: var(--text-primary);
+    background: var(--surface-1);
+    border: 1px solid var(--baseline);
+    border-radius: 999px;
+    padding: 3px 13px;
+    cursor: pointer;
+  }
+  .presets button:hover { border-color: var(--accent); }
+  .presets button[aria-pressed="true"] {
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+
+  .paramrow { min-height: 52px; }
+  .paramrow label { display: block; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 2px; }
+  .paramrow input[type=range] { width: 100%; accent-color: var(--series-1); }
+
+  .exactformula {
+    min-height: 56px;
+    margin: 2px 0 8px;
+    overflow-x: auto;
+    font-size: 0.9rem;
+  }
+  .exactformula .katex-display { margin: 0.35em 0; text-align: left; }
+  .matrixbox { display: flex; align-items: center; gap: 10px; margin: 10px 0 4px; flex-wrap: wrap; }
+  .matrixname { font-size: 0.95rem; color: var(--text-secondary); }
+  .mat {
+    display: grid; grid-template-columns: auto auto; gap: 6px 8px;
+    padding: 6px 22px;
+    position: relative;
+  }
+  /* Parentheses around the editable numerical matrix. */
+  .mat::before, .mat::after {
+    position: absolute;
+    top: 50%;
+    color: var(--text-primary);
+    font-family: KaTeX_Main, "Times New Roman", Times, serif;
+    font-size: 5.35rem;
+    font-weight: 300;
+    line-height: 1;
+    transform: translateY(-52%) scaleX(0.68);
+    pointer-events: none;
+  }
+  .mat::before { content: "("; left: -2px; }
+  .mat::after  { content: ")"; right: -2px; }
+  .entry { display: inline-block; position: relative; }
+  .entry[data-continued="true"]::after {
+    content: "⋯";
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    transform: translateY(-52%);
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .entry[data-continued="true"] input { padding-right: 20px; }
+  .mat input {
+    width: 104px; font: inherit; font-size: 0.88rem;
+    font-variant-numeric: tabular-nums; text-align: center;
+    color: var(--text-primary); background: var(--page);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 3px 4px;
+  }
+  .mat input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .mat input[aria-invalid="true"] { border-color: var(--tree-apple); }
+  .mat input[type="number"] { appearance: textfield; }
+  .mat input[type="number"]::-webkit-inner-spin-button,
+  .mat input[type="number"]::-webkit-outer-spin-button { appearance: none; margin: 0; }
+  #a11, #a12 { border-bottom-width: 1px; }
+  .mat input#a11, .mat input#a21 { box-shadow: inset 3px 0 0 -1px var(--series-1); }
+  .mat input#a12, .mat input#a22 { box-shadow: inset 3px 0 0 -1px var(--series-2); }
+
+  h2 { font-size: 1.15rem; margin: 0 0 10px; }
+  h3 { font-size: 1.0rem; margin: 18px 0 6px; }
+  .charttitle { font-size: 0.95rem; margin: 0 0 2px; }
+  .chartsub { font-size: 0.82rem; color: var(--muted); margin: 0 0 8px; }
+
+  #tooltip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 9px; font-size: 0.8rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    display: none; font-variant-numeric: tabular-nums;
+  }
+  .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+  footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
+  a { color: var(--series-1); }
+</style>
+</head>
+<body class="viz-root">
+<div class="wrap">
+
+<header>
+  <h1>Linear Transformations of the Plane</h1>
+  <p class="sub">How a \(2\times 2\) matrix moves every point of \(\mathbb{R}^2\)</p>
+</header>
+
+<!-- ============ Interactive demo ============ -->
+<section class="panel">
+  <div class="formula-hero">
+    $$ T(\vec v) \;=\; A\vec v, \qquad
+       A\begin{pmatrix}x\\[1pt] y\end{pmatrix}
+       = x\,(A\vec e_1) + y\,(A\vec e_2) $$
+    <p class="note">The columns of \(A\) are the images \(A\vec e_1,\;A\vec e_2\) of the standard basis vectors \(\vec{e}_{1}\) and \(\vec{e}_{2}\).</p>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <p class="charttitle">The plane under \(\vec v \mapsto A\vec v\)</p>
+      <canvas id="plane" width="460" height="460" aria-label="Coordinate plane with an apple tree and its image under the matrix A"></canvas>
+    </div>
+    <div>
+      <div class="presets" id="presets" role="group" aria-label="Preset transformations">
+        <button data-preset="identity">Identity</button>
+        <button data-preset="rotation">Rotation</button>
+        <button data-preset="scaling">Scaling</button>
+        <button data-preset="shear">Shear</button>
+        <button data-preset="reflection">Reflection</button>
+        <button data-preset="projection">Projection</button>
+      </div>
+
+      <div class="paramrow" id="paramrow" hidden>
+        <label for="param"><span id="paramlabel"></span>&nbsp; <span id="paramval" style="color:var(--text-primary)"></span></label>
+        <input type="range" id="param" min="-180" max="180" value="30" step="1">
+      </div>
+
+      <div id="presetformula" class="exactformula" aria-live="polite" aria-label="Preset matrix formula"></div>
+
+      <div class="matrixbox">
+        <span class="matrixname" id="matrixname" aria-label="Relation between A and the editable numerical entries"></span>
+        <div class="mat" aria-label="Editable numerical matrix entries enclosed in parentheses">
+          <span class="entry" data-continued="false"><input id="a11" type="number" step="any" value="1" aria-label="entry a, row 1 column 1"></span>
+          <span class="entry" data-continued="false"><input id="a12" type="number" step="any" value="0" aria-label="entry b, row 1 column 2"></span>
+          <span class="entry" data-continued="false"><input id="a21" type="number" step="any" value="0" aria-label="entry c, row 2 column 1"></span>
+          <span class="entry" data-continued="false"><input id="a22" type="number" step="any" value="1" aria-label="entry d, row 2 column 2"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/">Back to Collection</a></p>
+
+<div id="tooltip"></div>
+
+<script>
+"use strict";
+/* ---------- state ---------- */
+const state = {
+  A: [1, 0, 0, 1],       // [a, b, c, d] row-major: A = (a b; c d)
+  preset: "identity",    // active preset key, or "custom"
+  param: 30              // preset parameter: an angle, scale factor, or shear factor
+};
+
+const VIEW = 4.4;         // world coordinates shown: [-VIEW, VIEW]^2 (plus margin)
+const SNAP = 0.1;         // drag snap for column tips
+const DISPLAY_DIGITS = 6;
+const ENTRY_IDS = ["a11", "a12", "a21", "a22"];
+const SYMBOLIC_PRESETS = new Set(["rotation", "reflection", "projection"]);
+
+/* ---------- presets ---------- */
+const PRESETS = {
+  identity:   { param: null,
+                matrix: () => [1, 0, 0, 1] },
+  rotation:   { param: { label: "angle θ", min: -180, max: 180, step: 1, value: 30, unit: "°" },
+                matrix: t => { const r = t * Math.PI / 180;
+                               return [Math.cos(r), -Math.sin(r), Math.sin(r), Math.cos(r)]; } },
+  scaling:    { param: { label: "factor k", min: -2, max: 2, step: 0.05, value: 1.5, unit: "" },
+                matrix: t => [t, 0, 0, t] },
+  shear:      { param: { label: "shear k", min: -2, max: 2, step: 0.05, value: 0.6, unit: "" },
+                matrix: t => [1, t, 0, 1] },
+  reflection: { param: { label: "line angle φ", min: 0, max: 180, step: 1, value: 30, unit: "°" },
+                matrix: t => { const r = 2 * t * Math.PI / 180;
+                               return [Math.cos(r), Math.sin(r), Math.sin(r), -Math.cos(r)]; } },
+  projection: { param: { label: "line angle φ", min: 0, max: 180, step: 1, value: 30, unit: "°" },
+                matrix: t => { const r = t * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+                               return [c * c, c * s, c * s, s * s]; } }
+};
+
+/* ---------- helpers ---------- */
+function css(name) {
+  return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+function apply(A, p) {              // A·p for p = [x, y]
+  return [A[0] * p[0] + A[1] * p[1], A[2] * p[0] + A[3] * p[1]];
+}
+function distance(p, q) {
+  return Math.hypot(p[0] - q[0], p[1] - q[1]);
+}
+function sameVector(p, q) {
+  return cleanSignedZero(p[0]) === cleanSignedZero(q[0]) &&
+         cleanSignedZero(p[1]) === cleanSignedZero(q[1]);
+}
+function cleanSignedZero(x) {
+  const v = Number(x);
+  return Object.is(v, -0) ? 0 : v;
+}
+function normalizePresetNumber(x) {
+  const v = cleanSignedZero(x);
+  if (!Number.isFinite(v)) return v;
+  if (Math.abs(v) < 1e-12) return 0;
+
+  // Remove floating-point noise at simple rational preset values such as 1/2 and 3/4.
+  for (let denominator = 1; denominator <= 64; denominator++) {
+    const numerator = Math.round(v * denominator);
+    const rational = numerator / denominator;
+    if (Math.abs(v - rational) < 1e-12) return cleanSignedZero(rational);
+  }
+  return v;
+}
+function normalizeMatrix(A) {
+  return A.map(normalizePresetNumber);
+}
+function inputNumberString(x) {
+  const v = cleanSignedZero(x);
+  return Number.isFinite(v) ? String(v) : "";
+}
+function latexExactNumber(x) {
+  const text = inputNumberString(x);
+  const match = text.match(/^(-?\d+(?:\.\d+)?)e([+-]?\d+)$/i);
+  return match ? match[1] + "\\times 10^{" + String(Number(match[2])) + "}" : text;
+}
+function snapToStep(x, step) {
+  return cleanSignedZero(Number((Math.round(x / step) * step).toFixed(12)));
+}
+function trimFixed(text) {
+  return text.replace(/(?:\.0+|(\.\d*?[1-9])0+)$/, "$1");
+}
+function decimalInfo(x, digits = DISPLAY_DIGITS) {
+  const v = cleanSignedZero(x);
+  if (!Number.isFinite(v)) return { text: "", continued: false };
+  if (v === 0) return { text: "0", continued: false };
+
+  const abs = Math.abs(v);
+  const tolerance = 16 * Number.EPSILON * Math.max(1, abs);
+  let shown;
+  let text;
+
+  if (abs < 1e9 && abs >= 10 ** (-digits)) {
+    // Truncate rather than round, so an ellipsis records the actual following digits.
+    const scale = 10 ** digits;
+    shown = Math.trunc(v * scale) / scale;
+    text = trimFixed(shown.toFixed(digits));
+  } else {
+    // Use a truncated scientific mantissa for very large or very small values.
+    const exponent = Math.floor(Math.log10(abs));
+    const scale = 10 ** (digits - exponent);
+    shown = Number.isFinite(scale) ? Math.trunc(v * scale) / scale : v;
+    text = shown.toExponential(digits)
+      .replace(/\.0+e/, "e")
+      .replace(/(\.\d*?[1-9])0+e/, "$1e");
+  }
+
+  if (text === "-0") text = "0";
+  return { text, continued: Math.abs(v - shown) > tolerance };
+}
+function decimalText(x, digits = DISPLAY_DIGITS) {
+  const info = decimalInfo(x, digits);
+  const match = info.text.match(/^(.+)e([+-]?\d+)$/i);
+  if (match) return match[1] + (info.continued ? "⋯" : "") + "e" + String(Number(match[2]));
+  return info.text + (info.continued ? "⋯" : "");
+}
+function presetFormulaLatex() {
+  const parameter = latexExactNumber(state.param);
+  switch (state.preset) {
+    case "identity":
+      return "A=I_2.";
+    case "rotation":
+      return "A=\\begin{pmatrix}\\cos\\theta&-\\sin\\theta\\\\" +
+             "\\sin\\theta&\\cos\\theta\\end{pmatrix},\\qquad " +
+             "\\theta=" + parameter + "^{\\circ}.";
+    case "scaling":
+      return "A=\\begin{pmatrix}k&0\\\\0&k\\end{pmatrix},\\qquad " +
+             "k=" + parameter + ".";
+    case "shear":
+      return "A=\\begin{pmatrix}1&k\\\\0&1\\end{pmatrix},\\qquad " +
+             "k=" + parameter + ".";
+    case "reflection":
+      return "A=\\begin{pmatrix}\\cos(2\\phi)&\\sin(2\\phi)\\\\" +
+             "\\sin(2\\phi)&-\\cos(2\\phi)\\end{pmatrix},\\qquad " +
+             "\\phi=" + parameter + "^{\\circ}.";
+    case "projection":
+      return "A=\\begin{pmatrix}\\cos^2\\phi&\\sin\\phi\\cos\\phi\\\\" +
+             "\\sin\\phi\\cos\\phi&\\sin^2\\phi\\end{pmatrix},\\qquad " +
+             "\\phi=" + parameter + "^{\\circ}.";
+    default:
+      return "";
+  }
+}
+function renderLatex(element, source, displayMode = false) {
+  if (typeof katex === "object" && typeof katex.render === "function") {
+    katex.render(source, element, { throwOnError: false, displayMode });
+  } else {
+    element.textContent = source;
+  }
+}
+const $ = id => document.getElementById(id);
+
+/* ---------- HiDPI canvas setup ---------- */
+function setupCanvas(cv) {
+  const rect = cv.getBoundingClientRect();
+  if (rect.width < 10) return null;              // not laid out yet (hidden preview pane)
+  if (!cv.dataset.aspect) {
+    cv.dataset.aspect = cv.getAttribute("height") / cv.getAttribute("width");
+  }
+  let dpr = window.devicePixelRatio || 1;
+  if (rect.width * dpr > 3200) dpr = 3200 / rect.width;   // stay under canvas-size limits
+
+  const pixelWidth = Math.round(rect.width * dpr);
+  const pixelHeight = Math.round(rect.width * (+cv.dataset.aspect) * dpr);
+  if (cv.width !== pixelWidth || cv.height !== pixelHeight) {
+    cv.width = pixelWidth;
+    cv.height = pixelHeight;
+  }
+
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: cv.width / dpr, h: cv.height / dpr };
+}
+
+/* ---------- the apple tree (from the pinhole camera demo) ----------
+   Base at the origin, height H; local coords scaled from the original:
+   trunk quad + four canopy discs + one off-centre apple.               */
+const TREE_H = 2.0;
+const TREE = {
+  trunk: [[-0.07, 0], [0.07, 0], [0.05, 0.44], [-0.05, 0.44]]
+           .map(p => [p[0] * TREE_H, p[1] * TREE_H]),
+  blobs: [[0, 0.70, 0.28], [-0.18, 0.60, 0.19], [0.18, 0.60, 0.19], [0, 0.83, 0.17]]
+           .map(c => [c[0] * TREE_H, c[1] * TREE_H, c[2] * TREE_H]),
+  apple: [0.14 * TREE_H, 0.72 * TREE_H, 0.055 * TREE_H]
+};
+function circlePoints(cx, cy, r, n = 48) {
+  const pts = new Array(n);
+  for (let k = 0; k < n; k++) {
+    const t = 2 * Math.PI * k / n;
+    pts[k] = [cx + r * Math.cos(t), cy + r * Math.sin(t)];
+  }
+  return pts;
+}
+/* Draw the tree with every point sent through A (identity for the ghost).
+   The sampled circles become polygonal approximations of the image ellipses. */
+function drawTree(ctx, W, A, alpha, stroke) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.lineWidth = 1.4; ctx.lineJoin = "round";
+  const poly = pts => {
+    ctx.beginPath();
+    pts.forEach((p, i) => {
+      const q = W(apply(A, p));
+      i === 0 ? ctx.moveTo(q[0], q[1]) : ctx.lineTo(q[0], q[1]);
+    });
+    ctx.closePath(); ctx.fill();
+    if (stroke) ctx.stroke();   // keeps a det A = 0 image (a line segment) visible
+  };
+  ctx.fillStyle = ctx.strokeStyle = css("--tree-trunk");
+  poly(TREE.trunk);
+  ctx.fillStyle = ctx.strokeStyle = css("--tree-canopy");
+  TREE.blobs.forEach(c => poly(circlePoints(c[0], c[1], c[2])));
+  ctx.fillStyle = ctx.strokeStyle = css("--tree-apple");
+  poly(circlePoints(TREE.apple[0], TREE.apple[1], TREE.apple[2]));
+  ctx.restore();
+}
+
+/* ---------- arrows ---------- */
+function arrow(ctx, from, to, color, width, dash) {
+  const [x1, y1] = from, [x2, y2] = to;
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = width; ctx.lineCap = "round";
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.setLineDash([]);
+  if (len > 2) {
+    const hs = Math.min(11, 4 + width * 2.4);
+    const ang = Math.atan2(dy, dx);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - hs * Math.cos(ang - 0.42), y2 - hs * Math.sin(ang - 0.42));
+    ctx.lineTo(x2 - hs * Math.cos(ang + 0.42), y2 - hs * Math.sin(ang + 0.42));
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+function columnHandleGeometry(A, W) {
+  const O = W([0, 0]);
+  const q1 = W([A[0], A[2]]), q2 = W([A[1], A[3]]);
+  let h1 = q1.slice(), h2 = q2.slice();
+  let split = false;
+
+  if (distance(q1, q2) < 18) {
+    const mid = [(q1[0] + q2[0]) / 2, (q1[1] + q2[1]) / 2];
+    const vx = mid[0] - O[0], vy = mid[1] - O[1];
+    const n = Math.hypot(vx, vy);
+    const nx = n < 1 ? 1 : -vy / n;
+    const ny = n < 1 ? 0 : vx / n;
+    const offset = 8;
+    h1 = [q1[0] + nx * offset, q1[1] + ny * offset];
+    h2 = [q2[0] - nx * offset, q2[1] - ny * offset];
+    split = true;
+  }
+  return { O, q1, q2, h1, h2, split };
+}
+function drawHandle(ctx, actual, handle, color, split) {
+  if (split) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(actual[0], actual[1]);
+    ctx.lineTo(handle[0], handle[1]);
+    ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(handle[0], handle[1], 6, 0, 2 * Math.PI); ctx.fill();
+  ctx.strokeStyle = css("--surface-1"); ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(handle[0], handle[1], 6, 0, 2 * Math.PI); ctx.stroke();
+}
+
+/* ---------- main drawing ---------- */
+const plane = document.getElementById("plane");
+let worldCache = null;   // {W, Winv, w, h} for pointer handling
+let hoverP = null;       // hovered world point [x, y] or null
+
+function drawPlane() {
+  const s = setupCanvas(plane);
+  if (!s) return;                 // ResizeObserver redraws once the canvas has a size
+  const { ctx, w, h } = s;
+  ctx.clearRect(0, 0, w, h);
+  const cx = w / 2, cy = h / 2;
+  const S = Math.min(w, h) / (2 * (VIEW + 0.4));
+  const W = p => [cx + p[0] * S, cy - p[1] * S];               // world -> screen
+  const Winv = q => [(q[0] - cx) / S, (cy - q[1]) / S];        // screen -> world
+  worldCache = { W, Winv, w, h };
+  const A = state.A;
+  const N = Math.ceil(VIEW) + 2;
+  const EXT = N + 6;
+
+  // original square grid (recessive)
+  ctx.lineWidth = 1;
+  for (let k = -N; k <= N; k++) {
+    ctx.strokeStyle = css("--grid");
+    ctx.beginPath();
+    let p = W([k, -EXT]); ctx.moveTo(p[0], p[1]);
+    p = W([k, EXT]); ctx.lineTo(p[0], p[1]);
+    p = W([-EXT, k]); ctx.moveTo(p[0], p[1]);
+    p = W([EXT, k]); ctx.lineTo(p[0], p[1]);
+    ctx.stroke();
+  }
+
+  // axes
+  ctx.strokeStyle = css("--baseline");
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  let p = W([-EXT, 0]); ctx.moveTo(p[0], p[1]);
+  p = W([EXT, 0]); ctx.lineTo(p[0], p[1]);
+  p = W([0, -EXT]); ctx.moveTo(p[0], p[1]);
+  p = W([0, EXT]); ctx.lineTo(p[0], p[1]);
+  ctx.stroke();
+
+  // axis tick labels at 1
+  ctx.font = "11px system-ui, sans-serif";
+  ctx.fillStyle = css("--muted");
+  ctx.textAlign = "center";
+  p = W([1, 0]); ctx.fillText("1", p[0], p[1] + 14);
+  p = W([0, 1]); ctx.fillText("1", p[0] - 10, p[1] + 4);
+
+  // image grid: A maps {x = k} to the line through k·Ae1 with direction Ae2
+  ctx.save();
+  ctx.globalAlpha = 0.30;
+  ctx.strokeStyle = css("--accent");
+  ctx.lineWidth = 1;
+  for (let k = -N; k <= N; k++) {
+    ctx.beginPath();
+    let q = W(apply(A, [k, -EXT])); ctx.moveTo(q[0], q[1]);
+    q = W(apply(A, [k, EXT])); ctx.lineTo(q[0], q[1]);
+    q = W(apply(A, [-EXT, k])); ctx.moveTo(q[0], q[1]);
+    q = W(apply(A, [EXT, k])); ctx.lineTo(q[0], q[1]);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // trees: pale original, full-colour image
+  drawTree(ctx, W, [1, 0, 0, 1], 0.25, false);
+  drawTree(ctx, W, A, 0.95, true);
+
+  // basis vectors and their images
+  const handles = columnHandleGeometry(A, W);
+  const { O, q1, q2, h1, h2 } = handles;
+  const c1 = [A[0], A[2]], c2 = [A[1], A[3]];
+  arrow(ctx, O, W([1, 0]), css("--muted"), 1.6, [5, 4]);
+  arrow(ctx, O, W([0, 1]), css("--muted"), 1.6, [5, 4]);
+
+  if (distance(q1, q2) < 1) {
+    // A wide blue arrow beneath a narrower orange arrow keeps both coincident columns visible.
+    arrow(ctx, O, q1, css("--series-1"), 5.2);
+    arrow(ctx, O, q2, css("--series-2"), 2.4);
+  } else {
+    arrow(ctx, O, q1, css("--series-1"), 2.6);
+    arrow(ctx, O, q2, css("--series-2"), 2.6);
+  }
+
+  drawHandle(ctx, q1, h1, css("--series-1"), handles.split);
+  drawHandle(ctx, q2, h2, css("--series-2"), handles.split);
+
+  // labels: combine each basis-vector label with its image label whenever it is fixed
+  ctx.font = "12.5px system-ui, sans-serif";
+  const fixed1 = sameVector(c1, [1, 0]);
+  const fixed2 = sameVector(c2, [0, 1]);
+  const equalColumns = sameVector(c1, c2);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = fixed1 ? css("--text-primary") : css("--text-secondary");
+  p = W([1, 0]);
+  ctx.fillText(
+    fixed1 ? (equalColumns ? "e₁ = Ae₁ = Ae₂" : "e₁ = Ae₁") : "e₁",
+    p[0] + (fixed1 ? 8 : 5),
+    p[1] + (fixed1 ? 18 : 15)
+  );
+
+  ctx.textAlign = "right";
+  ctx.fillStyle = fixed2 ? css("--text-primary") : css("--text-secondary");
+  p = W([0, 1]);
+  ctx.fillText(
+    fixed2 ? (equalColumns ? "e₂ = Ae₁ = Ae₂" : "e₂ = Ae₂") : "e₂",
+    p[0] - 8,
+    p[1] - (fixed2 ? 10 : 6)
+  );
+
+  ctx.fillStyle = css("--text-primary");
+  const labelAt = (handle, c, text, side) => {
+    const n = Math.hypot(c[0], c[1]);
+    const ux = n < 1e-10 ? side : c[0] / n;
+    const uy = n < 1e-10 ? 0 : -c[1] / n;
+    ctx.textAlign = side > 0 ? "left" : "right";
+    ctx.fillText(text, handle[0] + side * 6 + 8 * ux, handle[1] + 4 + 8 * uy);
+  };
+
+  if (equalColumns) {
+    // When a common column is also a fixed basis vector, its combined label was drawn above.
+    if (!fixed1 && !fixed2) {
+      ctx.textAlign = "center";
+      ctx.fillText("Ae₁ = Ae₂", (h1[0] + h2[0]) / 2, Math.min(h1[1], h2[1]) - 12);
+    }
+  } else {
+    if (!fixed1) labelAt(h1, c1, "Ae₁", 1);
+    if (!fixed2) labelAt(h2, c2, "Ae₂", -1);
+  }
+
+  // hover marker: p (muted) and Ap (accent)
+  if (hoverP) {
+    const q0 = W(hoverP), q1Hover = W(apply(A, hoverP));
+    ctx.setLineDash([3, 3]);
+    ctx.strokeStyle = css("--baseline"); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(q0[0], q0[1]); ctx.lineTo(q1Hover[0], q1Hover[1]); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = css("--muted");
+    ctx.beginPath(); ctx.arc(q0[0], q0[1], 3.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = css("--series-3");
+    ctx.beginPath(); ctx.arc(q1Hover[0], q1Hover[1], 4.5, 0, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = css("--surface-1"); ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(q1Hover[0], q1Hover[1], 4.5, 0, 2 * Math.PI); ctx.stroke();
+  }
+}
+
+/* ---------- pointer interaction ---------- */
+const tooltip = document.getElementById("tooltip");
+let dragging = null;    // null | { column, pointerId, grabOffset: [dx, dy] }
+
+function localPointer(ev) {
+  const rect = plane.getBoundingClientRect();
+  return [ev.clientX - rect.left, ev.clientY - rect.top];
+}
+function pointerWorld(ev, grabOffset = [0, 0]) {
+  const p = localPointer(ev);
+  return worldCache.Winv([p[0] - grabOffset[0], p[1] - grabOffset[1]]);
+}
+function nearTip(ev) {
+  const p = localPointer(ev);
+  const handles = columnHandleGeometry(state.A, worldCache.W);
+  const d1 = distance(p, handles.h1), d2 = distance(p, handles.h2);
+  if (d1 >= 15 && d2 >= 15) return null;
+  return d1 <= d2 ? 1 : 2;
+}
+function endDrag(ev) {
+  if (!dragging || ev.pointerId !== dragging.pointerId) return;
+  if (plane.hasPointerCapture && plane.hasPointerCapture(ev.pointerId)) {
+    plane.releasePointerCapture(ev.pointerId);
+  }
+  dragging = null;
+  plane.style.cursor = "crosshair";
+}
+
+plane.addEventListener("pointerdown", ev => {
+  if (!worldCache || dragging) return;
+  const column = nearTip(ev);
+  if (!column) return;
+
+  const p = localPointer(ev);
+  const actual = column === 1
+    ? worldCache.W([state.A[0], state.A[2]])
+    : worldCache.W([state.A[1], state.A[3]]);
+  dragging = {
+    column,
+    pointerId: ev.pointerId,
+    grabOffset: [p[0] - actual[0], p[1] - actual[1]]
+  };
+  plane.setPointerCapture(ev.pointerId);
+  plane.style.cursor = "grabbing";
+  hoverP = null;
+  tooltip.style.display = "none";
+  ev.preventDefault();
+});
+
+plane.addEventListener("pointermove", ev => {
+  if (!worldCache) return;
+  if (dragging) {
+    if (ev.pointerId !== dragging.pointerId) return;
+    const p = pointerWorld(ev, dragging.grabOffset);
+    const sx = snapToStep(p[0], SNAP);
+    const sy = snapToStep(p[1], SNAP);
+    if (dragging.column === 1) { state.A[0] = sx; state.A[2] = sy; }
+    else                       { state.A[1] = sx; state.A[3] = sy; }
+    setPreset("custom");
+    update();
+    return;
+  }
+
+  plane.style.cursor = nearTip(ev) ? "grab" : "crosshair";
+  const p = pointerWorld(ev);
+  if (Math.abs(p[0]) > VIEW + 0.4 || Math.abs(p[1]) > VIEW + 0.4) {
+    hoverP = null;
+    tooltip.style.display = "none";
+    drawPlane();
+    return;
+  }
+
+  hoverP = [snapToStep(p[0], 0.1), snapToStep(p[1], 0.1)];
+  const q = apply(state.A, hoverP);
+  tooltip.innerHTML =
+    "p = (" + decimalText(hoverP[0], 1) + ", " + decimalText(hoverP[1], 1) + ")<br>" +
+    "Ap = (" + decimalText(q[0], 4) + ", " + decimalText(q[1], 4) + ")";
+  tooltip.style.display = "block";
+  tooltip.style.left = (ev.clientX + 14) + "px";
+  tooltip.style.top = (ev.clientY - 10) + "px";
+  drawPlane();
+});
+
+plane.addEventListener("pointerup", endDrag);
+plane.addEventListener("pointercancel", endDrag);
+plane.addEventListener("lostpointercapture", ev => {
+  if (dragging && ev.pointerId === dragging.pointerId) {
+    dragging = null;
+    plane.style.cursor = "crosshair";
+  }
+});
+plane.addEventListener("pointerleave", () => {
+  if (dragging) return;
+  hoverP = null;
+  tooltip.style.display = "none";
+  drawPlane();
+});
+
+/* ---------- presets & controls ---------- */
+function setPreset(key) {
+  state.preset = key;
+  document.querySelectorAll("#presets button").forEach(b =>
+    b.setAttribute("aria-pressed", b.dataset.preset === key ? "true" : "false"));
+  const cfg = PRESETS[key];
+  if (cfg && cfg.param) {
+    $("paramrow").hidden = false;
+    const s = $("param");
+    s.min = cfg.param.min;
+    s.max = cfg.param.max;
+    s.step = cfg.param.step;
+    s.value = cfg.param.value;
+    state.param = cfg.param.value;
+    $("paramlabel").textContent = cfg.param.label;
+  } else {
+    $("paramrow").hidden = true;
+  }
+}
+function usePresetMatrix(key) {
+  state.A = normalizeMatrix(PRESETS[key].matrix(state.param));
+}
+
+document.querySelectorAll("#presets button").forEach(b => {
+  b.addEventListener("click", () => {
+    const key = b.dataset.preset;
+    setPreset(key);
+    usePresetMatrix(key);
+    update();
+  });
+});
+
+$("param").addEventListener("input", e => {
+  state.param = +e.target.value;
+  const cfg = PRESETS[state.preset];
+  if (cfg && cfg.param) {
+    state.A = normalizeMatrix(cfg.matrix(state.param));
+    update();
+  }
+});
+
+function convertDisplayedPresetToCustom() {
+  if (state.preset === "custom") return;
+  const displayed = ENTRY_IDS.map((id, i) => {
+    const value = $(id).valueAsNumber;
+    return Number.isFinite(value) ? value : state.A[i];
+  });
+  state.A = displayed.map(cleanSignedZero);
+  setPreset("custom");
+}
+function restoreEntry(i) {
+  const input = $(ENTRY_IDS[i]);
+  if (state.preset !== "custom" && SYMBOLIC_PRESETS.has(state.preset)) {
+    input.value = decimalInfo(state.A[i]).text;
+  } else {
+    input.value = inputNumberString(state.A[i]);
+  }
+}
+
+ENTRY_IDS.forEach((id, i) => {
+  const input = $(id);
+  input.addEventListener("input", () => {
+    const v = input.valueAsNumber;
+    if (!Number.isFinite(v)) {
+      input.setAttribute("aria-invalid", "true");
+      return;
+    }
+    input.setAttribute("aria-invalid", "false");
+    convertDisplayedPresetToCustom();
+    state.A[i] = cleanSignedZero(v);
+    update(false);          // preserve the entry currently being typed
+  });
+  input.addEventListener("blur", () => {
+    if (!Number.isFinite(input.valueAsNumber)) restoreEntry(i);
+    input.setAttribute("aria-invalid", "false");
+  });
+  input.addEventListener("change", () => {
+    if (!Number.isFinite(input.valueAsNumber)) restoreEntry(i);
+    input.setAttribute("aria-invalid", "false");
+  });
+});
+
+/* ---------- readouts & sync ---------- */
+function syncMatrixInputs() {
+  const symbolic = state.preset !== "custom" && SYMBOLIC_PRESETS.has(state.preset);
+  ENTRY_IDS.forEach((id, i) => {
+    const input = $(id);
+    const entry = input.closest(".entry");
+    if (symbolic) {
+      const info = decimalInfo(state.A[i]);
+      input.value = info.text;
+      input.setAttribute("aria-invalid", "false");
+      entry.dataset.continued = info.continued ? "true" : "false";
+    } else {
+      input.value = inputNumberString(state.A[i]);
+      input.setAttribute("aria-invalid", "false");
+      entry.dataset.continued = "false";
+    }
+  });
+}
+function updateMatrixMetadata() {
+  renderLatex($("matrixname"), "A=");
+  const formula = presetFormulaLatex();
+  const formulaBox = $("presetformula");
+  formulaBox.hidden = !formula;
+  if (formula) renderLatex(formulaBox, formula, true);
+  else formulaBox.replaceChildren();
+}
+function update(syncInputs = true) {
+  if (syncInputs) syncMatrixInputs();
+  if (!syncInputs && state.preset === "custom") {
+    ENTRY_IDS.forEach(id => { $(id).closest(".entry").dataset.continued = "false"; });
+  }
+
+  const cfg = PRESETS[state.preset];
+  if (cfg && cfg.param) {
+    $("paramval").textContent = inputNumberString(state.param) + (cfg.param.unit || "");
+  }
+  updateMatrixMetadata();
+  drawPlane();
+}
+
+window.addEventListener("resize", drawPlane);
+window.addEventListener("load", drawPlane);
+if (window.ResizeObserver) {
+  let lastObsW = -1, rafPending = false;
+  const canvasContainer = plane.parentElement;
+  new ResizeObserver(entries => {
+    const wNow = Math.round(entries[entries.length - 1].contentRect.width);
+    if (wNow === lastObsW || rafPending) return;
+    lastObsW = wNow;
+    rafPending = true;
+    requestAnimationFrame(() => { rafPending = false; drawPlane(); });
+  }).observe(canvasContainer);
+}
+if (window.matchMedia) {
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawPlane);
+}
+
+/* ---------- init ---------- */
+document.addEventListener("DOMContentLoaded", () => {
+  if (typeof renderMathInElement === "function") {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "\\(", right: "\\)", display: false }
+      ]
+    });
+  }
+  setPreset("identity");
+  usePresetMatrix("identity");
+  update();
+});
+</script>
+</body>
+</html>
