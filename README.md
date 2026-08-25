@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of 42 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
+A collection of 43 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
 
 ## Contents
 
@@ -26,6 +26,7 @@ A collection of 42 interactive, browser-based visualizations for teaching mathem
 | [Binomial to Gaussian](https://so-okada.github.io/math_teaching_materials/binomialtogaussian.html) | Probability & Statistics | Central limit theorem, de Moivre-Laplace |
 | [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html) | Probability & Statistics | Normal distribution, random walks |
 | [Probability of a Defective Product](https://so-okada.github.io/math_teaching_materials/total_probability_demo.html) | Probability & Statistics | Law of total probability, Bayes' theorem, law of large numbers |
+| [Simpson's Paradox](https://so-okada.github.io/math_teaching_materials/simpsons_paradox.html) | Probability & Statistics | Weighted averages, confounding, aggregation reversal |
 | [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
 | [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html) | Geometry | Perspective projection, similar triangles, circle of confusion |
 | [Gömböc](https://so-okada.github.io/math_teaching_materials/gomboc.html) | Geometry | Mono-monostatic convex body, equilibrium points |
@@ -488,6 +489,23 @@ $$P(A|C) = \frac{P(A \cap C)}{P(C)}, \qquad P(B|C) = \frac{P(B \cap C)}{P(C)}.$$
 - **Sliders**: Defect rates $P(C|A)$, $P(C|B)$ and the mixing ratio $a:b$, with the problem text, diagram, and formulas updating live
 - **Area diagram**: Column widths are $P(A)$, $P(B)$; dark-band heights are the defect rates, so $P(C)$ is a sum of areas
 - **Simulation**: Draw 1/100/1000 products; tally table and bars show the observed defective fraction and origin split converging to $P(C)$, $P(A|C)$, $P(B|C)$ (law of large numbers)
+
+---
+
+### [Simpson's Paradox](https://so-okada.github.io/math_teaching_materials/simpsons_paradox.html)
+**File:** `simpsons_paradox.html`
+
+Two treatments $A$ and $B$ are compared on two groups of patients. In the default data, $A$ has the higher success rate in each group, yet $B$ has the higher pooled rate.
+
+**Mathematical Background:**
+The pooled rate is a weighted average of the group rates, with weights given by the case mix:
+$$\frac{s_1 + s_2}{n_1 + n_2} = \frac{n_1}{n_1+n_2}\cdot\frac{s_1}{n_1} + \frac{n_2}{n_1+n_2}\cdot\frac{s_2}{n_2}.$$
+Different weights for $A$ and $B$ can reverse the comparison. Geometrically, each treatment is the sum of two vectors $(n_i, s_i)$, and the pooled rate is the slope of the resultant.
+
+**Controls:**
+- **Editable table**: Successes and trials for each treatment and group, with exact rate comparison and a live verdict
+- **Case-mix sliders**: Move patients between groups while each within-group rate stays fixed
+- **Bar chart and vector picture**: Group rates vs. pooled rates, and the vector-addition view of why pooling can flip
 
 ---
 
