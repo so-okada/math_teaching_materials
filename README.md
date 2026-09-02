@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of 43 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
+A collection of 45 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
 
 ## Contents
 
@@ -18,6 +18,7 @@ A collection of 43 interactive, browser-based visualizations for teaching mathem
 | [Matrix Multiplication: A Nutrition Calculator](https://so-okada.github.io/math_teaching_materials/matrix_multiplication_nutrition.html) | Linear Algebra | Matrix–vector product, row and column pictures, inner product |
 | [Inverse Matrices: A Food Calculator](https://so-okada.github.io/math_teaching_materials/inverse_matrices_food_calc.html) | Linear Algebra | Inverse matrix, determinant, adjugate, linear systems |
 | [Linear Transformations of the Plane](https://so-okada.github.io/math_teaching_materials/linear_transformations_of_the_plane.html) | Linear Algebra | Matrix as a map of the plane, column picture, rotation, shear, reflection, projection |
+| [Complex Multiplication on the Gauss Plane](https://so-okada.github.io/math_teaching_materials/complex_multiplication.html) | Complex Numbers | Polar form, rotation and scaling, 2×2 matrix representation |
 | [Stirling's Formula](https://so-okada.github.io/math_teaching_materials/stirling_formula.html) | Approximation Theory | Factorial, asymptotic analysis |
 | [Small World Network](https://so-okada.github.io/math_teaching_materials/smallworld.html) | Graph Theory | Watts-Strogatz model, six degrees of separation |
 | [PageRank](https://so-okada.github.io/math_teaching_materials/pagerank.html) | Graph Theory | Markov chains, eigenvector centrality |
@@ -49,6 +50,7 @@ A collection of 43 interactive, browser-based visualizations for teaching mathem
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
 | [Strandbeest (Jansen Linkage)](https://so-okada.github.io/math_teaching_materials/strandbeest_demo.html) | Mechanics | Planar linkage, circle intersection, walking curve |
 | [Vibration (2nd-Order ODE)](https://so-okada.github.io/math_teaching_materials/vibration_demo.html) | Differential Equations | Damped harmonic oscillator, phase portraits |
+| [The Logistic Map](https://so-okada.github.io/math_teaching_materials/logistic_map.html) | Dynamical Systems | Cobweb plot, bifurcation diagram, period doubling, chaos, Lyapunov exponent |
 
 ---
 
@@ -300,6 +302,26 @@ $$A\begin{pmatrix}x\\ y\end{pmatrix} = x\,(A\vec e_1) + y\,(A\vec e_2).$$
 - Editable matrix entries 
 - Hover to see a point $p$ and its image $Ap$
 - Preset Choices: Identity, rotation, scaling, shear, reflection, and projection
+
+---
+
+## Complex Numbers
+
+### [Complex Multiplication on the Gauss Plane](https://so-okada.github.io/math_teaching_materials/complex_multiplication.html)
+**File:** `complex_multiplication.html`
+
+An apple tree and the coordinate grid on the Gauss plane are redrawn under $w \mapsto z\,w$ as $z$ is dragged: multiplication by $z = re^{i\theta}$ rotates the plane by $\theta$ and scales it by $r$.
+
+**Mathematical Background:**
+With $z = re^{i\theta}$ and $w = se^{i\varphi}$,
+$$z\,w = (rs)\,e^{i(\theta+\varphi)},$$
+so $|zw| = r|w|$ and $\operatorname{Arg}(zw) \equiv \operatorname{Arg} w + \theta \pmod{2\pi}$.
+
+**Controls:**
+- **Drag $z$** on the plane (Shift snaps to 15° and 0.25 steps), or use the $r$ and $\theta$ sliders
+- **Presets**: $z = 1$, $i$, $-1$, $-i$, $2$, $\tfrac12$, $e^{i\pi/3}$, $1.5\,e^{i\pi/4}$, $1+i$
+- **Hover** to see any $w$ and its image $zw$, with moduli and arguments
+- Live readout of polar and rectangular forms, $z\cdot 1$, $z\cdot i$, and the $2\times2$ matrix
 
 ---
 
@@ -996,6 +1018,21 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 
 ---
 
+## Dynamical Systems
+
+### [The Logistic Map](https://so-okada.github.io/math_teaching_materials/logistic_map.html)
+**File:** `logistic_map.html`
+
+The logistic map $x_{n+1} = r x_n(1 - x_n)$ from order to chaos: a cobweb plot and time series for the selected orbit, and a bifurcation diagram over $0 \le r \le 4$.
+
+**Controls:**
+- **Sliders**: $r$, initial value $x_0$, and steps shown
+- **Sensitivity check**: compare with a second orbit from $x_0 \pm 10^{-6}$ and its amplification factor
+- **Bifurcation diagram**: click or drag to set $r$, with labeled regime boundaries
+- **Status panel**: detected period, cycle-multiplier magnitude, and estimated Lyapunov exponent
+
+---
+
 ## Technical Notes
 
 **Dependencies:**
@@ -1028,6 +1065,7 @@ The damping ratio $\zeta = \dfrac{c}{2\sqrt{mk}}$ classifies the system behavior
 - `gomboc.html`: Uses Three.js and OrbitControls (CDN)
 - `shen_kuo_huiyuan_method_demo.html`: Uses KaTeX (CDN)
 - `linear_transformations_of_the_plane.html`: Uses KaTeX (CDN)
+- `complex_multiplication.html`: Uses KaTeX (CDN)
 
 ---
 
