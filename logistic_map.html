@@ -1,0 +1,749 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Logistic Map — Interactive Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;   /* parabola / orbit */
+    --series-2:       #eb6834;   /* cobweb / current r marker */
+    --series-3:       #1baf7a;   /* diagonal / second orbit */
+    --accent:         #2a78d6;
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-3:       #199e70;
+      --accent:         #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--text-primary);
+    font-family: var(--font-ui); line-height: 1.55;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 20px; font-size: 0.95rem; }
+  .disp { text-align: center; font-size: 1.15rem; margin: 14px 0; font-variant-numeric: tabular-nums; }
+  i, .disp i { font-family: Georgia, "Times New Roman", serif; }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.02rem; margin: 0 0 2px; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; display: block; touch-action: none; border-radius: 6px; }
+  .controls-row { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; margin: 8px 0 4px; }
+  .ctrl { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); }
+  .ctrl output { min-width: 3.6em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  input[type="range"] { accent-color: var(--series-1); width: 180px; min-width: 0; }
+  #rSl, #rSl3 { width: 100%; max-width: 640px; }
+  .panels { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  footer a, body > p a { overflow-wrap: anywhere; word-break: break-word; }
+  @media (max-width: 760px) { .panels { grid-template-columns: 1fr; } }
+  @media (max-width: 360px) {
+    .wrap { padding-left: 8px; padding-right: 8px; }
+    .card { padding: 12px; }
+    .controls-row { gap: 10px; }
+    .controls-row > .ctrl { flex: 1 1 100%; min-width: 0; }
+    .ctrl input[type="range"] { flex: 1 1 88px; width: auto; min-width: 0; }
+    .ctrl output { flex: 0 0 auto; min-width: 3.2em; }
+  }
+  .panel h3 { font-size: 0.9rem; margin: 0 0 6px; font-weight: 600; }
+  .rd {
+    font-size: 0.93rem; color: var(--text-secondary); margin-top: 8px;
+    font-variant-numeric: tabular-nums; line-height: 1.7;
+  }
+  .rd b { color: var(--text-primary); }
+  .status {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0 0; font-size: 0.95rem;
+  }
+  .status .tag {
+    display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem;
+    font-weight: 600; color: #fff; background: var(--series-1); margin-right: 6px;
+  }
+  .legend { display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 14px; height: 8px; border-radius: 2px;
+    margin-right: 6px; vertical-align: middle; opacity: 0.85;
+  }
+  .lg-1::before { background: var(--series-1); }
+  .lg-2::before { background: var(--series-2); }
+  .lg-3::before { background: var(--series-3); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>The Logistic Map: From Order to Chaos</h1></header>
+  <p class="subtitle">
+    The logistic map is the recurrence
+  </p>
+  <p class="disp"><i>x</i><sub><i>n</i>+1</sub> = <i>r</i> <i>x</i><sub><i>n</i></sub> (1 − <i>x</i><sub><i>n</i></sub>), &nbsp; 0 ≤ <i>x</i><sub><i>n</i></sub> ≤ 1, &nbsp; 0 ≤ <i>r</i> ≤ 4.</p>
+
+  <div class="card">
+    <h2>1. Choose the rate <i>r</i> and the initial value <i>x</i><sub>0</sub></h2>
+    <p class="hint">Drag the sliders, or click anywhere on the bifurcation diagram in section 3 to set <i>r</i>.</p>
+    <div class="controls-row">
+      <label class="ctrl" style="flex:1 1 100%"><i>r</i>
+        <input type="range" id="rSl" min="0" max="4" step="0.001" value="2.8">
+        <output id="rOut">2.800</output>
+      </label>
+    </div>
+    <div class="controls-row">
+      <label class="ctrl"><i>x</i><sub>0</sub>
+        <input type="range" id="x0Sl" min="0" max="1" step="0.001" value="0.2">
+        <output id="x0Out">0.200</output>
+      </label>
+      <label class="ctrl">steps shown
+        <input type="range" id="nSl" min="10" max="200" step="1" value="60">
+        <output id="nOut">60</output>
+      </label>
+      <label class="ctrl"><input type="checkbox" id="cmpChk"> compare with <i>x</i><sub>0</sub> <span id="cmpSignCtl">+</span> 10<sup>−6</sup> (sensitivity)</label>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Cobweb plot and time series</h2>
+    <p class="hint">
+      Left: start at <i>x</i><sub>0</sub> on the horizontal axis, go up to the parabola
+      <i>y</i> = <i>rx</i>(1 − <i>x</i>), across to the diagonal <i>y</i> = <i>x</i>, and repeat.
+      Each corner on the diagonal is one iterate. Right: the same iterates plotted against <i>n</i>.
+    </p>
+    <div class="panels">
+      <div class="panel">
+        <h3>Cobweb: <i>x</i><sub><i>n</i></sub> ↦ <i>x</i><sub><i>n</i>+1</sub></h3>
+        <canvas id="cvCob" width="640" height="640" aria-label="Cobweb plot of the logistic map"></canvas>
+        <div class="legend"><span class="lg-1">parabola <i>y</i> = <i>rx</i>(1 − <i>x</i>)</span><span class="lg-3">diagonal <i>y</i> = <i>x</i></span><span class="lg-2">cobweb path</span></div>
+      </div>
+      <div class="panel">
+        <h3>Time series: <i>x</i><sub><i>n</i></sub> vs <i>n</i></h3>
+        <canvas id="cvTs" width="640" height="640" aria-label="Time series of the logistic map"></canvas>
+        <div class="legend"><span class="lg-1">orbit of <i>x</i><sub>0</sub></span><span class="lg-3" id="lgCmp" hidden>orbit of <i>x</i><sub>0</sub> <span id="cmpSignLegend">+</span> 10<sup>−6</sup></span></div>
+      </div>
+    </div>
+    <div class="rd" id="rdOrbit"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. Bifurcation diagram: long-run behaviour as <i>r</i> varies</h2>
+    <canvas id="cvBif" width="1000" height="560" aria-label="Bifurcation diagram of the logistic map"></canvas>
+    <div class="controls-row">
+      <label class="ctrl" style="flex:1 1 100%"><i>r</i>
+        <input type="range" id="rSl3" min="0" max="4" step="0.001" value="2.8" >
+        <output id="rOut3">2.800</output>
+      </label>
+    </div>
+    <div class="legend"><span class="lg-2">current <i>r</i></span><span class="lg-3">major parameter-region boundaries</span></div>
+  </div>
+
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">Back to Collection</a></p>
+
+<script>
+"use strict";
+
+/* ---------- state ---------- */
+let r = 2.8, x0 = 0.2, N = 60, compare = false;
+const PERTURBATION = 1e-6;
+const PARAMETER_EPS = 1e-12;
+const LOG_SLOPE_TRANSIENT = 1000;
+const LOG_SLOPE_SAMPLES = 4000;
+const CYCLE_TRANSIENT_STAGES = [5000, 20000, 60000];
+const f = x => r * x * (1 - x);
+const atParameter = value => Math.abs(r - value) < PARAMETER_EPS;
+
+/* ---------- palette ---------- */
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let C = {};
+function refreshColors() {
+  C = { surface: cssVar('--surface-1'), grid: cssVar('--grid'), baseline: cssVar('--baseline'),
+        muted: cssVar('--text-muted'), ink: cssVar('--text-primary'),
+        s1: cssVar('--series-1'), s2: cssVar('--series-2'), s3: cssVar('--series-3') };
+}
+refreshColors();
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    refreshColors(); bifCache = null; updateAll();
+  });
+}
+function withAlpha(hex, al) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + al + ')';
+}
+function fmt(v, d) {
+  if (v === Infinity) return '∞';
+  if (v === -Infinity) return '−∞';
+  if (!Number.isFinite(v)) return '—';
+  const s = v.toFixed(d === undefined ? 3 : d);
+  return /^-0(\.0+)?$/.test(s) ? s.slice(1) : s.replace('-', '−');
+}
+/* Truncate, rather than round, when an equality is followed by a decimal expansion. */
+function fmtExpansion(v, d) {
+  if (v === Infinity) return '∞';
+  if (v === -Infinity) return '−∞';
+  if (!Number.isFinite(v)) return '—';
+  const digits = d === undefined ? 4 : d;
+  const sign = v < 0 ? '−' : '';
+  const a = Math.abs(v);
+  const scale = Math.pow(10, digits);
+  const nearest = Math.round(a * scale) / scale;
+  const tolerance = 64 * Number.EPSILON * Math.max(1, a, nearest);
+  if (Math.abs(a - nearest) <= tolerance) return sign + nearest.toFixed(digits);
+  const truncated = Math.floor(a * scale) / scale;
+  return sign + truncated.toFixed(digits) + '…';
+}
+function fmtScientificExpansion(v, significantDigits) {
+  if (v === Infinity) return '∞';
+  if (v === -Infinity) return '−∞';
+  if (!Number.isFinite(v)) return '—';
+  if (v === 0) return '0';
+  const digits = significantDigits === undefined ? 3 : significantDigits;
+  const sign = v < 0 ? '−' : '';
+  const a = Math.abs(v);
+  const exponent = Math.floor(Math.log10(a));
+  const mantissa = a / Math.pow(10, exponent);
+  return sign + fmtExpansion(mantissa, Math.max(0, digits - 1)) +
+         ' × 10<sup>' + String(exponent).replace('-', '−') + '</sup>';
+}
+function fmtMagnitude(v) {
+  if (v === Infinity) return '∞';
+  if (v === -Infinity) return '−∞';
+  if (!Number.isFinite(v)) return '—';
+  if (v === 0) return '0';
+  if (Math.abs(v) < 1e-3 || Math.abs(v) >= 1e4) return fmtScientificExpansion(v, 3);
+  return fmtExpansion(v, 4);
+}
+function fmtEstimate(v) {
+  if (!Number.isFinite(v)) return fmt(v);
+  if (v !== 0 && Math.abs(v) < 1e-3) return fmtScientificExpansion(v, 3);
+  return fmtExpansion(v, 3);
+}
+function canvasFontSize(cv, desiredCssPixels, minimumInternal, maximumInternal) {
+  const width = cv.getBoundingClientRect().width;
+  const scale = width > 0 ? width / cv.width : 1;
+  return Math.max(minimumInternal, Math.min(maximumInternal, desiredCssPixels / scale));
+}
+
+/* ---------- orbit computation ---------- */
+function orbit(x, n) {
+  const o = new Float64Array(n + 1); o[0] = x;
+  for (let i = 0; i < n; i++) o[i + 1] = r * o[i] * (1 - o[i]);
+  return o;
+}
+/* Average log-slope along a later part of the selected orbit. */
+function postTransientLogSlope(x) {
+  const initial = x;
+  if (atParameter(2) && initial > 0 && initial < 1) return -Infinity;
+  for (let i = 0; i < LOG_SLOPE_TRANSIENT; i++) x = r * x * (1 - x);
+  let sum = 0;
+  for (let i = 0; i < LOG_SLOPE_SAMPLES; i++) {
+    const d = Math.abs(r * (1 - 2 * x));
+    if (d === 0) return -Infinity;
+    sum += Math.log(d);
+    x = r * x * (1 - x);
+  }
+  return sum / LOG_SLOPE_SAMPLES;
+}
+function verifyCycleFrom(x, maxP, transient) {
+  const repeats = 8;
+  const tolerance = 1e-9;
+  const values = new Float64Array(repeats * maxP + 1);
+  values[0] = x;
+  for (let i = 1; i < values.length; i++) values[i] = r * values[i - 1] * (1 - values[i - 1]);
+
+  for (let p = 1; p <= maxP; p++) {
+    let verified = true;
+    let maxError = 0;
+    for (let i = p; i < values.length; i++) {
+      const error = Math.abs(values[i] - values[i - p]);
+      if (error > maxError) maxError = error;
+      if (error > tolerance) { verified = false; break; }
+    }
+    if (!verified) continue;
+
+    let logMultiplier = 0;
+    for (let i = 0; i < p; i++) {
+      const d = Math.abs(r * (1 - 2 * values[i]));
+      if (d === 0) { logMultiplier = -Infinity; break; }
+      logMultiplier += Math.log(d);
+    }
+    const stability = logMultiplier < -1e-8 ? 'stable' :
+                      logMultiplier >  1e-8 ? 'unstable' : 'neutral';
+    return { period: p, logMultiplier, stability, maxError, transient };
+  }
+  return null;
+}
+/*
+  Increase the discarded transient adaptively. This resolves the slow
+  convergence immediately below the first few period-doubling boundaries
+  without imposing the longest computation on every detected cycle.
+*/
+function detectCycle(x, maxP) {
+  let completed = 0;
+  let previous = null;
+  let finalCandidate = null;
+  for (const target of CYCLE_TRANSIENT_STAGES) {
+    for (; completed < target; completed++) x = r * x * (1 - x);
+    const cycle = verifyCycleFrom(x, maxP, target);
+    finalCandidate = cycle;
+    if (cycle && previous &&
+        cycle.period === previous.period && cycle.stability === previous.stability) {
+      return cycle;
+    }
+    previous = cycle;
+  }
+  /* Near a flip boundary, a transient can mimic twice the true period.
+     Use only the candidate from the longest transient if stages disagree. */
+  return finalCandidate;
+}
+function cycleMultiplierMagnitude(cycle) {
+  if (!cycle) return NaN;
+  if (cycle.logMultiplier === -Infinity) return 0;
+  if (cycle.logMultiplier > Math.log(Number.MAX_VALUE)) return Infinity;
+  return Math.exp(cycle.logMultiplier);
+}
+function comparisonOffset() {
+  return x0 + PERTURBATION <= 1 ? PERTURBATION : -PERTURBATION;
+}
+
+/* ---------- generic axes ---------- */
+const M = { l: 64, r: 18, t: 20, b: 52 };
+function makeMap(cv, xr, yr) {
+  const pw = cv.width - M.l - M.r, ph = cv.height - M.t - M.b;
+  return { px: x => M.l + (x - xr[0]) / (xr[1] - xr[0]) * pw,
+           py: y => M.t + ph - (y - yr[0]) / (yr[1] - yr[0]) * ph,
+           ix: p => xr[0] + (p - M.l) / pw * (xr[1] - xr[0]),
+           iy: p => yr[0] + (M.t + ph - p) / ph * (yr[1] - yr[0]),
+           pw, ph };
+}
+function niceStep(range) {
+  const raw = range / 6, pow = Math.pow(10, Math.floor(Math.log10(raw)));
+  for (const m of [1, 2, 5, 10]) if (m * pow >= raw) return m * pow;
+  return 10 * pow;
+}
+function fmtTick(v) { const s = (Math.round(v * 1000) / 1000).toString(); return s === '-0' ? '0' : s; }
+function drawAxes(cv, xr, yr, xLab, yLab, displayCanvas) {
+  const ctx = cv.getContext('2d'), mp = makeMap(cv, xr, yr);
+  const fontCanvas = displayCanvas || cv;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = C.surface; ctx.fillRect(0, 0, cv.width, cv.height);
+  const xs = niceStep(xr[1] - xr[0]), ys = niceStep(yr[1] - yr[0]);
+  ctx.lineWidth = 1; ctx.font = canvasFontSize(fontCanvas, 11, 17, 38) + 'px system-ui, sans-serif';
+  for (let v = Math.ceil(xr[0] / xs - 1e-9) * xs; v <= xr[1] + 1e-9; v += xs) {
+    const p = mp.px(v);
+    ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(p, M.t); ctx.lineTo(p, M.t + mp.ph); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(fmtTick(v), p, M.t + mp.ph + 6);
+  }
+  for (let v = Math.ceil(yr[0] / ys - 1e-9) * ys; v <= yr[1] + 1e-9; v += ys) {
+    const p = mp.py(v);
+    ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(M.l, p); ctx.lineTo(M.l + mp.pw, p); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(fmtTick(v), M.l - 8, p);
+  }
+  ctx.strokeStyle = C.baseline; ctx.strokeRect(M.l, M.t, mp.pw, mp.ph);
+  ctx.fillStyle = C.muted; ctx.font = 'italic ' + canvasFontSize(fontCanvas, 13, 20, 42) + 'px Georgia, serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText(xLab, M.l + mp.pw / 2, M.t + mp.ph + 28);
+  ctx.save(); ctx.translate(16, M.t + mp.ph / 2); ctx.rotate(-Math.PI / 2);
+  ctx.textBaseline = 'middle'; ctx.fillText(yLab, 0, 0); ctx.restore();
+  return { ctx, mp };
+}
+
+/* ---------- cobweb ---------- */
+const cvCob = document.getElementById('cvCob');
+function drawCobweb(o) {
+  const { ctx, mp } = drawAxes(cvCob, [0, 1], [0, 1], 'xₙ', 'xₙ₊₁');
+  ctx.save(); ctx.beginPath(); ctx.rect(M.l, M.t, mp.pw, mp.ph); ctx.clip();
+  /* diagonal */
+  ctx.strokeStyle = C.s3; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(mp.px(0), mp.py(0)); ctx.lineTo(mp.px(1), mp.py(1)); ctx.stroke();
+  /* parabola */
+  ctx.strokeStyle = C.s1; ctx.lineWidth = 3; ctx.beginPath();
+  for (let i = 0; i <= 300; i++) { const x = i / 300, y = f(x); i ? ctx.lineTo(mp.px(x), mp.py(y)) : ctx.moveTo(mp.px(x), mp.py(y)); }
+  ctx.stroke();
+  /* cobweb path */
+  const n = o.length - 1;
+  ctx.lineWidth = 1.6;
+  ctx.strokeStyle = C.s2;
+  ctx.beginPath(); ctx.moveTo(mp.px(o[0]), mp.py(0));
+  for (let i = 0; i < n; i++) {
+    ctx.lineTo(mp.px(o[i]), mp.py(o[i + 1]));      /* up/down to parabola */
+    ctx.lineTo(mp.px(o[i + 1]), mp.py(o[i + 1]));  /* across to diagonal */
+  }
+  ctx.stroke();
+  /* mark the first few corners and the last */
+  ctx.fillStyle = C.s2;
+  for (let i = 1; i <= Math.min(n, 3); i++) { ctx.beginPath(); ctx.arc(mp.px(o[i]), mp.py(o[i]), 4, 0, 2 * Math.PI); ctx.fill(); }
+  ctx.beginPath(); ctx.arc(mp.px(o[0]), mp.py(0), 6, 0, 2 * Math.PI); ctx.fill();
+  ctx.fillStyle = C.ink; ctx.font = '16px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('x₀', mp.px(o[0]), mp.py(0) - 8);
+  ctx.beginPath(); ctx.arc(mp.px(o[n]), mp.py(o[n]), 6, 0, 2 * Math.PI); ctx.fillStyle = C.ink; ctx.fill();
+  /* fixed point marker */
+  if (r > 1) {
+    const xs = 1 - 1 / r;
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.arc(mp.px(xs), mp.py(xs), 9, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+/* ---------- time series ---------- */
+const cvTs = document.getElementById('cvTs');
+function drawTs(o, o2) {
+  const { ctx, mp } = drawAxes(cvTs, [0, N], [0, 1], 'n', 'xₙ');
+  ctx.save(); ctx.beginPath(); ctx.rect(M.l, M.t, mp.pw, mp.ph); ctx.clip();
+  function series(arr, col) {
+    ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i = 0; i < arr.length; i++) i ? ctx.lineTo(mp.px(i), mp.py(arr[i])) : ctx.moveTo(mp.px(i), mp.py(arr[i]));
+    ctx.stroke();
+    ctx.fillStyle = col;
+    const rad = N <= 80 ? 3.5 : 2;
+    for (let i = 0; i < arr.length; i++) { ctx.beginPath(); ctx.arc(mp.px(i), mp.py(arr[i]), rad, 0, 2 * Math.PI); ctx.fill(); }
+  }
+  if (r > 1) {
+    const xs = 1 - 1 / r;
+    ctx.strokeStyle = C.baseline; ctx.setLineDash([4, 4]); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(M.l, mp.py(xs)); ctx.lineTo(M.l + mp.pw, mp.py(xs)); ctx.stroke(); ctx.setLineDash([]);
+  }
+  if (o2) series(o2, C.s3);
+  series(o, C.s1);
+  ctx.restore();
+}
+
+/* ---------- bifurcation diagram (rendered once per view, cached) ---------- */
+const cvBif = document.getElementById('cvBif');
+let bifView = { r: [0, 4], x: [0, 1] };
+let bifCache = null;
+function renderBif() {
+  const cv = document.createElement('canvas'); cv.width = cvBif.width; cv.height = cvBif.height;
+  const { ctx, mp } = drawAxes(cv, bifView.r, bifView.x, 'r', 'x', cvBif);
+  const img = ctx.getImageData(M.l, M.t, mp.pw, mp.ph);
+  const data = img.data, W = mp.pw, H = mp.ph;
+  const dark = C.surface.length === 7 && parseInt(C.surface.slice(1, 3), 16) < 128;
+  const ink = dark ? [255, 255, 255] : [11, 11, 11];
+  /* accumulate hit counts */
+  const cnt = new Float32Array(W * H);
+  const cols = W * 2;                                /* sub-pixel r sampling */
+  const zoom = 4 / (bifView.r[1] - bifView.r[0]);
+  const transient = Math.min(10000, Math.round(1600 * Math.sqrt(zoom)));
+  const keep = Math.min(4000, Math.round(800 * Math.sqrt(zoom)));
+  for (let c = 0; c < cols; c++) {
+    const rr = bifView.r[0] + (c + 0.5) / cols * (bifView.r[1] - bifView.r[0]);
+    let x = 0.5;
+    for (let i = 0; i < transient; i++) x = rr * x * (1 - x);
+    const px = Math.floor(c / 2);
+    for (let i = 0; i < keep; i++) {
+      x = rr * x * (1 - x);
+      const py = Math.min(H - 1, Math.max(0,
+        Math.floor((bifView.x[1] - x) / (bifView.x[1] - bifView.x[0]) * (H - 1))));
+      cnt[py * W + px] += 1;
+    }
+  }
+  /* map counts to alpha with a log scale so sparse chaos is visible but cycles are dark */
+  let mx = 0; for (let i = 0; i < cnt.length; i++) if (cnt[i] > mx) mx = cnt[i];
+  const lmx = Math.log(1 + mx);
+  for (let i = 0; i < cnt.length; i++) {
+    if (!cnt[i]) continue;
+    const a = Math.min(1, 0.25 + 0.75 * Math.log(1 + cnt[i]) / lmx);
+    const k = i * 4;
+    data[k] = Math.round(data[k] * (1 - a) + ink[0] * a);
+    data[k + 1] = Math.round(data[k + 1] * (1 - a) + ink[1] * a);
+    data[k + 2] = Math.round(data[k + 2] * (1 - a) + ink[2] * a);
+  }
+  ctx.putImageData(img, M.l, M.t);
+  bifCache = cv;
+}
+/* Major regimes before the accumulation point, followed by a mixed region. */
+const R2 = 1 + Math.sqrt(6);
+const R4 = 3.5440903596;
+const R8 = 3.5644072661;
+const RINF = 3.5699456720;
+const REGIMES = [
+  { a: 0,    b: 1,    name: 'extinction attractor',                  short: 'extinction' },
+  { a: 1,    b: 3,    name: 'attracting fixed point',                short: 'fixed point' },
+  { a: 3,    b: R2,   name: 'attracting 2-cycle',                    short: '2-cycle' },
+  { a: R2,   b: R4,   name: 'attracting 4-cycle',                    short: '4-cycle' },
+  { a: R4,   b: R8,   name: 'attracting 8-cycle',                    short: '8-cycle' },
+  { a: R8,   b: RINF, name: 'period-doubling cascade',               short: 'cascade' },
+  { a: RINF, b: 4,    name: 'mixed region',                          short: 'mixed region' }
+];
+const REGIME_BOUNDARIES = [
+  { value: 1,    name: 'nonhyperbolic boundary at r = 1' },
+  { value: 3,    name: 'first period-doubling boundary' },
+  { value: R2,   name: 'second period-doubling boundary' },
+  { value: R4,   name: 'period-doubling boundary' },
+  { value: R8,   name: 'period-doubling boundary' },
+  { value: RINF, name: 'period-doubling accumulation point' }
+];
+function regimeOf(rr) {
+  for (const b of REGIME_BOUNDARIES) {
+    if (Math.abs(rr - b.value) < PARAMETER_EPS) return { point: true, value: b.value, name: b.name };
+  }
+  for (const g of REGIMES) {
+    if ((rr >= g.a && rr < g.b) || (rr === 4 && g.b === 4)) return g;
+  }
+  return REGIMES[REGIMES.length - 1];
+}
+function expectedAttractingPeriod(rr) {
+  if (rr > 3 && rr < R2) return 2;
+  if (rr > R2 && rr < R4) return 4;
+  if (rr > R4 && rr < R8) return 8;
+  return 0;
+}
+function drawBif() {
+  if (!bifCache) renderBif();
+  const ctx = cvBif.getContext('2d');
+  ctx.clearRect(0, 0, cvBif.width, cvBif.height);
+  ctx.drawImage(bifCache, 0, 0);
+  const mp = makeMap(cvBif, bifView.r, bifView.x);
+  const cur = regimeOf(r);
+
+  ctx.save(); ctx.beginPath(); ctx.rect(M.l, M.t, mp.pw, mp.ph); ctx.clip();
+  /* Highlight either the current interval or a bifurcation boundary. */
+  ctx.fillStyle = withAlpha(C.s2, 0.10);
+  if (cur.point) {
+    ctx.fillRect(mp.px(cur.value) - 2, M.t, 4, mp.ph);
+  } else {
+    ctx.fillRect(mp.px(cur.a), M.t, Math.max(3, mp.px(cur.b) - mp.px(cur.a)), mp.ph);
+  }
+
+  for (const b of REGIME_BOUNDARIES) {
+    if (b.value > bifView.r[0] && b.value < bifView.r[1]) {
+      const p = mp.px(b.value);
+      ctx.strokeStyle = withAlpha(C.s3, 0.8); ctx.lineWidth = 1.2; ctx.setLineDash([5, 5]);
+      ctx.beginPath(); ctx.moveTo(p, M.t); ctx.lineTo(p, M.t + mp.ph); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+
+  ctx.font = '600 ' + canvasFontSize(cvBif, 10, 15, 38) + 'px system-ui, sans-serif'; ctx.textBaseline = 'top';
+  let lastLabelEnd = -Infinity;
+  for (const g of REGIMES) {
+    const lo = Math.max(mp.px(g.a), M.l), hi = Math.min(mp.px(g.b), M.l + mp.pw);
+    if (hi - lo < 4) continue;
+    const w = ctx.measureText(g.short).width;
+    const centre = (lo + hi) / 2;
+    if (hi - lo >= w + 8 && centre - w / 2 > lastLabelEnd + 4) {
+      ctx.fillStyle = C.s3; ctx.textAlign = 'center';
+      ctx.fillText(g.short, centre, M.t + 6);
+      lastLabelEnd = centre + w / 2;
+    }
+  }
+  ctx.restore();
+
+  if (r >= bifView.r[0] && r <= bifView.r[1]) {
+    const p = mp.px(r);
+    ctx.strokeStyle = C.s2; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(p, M.t); ctx.lineTo(p, M.t + mp.ph); ctx.stroke();
+  }
+}
+(function attachBif() {
+  /* drag anywhere on the diagram to slide r */
+  let down = false;
+  const toR = ev => {
+    const b = cvBif.getBoundingClientRect(), mp = makeMap(cvBif, bifView.r, bifView.x);
+    const px = (ev.clientX - b.left) * cvBif.width / b.width;
+    return Math.round(Math.min(4, Math.max(0, mp.ix(px))) * 1000) / 1000;
+  };
+  cvBif.style.cursor = 'ew-resize';
+  const set = ev => { r = toR(ev); rSl.value = r; rSl3.value = r; updateAll(); };
+  cvBif.addEventListener('pointerdown', ev => { down = true; cvBif.setPointerCapture(ev.pointerId); set(ev); });
+  cvBif.addEventListener('pointermove', ev => { if (down) set(ev); });
+  const end = () => { down = false; };
+  cvBif.addEventListener('pointerup', end); cvBif.addEventListener('pointercancel', end);
+})();
+let resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { bifCache = null; updateAll(); }, 120);
+});
+
+/* ---------- UI ---------- */
+const rSl = document.getElementById('rSl'), rSl3 = document.getElementById('rSl3'), x0Sl = document.getElementById('x0Sl'), nSl = document.getElementById('nSl');
+rSl.addEventListener('input', () => { r = Number(rSl.value); rSl3.value = r; updateAll(); });
+rSl3.addEventListener('input', () => { r = Number(rSl3.value); rSl.value = r; updateAll(); });
+x0Sl.addEventListener('input', () => { x0 = Number(x0Sl.value); updateAll(); });
+nSl.addEventListener('input', () => { N = Number(nSl.value); updateAll(); });
+document.getElementById('cmpChk').addEventListener('change', ev => { compare = ev.target.checked; updateAll(); });
+
+function describeZeroOrbit() {
+  const first = x0 === 0 ? 'The selected orbit remains at <b>0</b>.' :
+                           'The selected orbit has <i>x</i><sub>1</sub> = 0 and then remains at <b>0</b>.';
+  if (r < 1) {
+    return ['extinction', first + ' The fixed point 0 is attracting because |<i>f</i>′(0)| = <i>r</i> = ' + fmt(r) + ' &lt; 1.'];
+  }
+  if (atParameter(1)) {
+    return ['nonhyperbolic orbit', first + ' Here <i>f</i>′(0) = 1, so 0 is nonhyperbolic.'];
+  }
+  return [x0 === 0 ? 'exceptional fixed orbit' : 'exceptional preperiodic orbit',
+          first + ' However, 0 is repelling because |<i>f</i>′(0)| = <i>r</i> = ' + fmt(r) + ' &gt; 1; this exact trajectory is exceptional.'];
+}
+
+function describe(tailSlope, cycle) {
+  if (x0 === 0 || x0 === 1) return describeZeroOrbit();
+
+  if (r < 1) {
+    return ['extinction', 'Every orbit in [0, 1] tends to <b>0</b>: the only fixed point in [0, 1] is 0, and |<i>f</i>′(0)| = <i>r</i> &lt; 1.'];
+  }
+  if (atParameter(1)) {
+    return ['nonhyperbolic attraction',
+      'The fixed point 0 has <i>f</i>′(0) = 1, but <i>f</i>(<i>x</i>) = <i>x</i> − <i>x</i><sup>2</sup> &lt; <i>x</i> for 0 &lt; <i>x</i> ≤ 1.<br>The selected orbit therefore decreases to 0 very slowly; 0 is one-sided attracting, not neutral.'];
+  }
+
+  const xs = 1 - 1 / r;
+  const xStar = '<i>x</i><sup>*</sup>';
+  if (r < 2) {
+    return ['stable fixed point',
+      'The selected orbit converges to ' + xStar + ' = 1 − 1/<i>r</i> = <b>' + fmtExpansion(xs, 4) + '</b>, since |<i>f</i>′(' + xStar + ')| = |2 − <i>r</i>| = ' + fmt(Math.abs(2 - r)) + ' &lt; 1.<br>Near the fixed point, the positive slope gives a staircase-like approach.'];
+  }
+  if (atParameter(2)) {
+    return ['superstable fixed point',
+      'The selected orbit converges to ' + xStar + ' = 1/2. Since <i>f</i>′(' + xStar + ') = 0, this fixed point is superstable.'];
+  }
+  if (r < 3) {
+    return ['stable fixed point',
+      'The selected orbit converges to ' + xStar + ' = 1 − 1/<i>r</i> = <b>' + fmtExpansion(xs, 4) + '</b>, since |<i>f</i>′(' + xStar + ')| = |2 − <i>r</i>| = ' + fmt(Math.abs(2 - r)) + ' &lt; 1.<br>Near the fixed point, the negative slope makes successive iterates alternate about it.'];
+  }
+  if (atParameter(3)) {
+    return ['period-doubling boundary',
+      'The fixed point ' + xStar + ' = 2/3 has <i>f</i>′(' + xStar + ') = −1. No distinct attracting 2-cycle exists at <i>r</i> = 3.<br>For 0 &lt; <i>x</i><sub>0</sub> &lt; 1, the orbit generally converges to ' + xStar + ' very slowly, alternating about it.'];
+  }
+
+  if (cycle && cycle.stability === 'stable') {
+    const mu = cycleMultiplierMagnitude(cycle);
+    return ['period ' + cycle.period,
+      'The nonzero fixed point ' + xStar + ' = ' + fmtExpansion(xs, 4) + ' is unstable because |<i>f</i>′(' + xStar + ')| = ' + fmt(r - 2) + ' &gt; 1.<br>The selected orbit approaches an attracting cycle of period <b>' + cycle.period + '</b>; the computed cycle-multiplier magnitude is <b>' + fmtMagnitude(mu) + '</b> &lt; 1.'];
+  }
+  if (cycle && cycle.stability === 'unstable') {
+    const mu = cycleMultiplierMagnitude(cycle);
+    return ['exceptional period-' + cycle.period + ' orbit',
+      'After the transient, the selected orbit repeats with period <b>' + cycle.period + '</b>, but the computed cycle-multiplier magnitude is <b>' + fmtMagnitude(mu) + '</b> &gt; 1.<br>This cycle is repelling, so the selected start is an exceptional eventually periodic trajectory, not an attracting cycle.'];
+  }
+  if (cycle && cycle.stability === 'neutral') {
+    return ['nonhyperbolic period-' + cycle.period + ' orbit',
+      'The selected orbit repeats with period <b>' + cycle.period + '</b>, and the computed cycle-multiplier magnitude is approximately 1.<br>The cycle is nonhyperbolic rather than attracting.'];
+  }
+  const expectedPeriod = expectedAttractingPeriod(r);
+  if (!cycle && expectedPeriod) {
+    return ['period ' + expectedPeriod + ' (slow convergence)',
+      'The parameter lies in the attracting period-' + expectedPeriod + ' interval, but convergence is very slow near its period-doubling boundary.<br>The adaptive finite numerical test did not fully resolve the cycle.'];
+  }
+  if (tailSlope > 1e-3) {
+    return ['chaotic behaviour',
+      'No attracting cycle of period at most 64 was verified, and the estimated Lyapunov exponent is positive.<br>This is numerical evidence of sensitive chaotic behaviour for the selected orbit.'];
+  }
+  if (tailSlope < -1e-3) {
+    return ['unresolved attracting behaviour',
+      'The estimated Lyapunov exponent is negative, but no cycle of period at most 64 was verified.<br>The attractor may be a cycle of higher period, or convergence may be too slow for the numerical test.'];
+  }
+  return ['transition or unresolved behaviour',
+    'No cycle of period at most 64 was verified, and the estimated Lyapunov exponent is near 0.<br>The orbit may be near a bifurcation boundary or may require a longer computation.'];
+}
+
+function logSlopeReport(tailSlope) {
+  let report;
+  if (atParameter(2) && x0 > 0 && x0 < 1) {
+    report = '<br>Lyapunov exponent of the superstable attracting fixed point: <b>−∞</b>.';
+  } else {
+    report = '<br>Estimated Lyapunov exponent from finitely many iterates: <b>' + fmtEstimate(tailSlope) + '</b>.';
+  }
+  if (atParameter(1)) {
+    report += ' The asymptotic exponent at the nonhyperbolic fixed point 0 is 0.';
+  } else if (atParameter(3) && x0 > 0 && x0 < 1) {
+    report += ' The asymptotic exponent at the nonhyperbolic fixed point 2/3 is 0.';
+  } else if (atParameter(4)) {
+    report += ' For almost every initial value at <i>r</i> = 4, the asymptotic Lyapunov exponent is ln 2 = 0.693…; exceptional orbits can have a different value.';
+  }
+  if (atParameter(0) || x0 === 0.5) {
+    report += '<br>The pointwise Lyapunov exponent from the selected initial value is <b>−∞</b>, because <i>f</i>′(<i>x</i><sub>0</sub>) = 0.';
+  }
+  return report;
+}
+
+function updateAll() {
+  document.getElementById('rOut').textContent = fmt(r);
+  document.getElementById('rOut3').textContent = fmt(r);
+  document.getElementById('x0Out').textContent = fmt(x0);
+  document.getElementById('nOut').textContent = N;
+
+  const delta0 = comparisonOffset();
+  const sign = delta0 > 0 ? '+' : '−';
+  document.getElementById('cmpSignCtl').textContent = sign;
+  document.getElementById('cmpSignLegend').textContent = sign;
+
+  const o = orbit(x0, N);
+  const o2 = compare ? orbit(x0 + delta0, N) : null;
+  document.getElementById('lgCmp').hidden = !compare;
+  drawCobweb(o);
+  drawTs(o, o2);
+  drawBif();
+
+  const tailSlope = postTransientLogSlope(x0);
+  const cycle = detectCycle(x0, 64);
+  const [tag, description] = describe(tailSlope, cycle);
+  document.getElementById('status').innerHTML =
+    '<span class="tag">' + tag + '</span><br>' + description + logSlopeReport(tailSlope);
+
+  let s = 'First iterates: ';
+  for (let i = 0; i <= Math.min(6, N); i++) {
+    s += '<i>x</i><sub>' + i + '</sub> = ' + fmtExpansion(o[i], 4) + (i < Math.min(6, N) ? ', ' : ' … ');
+  }
+  s += '<i>x</i><sub>' + N + '</sub> = <b>' + fmtExpansion(o[N], 4) + '</b>.';
+
+  if (o2) {
+    const difference = Math.abs(o[N] - o2[N]);
+    const mergedAtMachinePrecision = difference === 0 && !atParameter(0);
+    s += '<br>With the second start <i>x</i><sub>0</sub> ' + sign + ' 10<sup>−6</sup>: ';
+    if (mergedAtMachinePrecision) {
+      s += '|difference at <i>n</i> = ' + N + '| is <b>below double-precision resolution</b>; the actual amplification factor cannot be resolved from these floating-point iterates.';
+    } else {
+      const factor = difference / Math.abs(delta0);
+      s += '|difference at <i>n</i> = ' + N + '| = <b>' + fmtMagnitude(difference) +
+           '</b>; actual amplification factor = <b>' + fmtMagnitude(factor) + '</b>.';
+    }
+    if (tailSlope > 1e-3) {
+      s += ' While a separation remains small, the long-run linearized model is |δ<sub><i>n</i></sub>| ≈ |δ<sub>0</sub>|e<sup>λ<i>n</i></sup>, with λ represented here by the estimated Lyapunov exponent. This model need not describe every displayed step or the separation after it becomes macroscopic.';
+    } else if (tailSlope < -1e-3 && tailSlope !== -Infinity) {
+      s += ' A negative estimated Lyapunov exponent indicates average contraction on the later orbit, although the distance can increase on individual steps.';
+    } else if (tailSlope === -Infinity && atParameter(2) && x0 > 0 && x0 < 1) {
+      s += ' The orbit approaches the critical fixed point, so perturbations contract super-exponentially and the asymptotic Lyapunov exponent is −∞.';
+    } else if (tailSlope === -Infinity) {
+      s += ' The later orbit passes through a critical point, so its linearized derivative product is zero.';
+    } else {
+      s += ' A near-zero estimated Lyapunov exponent indicates weak average expansion or contraction, as can occur near a bifurcation boundary.';
+    }
+  }
+  document.getElementById('rdOrbit').innerHTML = s;
+}
+updateAll();
+</script>
+</body>
+</html>
