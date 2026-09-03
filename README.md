@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of 47 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. The demos are subject to rounding and approximation errors.
+A collection of 48 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. The demos are subject to rounding and approximation errors.
 
 ## Contents
 
@@ -46,6 +46,7 @@ A collection of 47 interactive, browser-based visualizations for teaching mathem
 | [Gradient Descent](https://so-okada.github.io/math_teaching_materials/gradient_descent.html) | Numerical Analysis | Steepest descent, learning rate, convergence |
 | [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html) | Analysis | Limit definition, series, compound interest |
 | [Sound & Harmonics](https://so-okada.github.io/math_teaching_materials/fourier_sound_harmonics.html) | Analysis | Fourier series, harmonics, timbre, Gibbs phenomenon |
+| [The Sampling Theorem: Hearing Aliasing](https://so-okada.github.io/math_teaching_materials/sampling_theorem_aliasing.html) | Analysis | Sampling theorem, Nyquist frequency, aliasing |
 | [Fourier Epicycles](https://so-okada.github.io/math_teaching_materials/fourier_epicycles.html) | Analysis | Complex Fourier series, discrete Fourier transform, epicycles |
 | [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
 | [Catenary Curve](https://so-okada.github.io/math_teaching_materials/catenary.html) | Differential Geometry | Hyperbolic cosine, hanging chain, curvature |
@@ -908,6 +909,13 @@ The tone is a finite Fourier sine series at fundamental frequency $f$:
 $$y(t) = \sum_{n=1}^{10} a_n \sin(2\pi n f t)$$
 
 The amplitude recipe $(a_1, \ldots, a_{10})$ determines the waveform and the timbre, independently of pitch. Presets include square-wave (odd harmonics, $a_n = 1/n$, showing the Gibbs phenomenon) and sawtooth ($a_n = 1/n$ for all $n$) approximations; faster decay of high-frequency coefficients corresponds to smoother waveforms.
+
+---
+
+### [The Sampling Theorem: Hearing Aliasing](https://so-okada.github.io/math_teaching_materials/sampling_theorem_aliasing.html)
+**File:** `sampling_theorem_aliasing.html`
+
+Interactive demo of sampling a sine wave, ideal reconstruction, and aliasing. Adjust the tone frequency and sampling rate, compare the original and reconstructed waves, listen to both signals, or run a frequency sweep.
 
 ---
 
