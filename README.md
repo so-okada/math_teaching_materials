@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of 45 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. 
+A collection of 47 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. The demos are subject to rounding and approximation errors.
 
 ## Contents
 
@@ -28,6 +28,7 @@ A collection of 45 interactive, browser-based visualizations for teaching mathem
 | [Galton Board](https://so-okada.github.io/math_teaching_materials/galton_board.html) | Probability & Statistics | Normal distribution, random walks |
 | [Probability of a Defective Product](https://so-okada.github.io/math_teaching_materials/total_probability_demo.html) | Probability & Statistics | Law of total probability, Bayes' theorem, law of large numbers |
 | [Simpson's Paradox](https://so-okada.github.io/math_teaching_materials/simpsons_paradox.html) | Probability & Statistics | Weighted averages, confounding, aggregation reversal |
+| [Anscombe's Quartet](https://so-okada.github.io/math_teaching_materials/anscombe_quartet.html) | Probability & Statistics | Summary statistics, correlation, regression line, why plotting matters |
 | [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html) | Geometry | Cone slicing, eccentricity, degenerate conics |
 | [Pinhole Camera](https://so-okada.github.io/math_teaching_materials/pinhole_camera.html) | Geometry | Perspective projection, similar triangles, circle of confusion |
 | [Gömböc](https://so-okada.github.io/math_teaching_materials/gomboc.html) | Geometry | Mono-monostatic convex body, equilibrium points |
@@ -45,6 +46,7 @@ A collection of 45 interactive, browser-based visualizations for teaching mathem
 | [Gradient Descent](https://so-okada.github.io/math_teaching_materials/gradient_descent.html) | Numerical Analysis | Steepest descent, learning rate, convergence |
 | [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html) | Analysis | Limit definition, series, compound interest |
 | [Sound & Harmonics](https://so-okada.github.io/math_teaching_materials/fourier_sound_harmonics.html) | Analysis | Fourier series, harmonics, timbre, Gibbs phenomenon |
+| [Fourier Epicycles](https://so-okada.github.io/math_teaching_materials/fourier_epicycles.html) | Analysis | Complex Fourier series, discrete Fourier transform, epicycles |
 | [Clothoid Highway Curves](https://so-okada.github.io/math_teaching_materials/clothoid_highway_demo.html) | Differential Geometry | Euler spiral, curvature, road design |
 | [Catenary Curve](https://so-okada.github.io/math_teaching_materials/catenary.html) | Differential Geometry | Hyperbolic cosine, hanging chain, curvature |
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
@@ -531,6 +533,25 @@ Different weights for $A$ and $B$ can reverse the comparison. Geometrically, eac
 
 ---
 
+### [Anscombe's Quartet](https://so-okada.github.io/math_teaching_materials/anscombe_quartet.html)
+**File:** `anscombe_quartet.html`
+
+Four data sets of eleven points with nearly identical means, variances, correlation, and regression line, but very different scatter plots.
+
+**Mathematical Background:**
+With $n = 11$ points $(x_i, y_i)$, the summary statistics are
+$$\bar x = \frac{\sum x}{n}, \quad s_x^2 = \frac{\sum x^2 - n\bar x^2}{n-1}, \quad r = \frac{\sum xy - n\bar x\bar y}{\sqrt{\sum x^2 - n\bar x^2}\,\sqrt{\sum y^2 - n\bar y^2}}, \quad b = r\,\frac{s_y}{s_x}, \quad a = \bar y - b\bar x.$$
+All four sets share $\bar x = 9$, $\bar y \approx 7.50$, $r \approx 0.816$, and $\hat y \approx 3.00 + 0.500\,x$.
+
+**Controls:**
+- **Drag any point** or edit the raw data table; the statistics update live and turn red where the four sets stop agreeing
+- **Toggles**: Regression line, means, residuals
+- **Reset**: Restore Anscombe's original data
+
+**Reference:** F. J. Anscombe, "Graphs in Statistical Analysis," *The American Statistician* **27** (1973), 17–21. [doi:10.1080/00031305.1973.10478966](https://doi.org/10.1080/00031305.1973.10478966)
+
+---
+
 ## Geometry
 
 ### [Conic Sections](https://so-okada.github.io/math_teaching_materials/conic_sections.html)
@@ -887,6 +908,24 @@ The tone is a finite Fourier sine series at fundamental frequency $f$:
 $$y(t) = \sum_{n=1}^{10} a_n \sin(2\pi n f t)$$
 
 The amplitude recipe $(a_1, \ldots, a_{10})$ determines the waveform and the timbre, independently of pitch. Presets include square-wave (odd harmonics, $a_n = 1/n$, showing the Gibbs phenomenon) and sawtooth ($a_n = 1/n$ for all $n$) approximations; faster decay of high-frequency coefficients corresponds to smoother waveforms.
+
+---
+
+### [Fourier Epicycles](https://so-okada.github.io/math_teaching_materials/fourier_epicycles.html)
+**File:** `fourier_epicycles.html`
+
+Draw a closed curve and watch a chain of rotating circles (epicycles) redraw it: each circle is one term of the complex Fourier series.
+
+**Mathematical Background:**
+A closed curve is a 1-periodic function $z(t) = x(t) + i\,y(t)$ with
+$$z(t) = \sum_{k=-\infty}^{\infty} a_k\, e^{2\pi i k t}, \qquad a_k = \int_0^1 z(t)\, e^{-2\pi i k t}\, dt.$$
+The demo samples the curve at $N = 511$ equally spaced points along its length and computes the discrete coefficients $c_k$ for $|k| \le 255$.
+
+**Controls:**
+- **Draw** a curve on the left, or choose a preset (heart, star, square, figure eight, random blob)
+- **Number of terms $M$** (1–511), ordered by largest $|c_k|$ or lowest $|k|$
+- **Animation period, show circles, play/pause**
+- **Amplitude spectrum** $|c_k|$ with a table of the leading coefficients
 
 ---
 
