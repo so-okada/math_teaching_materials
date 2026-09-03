@@ -1,0 +1,492 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sampling Theorem &amp; Aliasing — Interactive Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;   /* original signal */
+    --series-2:       #eb6834;   /* reconstructed / alias */
+    --series-dim:     #9ec5f4;   /* spectral images */
+    --band:           rgba(42,120,214,0.08);
+    --danger:         #c62828;
+    --ok:             #2e7d32;
+    --accent-bg:      #2a78d6;
+    --accent-fg:      #ffffff;
+    --accent:         #2a78d6;
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-dim:     #1c5cab;
+      --band:           rgba(57,135,229,0.14);
+      --danger:         #ef5350;
+      --ok:             #66bb6a;
+      --accent-bg:      #3987e5;
+      --accent-fg:      #ffffff;
+      --accent:         #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 20px; font-size: 0.95rem; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.02rem; margin: 0 0 2px; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 6px; }
+  .controls-row {
+    display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
+    margin-bottom: 4px;
+  }
+  .ctrl { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); }
+  .ctrl output { min-width: 5.4em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  input[type="range"] { accent-color: var(--series-1); width: 200px; }
+  input[type="range"].fs { accent-color: var(--series-2); }
+  input[type="checkbox"] { accent-color: var(--series-1); width: 16px; height: 16px; }
+  button {
+    font: inherit; font-size: 0.88rem;
+    padding: 7px 14px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface-1); color: var(--text-primary);
+  }
+  button:hover { border-color: var(--baseline); }
+  button.primary { background: var(--accent-bg); color: var(--accent-fg); border-color: transparent; font-weight: 600; min-width: 130px; }
+  button.alias { background: var(--series-2); color: #fff; border-color: transparent; font-weight: 600; min-width: 130px; }
+  .formula {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0 0; font-size: 0.95rem; overflow-x: auto;
+    color: var(--text-primary);
+  }
+  .formula i, .readout i, h2 i, .subtitle i, p i, label i { font-family: Georgia, "Times New Roman", serif; }
+  .readout {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;
+    margin: 10px 0 0;
+  }
+  .stat {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; font-size: 0.82rem; color: var(--text-secondary);
+  }
+  .stat b { display: block; font-size: 1.15rem; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .stat.heard b { color: var(--series-2); }
+  .status { font-weight: 600; font-size: 0.9rem; margin: 10px 0 0; }
+  .status.bad { color: var(--danger); }
+  .status.good { color: var(--ok); }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
+  details p { font-size: 0.9rem; color: var(--text-secondary); }
+  .legend { display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 14px; height: 3px;
+    border-radius: 2px; margin-right: 6px; vertical-align: middle;
+  }
+  .lg-orig::before { background: var(--series-1); }
+  .lg-rec::before  { background: var(--series-2); }
+  .lg-img::before  { background: var(--series-dim); }
+  .lg-dot::before  { width: 8px; height: 8px; border-radius: 50%; background: var(--text-primary); }
+  .why p { font-size: 0.92rem; color: var(--text-secondary); margin: 8px 0; }
+  .why b { color: var(--text-primary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>The Sampling Theorem: Hearing Aliasing</h1>
+  </header>
+  <p class="subtitle">
+    In this idealized model, a digital recorder stores uniformly spaced <b>samples</b> of a sound wave,
+    taken <i>f</i><sub>s</sub> times per second. The <b>Nyquist–Shannon sampling theorem</b> says that the
+    signal can be reconstructed exactly when all its frequencies are below <i>f</i><sub>s</sub>/2.
+  </p>
+
+  <div class="card">
+    <h2>1. The signal and the sampler</h2>
+    <div class="controls-row">
+      <label class="ctrl">Tone <i>&nbsp;f&nbsp;</i>
+        <input type="range" id="freq" min="100" max="5000" step="10" value="1000">
+        <output id="freqOut">1 000 Hz</output>
+      </label>
+      <label class="ctrl">Sampling rate <i>&nbsp;f</i><sub>s</sub>&nbsp;
+        <input type="range" id="fs" class="fs" min="1000" max="48000" step="50" value="8000">
+        <output id="fsOut">8 000 Hz</output>
+      </label>
+    </div>
+    <div class="readout">
+      <div class="stat">tone <i>f</i><b id="rF">1 000 Hz</b></div>
+      <div class="stat">Nyquist frequency <i>f</i><sub>s</sub>/2<b id="rNy">4 000 Hz</b></div>
+      <div class="stat">samples per period <i>f</i><sub>s</sub>/<i>f</i><b id="rSpp">8.0</b></div>
+      <div class="stat heard">ideal reconstruction<b id="rHeard">1 000 Hz</b></div>
+    </div>
+    <p class="status good" id="status"></p>
+  </div>
+
+  <div class="card">
+    <h2>2. Time domain — the samples and what they reconstruct</h2>
+    <canvas id="time" width="1600" height="440" aria-label="Time-domain view of a sine wave, its samples, and the reconstructed wave"></canvas>
+    <div class="legend">
+      <span class="lg-orig">original tone <i>f</i></span>
+      <span class="lg-dot">samples at spacing 1/<i>f</i><sub>s</sub></span>
+      <span class="lg-rec">reconstruction (sinc/ideal low-pass)</span>
+    </div>
+  </div>
+
+
+  <div class="card">
+    <h2>3. Listen</h2>
+    <div class="controls-row">
+      <button class="primary" id="playOrig">▶ Original tone</button>
+      <button class="alias" id="playSamp">▶ After sampling</button>
+      <label class="ctrl">Volume
+        <input type="range" id="vol" min="0" max="50" step="1" value="25" style="width:120px">
+        <output id="volOut">25 %</output>
+      </label>
+    </div>
+    <div class="controls-row" style="margin-top:10px">
+      <label class="ctrl"><input type="checkbox" id="sweep"> Sweep <i>f</i> from 100 Hz to 5 kHz (6 s, loops)</label>
+      <span class="ctrl">sweep position: <output id="sweepOut" style="min-width:7em">—</output></span>
+    </div>
+  </div>
+
+  <p class="hint" style="text-align:center">Audio uses the Web Audio API — works in any modern browser. No data leaves your device.</p>
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">Back to Collection</a></p>
+
+<script>
+"use strict";
+/* ---------- state ---------- */
+const S = {
+  f: 1000,          // tone frequency (Hz)
+  fs: 8000,         // sampling rate (Hz)
+  source: null,     // null | 'orig' | 'samp'   (what is sounding)
+  sweep: false,
+  sweepT0: 0,
+  sweepRaf: null
+};
+const SWEEP_LO = 100, SWEEP_HI = 5000, SWEEP_DUR = 6;   // seconds, logarithmic sweep
+
+/* Signed folded frequency r in [-fs/2, fs/2). Away from the two degenerate
+   classes r = 0 and |r| = fs/2, ideal reconstruction is sin(2π r t). */
+function folded(f, fs) { return f - fs * Math.round(f / fs); }
+function nearlyEqual(a, b) {
+  return Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b));
+}
+/* For the fixed-frequency sine used in this demo, these classes give x[n] = 0
+   for every integer n, so the ideal reconstruction is silent. */
+function isSilentSampleSequence(f, fs) {
+  const r = folded(f, fs);
+  return nearlyEqual(r, 0) || nearlyEqual(Math.abs(r), fs / 2);
+}
+function idealValue(t, f, fs) {
+  return isSilentSampleSequence(f, fs) ? 0 : Math.sin(2 * Math.PI * folded(f, fs) * t);
+}
+function sampleValue(n, f, fs) {
+  if (isSilentSampleSequence(f, fs)) return 0;
+  return Math.sin(2 * Math.PI * folded(f, fs) * n / fs);
+}
+
+/* ---------- palette from CSS ---------- */
+function cssVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+let C = {};
+function refreshColors() {
+  C = {
+    surface: cssVar('--surface-1'), grid: cssVar('--grid'), baseline: cssVar('--baseline'),
+    muted: cssVar('--text-muted'), ink: cssVar('--text-primary'),
+    orig: cssVar('--series-1'), rec: cssVar('--series-2'), dim: cssVar('--series-dim'),
+    band: cssVar('--band'), danger: cssVar('--danger')
+  };
+}
+refreshColors();
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { refreshColors(); redraw(); });
+}
+
+/* ---------- DOM ---------- */
+const $ = id => document.getElementById(id);
+const freqEl = $('freq'), fsEl = $('fs'), volEl = $('vol');
+const timeCv = $('time');
+const tctx = timeCv.getContext('2d');
+
+function fmtHz(v) {
+  const r = Math.round(v);
+  return r.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' Hz';
+}
+
+/* ---------- readouts ---------- */
+function updateReadout() {
+  const { f, fs } = S;
+  const r = folded(f, fs);
+  const fa = Math.abs(r);
+  const silent = isSilentSampleSequence(f, fs);
+  $('freqOut').textContent = fmtHz(f);
+  $('fsOut').textContent = fmtHz(fs);
+  $('rF').textContent = fmtHz(f);
+  $('rNy').textContent = fmtHz(fs / 2);
+  $('rSpp').textContent = (fs / f).toFixed(fs / f < 10 ? 2 : 1);
+  $('rHeard').textContent = silent ? 'silence' : fmtHz(fa);
+  const st = $('status');
+  if (f < fs / 2 && !nearlyEqual(f, fs / 2)) {
+    st.className = 'status good';
+    st.textContent = 'f < fs/2: ideal reconstruction reproduces the original sine wave exactly.';
+  } else if (nearlyEqual(f, fs / 2)) {
+    st.className = 'status bad';
+    st.textContent = 'f = fs/2: the displayed sine is sampled at zero crossings, so all samples are zero and the ideal reconstruction is silence. At this boundary, the original sine wave is not uniquely determined by its samples.';
+  } else if (silent) {
+    st.className = 'status bad';
+    if (nearlyEqual(r, 0)) {
+      st.textContent = 'f > fs/2: ALIASING — all samples are zero, so the ideal reconstruction is silence.';
+    } else {
+      st.textContent = 'f > fs/2: ALIASING — the folded frequency is at the Nyquist boundary. All samples are zero, so the ideal reconstruction is silence.';
+    }
+  } else {
+    st.className = 'status bad';
+    st.textContent = 'f > fs/2: ALIASING — the samples are identical to those of ' +
+      (r < 0 ? 'a sign-reversed ' : 'a ') + fmtHz(fa) + ' sine wave.';
+  }
+}
+
+/* ---------- time-domain canvas ---------- */
+function drawTime() {
+  const W = timeCv.width, H = timeCv.height;
+  const L = 60, R = 50, T = 20, B = 60;
+  const plotW = W - L - R, plotH = H - T - B;
+  const { f, fs } = S;
+  const r = folded(f, fs);
+  tctx.clearRect(0, 0, W, H);
+  tctx.fillStyle = C.surface; tctx.fillRect(0, 0, W, H);
+
+  /* window: enough to show a few periods of f and a few samples */
+  const Tw = Math.max(5 / f, 10 / fs);
+  const xOf = t => L + (t / Tw) * plotW;
+  const yOf = v => T + plotH / 2 - v * (plotH / 2) * 0.85;
+
+  /* grid */
+  tctx.strokeStyle = C.grid; tctx.lineWidth = 1;
+  for (let k = 1; k < 4; k++) {
+    const x = L + plotW * k / 4;
+    tctx.beginPath(); tctx.moveTo(x, T); tctx.lineTo(x, T + plotH); tctx.stroke();
+  }
+  tctx.strokeStyle = C.baseline; tctx.lineWidth = 1.5;
+  tctx.beginPath(); tctx.moveTo(L, yOf(0)); tctx.lineTo(L + plotW, yOf(0)); tctx.stroke();
+
+  /* reconstruction (sinc / ideal low-pass) */
+  const lastSampleIndex = Math.floor(Tw * fs + 1e-9);
+  const sampleCount = lastSampleIndex + 1;
+  tctx.strokeStyle = C.rec; tctx.lineWidth = 3;
+  tctx.beginPath();
+  const P = 1200;
+  for (let i = 0; i <= P; i++) {
+    const t = Tw * i / P;
+    const v = idealValue(t, f, fs);
+    i === 0 ? tctx.moveTo(xOf(t), yOf(v)) : tctx.lineTo(xOf(t), yOf(v));
+  }
+  tctx.stroke();
+
+  /* original tone */
+  tctx.strokeStyle = C.orig; tctx.lineWidth = 2;
+  tctx.globalAlpha = (!isSilentSampleSequence(f, fs) && nearlyEqual(r, f)) ? 0.55 : 1;   /* coincides with orange → show both */
+  tctx.beginPath();
+  const P2 = Math.min(6000, Math.max(1200, Math.ceil(Tw * f * 40)));
+  for (let i = 0; i <= P2; i++) {
+    const t = Tw * i / P2;
+    const v = Math.sin(2 * Math.PI * f * t);
+    i === 0 ? tctx.moveTo(xOf(t), yOf(v)) : tctx.lineTo(xOf(t), yOf(v));
+  }
+  tctx.stroke();
+  tctx.globalAlpha = 1;
+
+  /* samples */
+  const dotR = sampleCount > 300 ? 2.5 : sampleCount > 80 ? 4 : 7;
+  tctx.fillStyle = C.ink;
+  for (let n = 0; n <= lastSampleIndex; n++) {
+    const t = n / fs;
+    const v = sampleValue(n, f, fs);
+    tctx.beginPath(); tctx.arc(xOf(t), yOf(v), dotR, 0, 2 * Math.PI); tctx.fill();
+    if (sampleCount <= 80) {                     /* stems */
+      tctx.strokeStyle = C.ink; tctx.lineWidth = 1; tctx.globalAlpha = 0.35;
+      tctx.beginPath(); tctx.moveTo(xOf(t), yOf(0)); tctx.lineTo(xOf(t), yOf(v)); tctx.stroke();
+      tctx.globalAlpha = 1;
+    }
+  }
+
+  /* labels */
+  tctx.fillStyle = C.muted; tctx.font = '19px ' + cssVar('--font-ui');
+  tctx.textAlign = 'center'; tctx.textBaseline = 'top';
+  for (let k = 0; k <= 4; k++) {
+    const t = Tw * k / 4;
+    tctx.fillText((t * 1000).toFixed(t * 1000 < 1 ? 2 : 1) + ' ms', L + plotW * k / 4, T + plotH + 8);
+  }
+  tctx.fillText('time', L + plotW / 2, T + plotH + 32);
+  tctx.textAlign = 'left';
+  tctx.fillText('window = ' + (Tw * 1000).toFixed(2) + ' ms  ·  ' + (Tw * f).toFixed(1) + ' periods of f  ·  ' + sampleCount + ' samples', L, T - 2);
+}
+
+function redraw() { updateReadout(); drawTime(); }
+
+/* ---------- controls ---------- */
+freqEl.addEventListener('input', () => {
+  S.f = Number(freqEl.value);
+  updateActiveAudio();
+  redraw();
+});
+fsEl.addEventListener('input', () => {
+  S.fs = Number(fsEl.value);
+  updateActiveAudio();
+  redraw();
+});
+volEl.addEventListener('input', () => {
+  $('volOut').textContent = volEl.value + ' %';
+  if (masterGain && actx) masterGain.gain.setTargetAtTime(getVol(), actx.currentTime, 0.02);
+});
+function getVol() { return Number(volEl.value) / 100 * 0.3; }
+
+/* ---------- sweep ---------- */
+$('sweep').addEventListener('change', event => {
+  S.sweep = event.target.checked;
+  freqEl.disabled = S.sweep;
+  if (S.sweep) {
+    S.sweepT0 = performance.now();
+    if (S.sweepRaf === null) S.sweepRaf = requestAnimationFrame(sweepFrame);
+  } else {
+    if (S.sweepRaf !== null) cancelAnimationFrame(S.sweepRaf);
+    S.sweepRaf = null;
+    $('sweepOut').textContent = '—';
+  }
+});
+
+function sweepFrame(now) {
+  if (!S.sweep) {
+    S.sweepRaf = null;
+    return;
+  }
+  const elapsed = (now - S.sweepT0) / 1000;
+  const u = (elapsed % SWEEP_DUR) / SWEEP_DUR;
+  const sweptFrequency = SWEEP_LO * Math.pow(SWEEP_HI / SWEEP_LO, u);
+  S.f = Math.min(SWEEP_HI, Math.max(SWEEP_LO, Math.round(sweptFrequency / 10) * 10));
+  freqEl.value = String(S.f);
+  $('sweepOut').textContent = (u * SWEEP_DUR).toFixed(1) + ' s / ' + SWEEP_DUR + ' s';
+  updateActiveAudio();
+  redraw();
+  S.sweepRaf = requestAnimationFrame(sweepFrame);
+}
+
+/* ---------- audio ----------
+   original : sin(2π f t)
+   sampled  : sin(2π r t), where r is the signed folded frequency; the
+              zero-sample classes r = 0 and |r| = fs/2 produce silence */
+let actx = null, masterGain = null, osc = null, voiceGain = null;
+
+function ensureAudio() {
+  if (actx) return;
+  actx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = actx.createGain();
+  masterGain.gain.value = getVol();
+  masterGain.connect(actx.destination);
+}
+
+function audioParameters(source) {
+  if (source === 'orig') return { frequency: S.f, amplitude: 1 };
+  const r = folded(S.f, S.fs);
+  if (isSilentSampleSequence(S.f, S.fs)) return { frequency: 1, amplitude: 0 };
+  return { frequency: Math.abs(r), amplitude: r < 0 ? -1 : 1 };
+}
+
+function updateActiveAudio() {
+  if (!actx || !osc || !voiceGain || !S.source) return;
+  const t = actx.currentTime;
+  const { frequency, amplitude } = audioParameters(S.source);
+  osc.frequency.cancelScheduledValues(t);
+  osc.frequency.setTargetAtTime(frequency, t, 0.01);
+  voiceGain.gain.cancelScheduledValues(t);
+  voiceGain.gain.setTargetAtTime(amplitude, t, 0.01);
+}
+
+function stopVoice() {
+  if (!osc || !voiceGain || !actx) return;
+  const oldOsc = osc, oldGain = voiceGain;
+  osc = null;
+  voiceGain = null;
+  const t = actx.currentTime;
+  oldGain.gain.cancelScheduledValues(t);
+  oldGain.gain.setTargetAtTime(0, t, 0.01);
+  oldOsc.stop(t + 0.08);
+  oldOsc.onended = () => { oldOsc.disconnect(); oldGain.disconnect(); };
+}
+
+function startVoice(source) {
+  ensureAudio();
+  stopVoice();
+  const t = actx.currentTime;
+  const { frequency, amplitude } = audioParameters(source);
+  osc = actx.createOscillator();
+  voiceGain = actx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = frequency;
+  voiceGain.gain.value = 0;
+  osc.connect(voiceGain).connect(masterGain);
+  osc.start(t);
+  voiceGain.gain.linearRampToValueAtTime(amplitude, t + 0.03);
+}
+
+const btnO = $('playOrig'), btnS = $('playSamp');
+function setSource(source) {
+  ensureAudio();
+  actx.resume();
+  if (S.source === source) {
+    S.source = null;
+    stopVoice();
+  } else {
+    S.source = source;
+    startVoice(source);
+  }
+  btnO.textContent = (S.source === 'orig') ? '■ Stop' : '▶ Original tone';
+  btnS.textContent = (S.source === 'samp') ? '■ Stop' : '▶ After sampling';
+}
+btnO.addEventListener('click', () => setSource('orig'));
+btnS.addEventListener('click', () => setSource('samp'));
+
+/* ---------- init ---------- */
+$('volOut').textContent = volEl.value + ' %';
+redraw();
+</script>
+</body>
+</html>
