@@ -1,0 +1,384 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anscombe's Quartet — Interactive Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --s1: #2a78d6;   /* I   blue   */
+    --s2: #eb6834;   /* II  orange */
+    --s3: #2f8f5b;   /* III green  */
+    --s4: #8a5cd6;   /* IV  purple */
+    --ok: #2f8f5b;
+    --warn: #c2412d;
+    --accent: #2a78d6;
+    --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --s1: #3987e5;
+      --s2: #ef7a48;
+      --s3: #5fc48c;
+      --s4: #b08ff0;
+      --ok: #5fc48c;
+      --warn: #f0705c;
+      --accent: #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text-primary); font-family: var(--font-ui); line-height: 1.6; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.35rem; margin: 0 0 18px; }
+  h2 { font-size: 1.02rem; margin: 0 0 12px; }
+  h3 { font-size: .92rem; margin: 0 0 6px; }
+  a { color: var(--accent); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 18px; }
+  .problem { font-size: .95rem; }
+  .note { font-size: .8rem; color: var(--muted); margin-top: 10px; }
+  .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  button { font: inherit; font-size: .85rem; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--baseline); border-radius: 7px; padding: 5px 14px; cursor: pointer; }
+  button:hover { border-color: var(--muted); }
+  label.chk { font-size: .85rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+  /* grid of four plots */
+  .quad { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 560px) { .quad { grid-template-columns: 1fr; } }
+  .panel { border: 1px solid var(--border); border-radius: 8px; padding: 10px 10px 6px; background: var(--page); }
+  .panel h3 span.stat { font-weight: 400; color: var(--muted); font-size: .8rem; margin-left: 8px; font-variant-numeric: tabular-nums; }
+  svg { width: 100%; height: auto; display: block; touch-action: none; }
+  .pt { cursor: grab; }
+  .pt:active { cursor: grabbing; }
+  /* stats table */
+  .tblwrap { overflow-x: auto; }
+  table { border-collapse: collapse; font-size: .88rem; width: 100%; }
+  th, td { border: 1px solid var(--grid); padding: 5px 8px; text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th { color: var(--text-secondary); font-weight: 500; }
+  td.rowhead { text-align: left; font-weight: 600; }
+  th.c1 { color: var(--s1); } th.c2 { color: var(--s2); } th.c3 { color: var(--s3); } th.c4 { color: var(--s4); }
+  td.same { color: var(--ok); font-weight: 600; }
+  td.diff { color: var(--warn); font-weight: 600; }
+  .verdict { margin-top: 14px; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); font-size: .92rem; }
+  .verdict.same { border-color: var(--ok); } .verdict.same strong { color: var(--ok); }
+  .verdict.diff { border-color: var(--warn); } .verdict.diff strong { color: var(--warn); }
+  /* raw data */
+  .data-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 720px) { .data-grid { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  .data-grid table { font-size: .8rem; }
+  .data-grid td input { width: 64px; font: inherit; text-align: right; padding: 1px 3px; border: 1px solid var(--baseline); border-radius: 4px; background: var(--page); color: var(--text-primary); }
+  .formula { font-family: Georgia, "Times New Roman", serif; font-size: 1rem; overflow-x: auto; padding: 4px 0; }
+  .formula .row { margin: 6px 0; white-space: nowrap; }
+  .frac { display: inline-block; vertical-align: middle; text-align: center; line-height: 1.15; }
+  .frac .top { display: block; padding: 0 4px; border-bottom: 1px solid currentColor; }
+  .frac .bot { display: block; padding: 0 4px; }
+  #tip { position: fixed; pointer-events: none; z-index: 10; display: none; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--baseline); border-radius: 7px; padding: 6px 10px; font-size: .8rem; box-shadow: 0 2px 10px rgba(0,0,0,.15); font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Anscombe's Quartet — similar statistics, different plots</h1></header>
+
+  <div class="card problem">
+    Anscombe's quartet consists of four data sets, each with eleven points.
+    Their summary statistics and regression lines are nearly the same, but their scatter plots are very different.
+  </div>
+
+  <div class="card">
+    <h2>Four scatter plots — drag any point</h2>
+    <div class="presets">
+      <button id="resetBtn">Reset to Anscombe's data</button>
+      <label class="chk"><input type="checkbox" id="showLine" checked> regression line</label>
+      <label class="chk"><input type="checkbox" id="showMean" checked> means (x̄, ȳ)</label>
+      <label class="chk"><input type="checkbox" id="showRes"> residuals</label>
+    </div>
+    <div class="quad" id="quad"></div>
+    <div class="note">Drag a point to see how the statistics change.</div>
+  </div>
+
+  <div class="card">
+    <h2>Summary statistics</h2>
+    <div class="tblwrap">
+    <table id="stats">
+      <thead><tr><th></th><th class="c1">I</th><th class="c2">II</th><th class="c3">III</th><th class="c4">IV</th></tr></thead>
+      <tbody id="statsBody"></tbody>
+    </table>
+    </div>
+    <div class="verdict" id="verdict"></div>
+    <div class="note">Sample variances use <i>n</i> − 1. Green means that the largest and smallest unrounded values differ by less than 0.01, or 0.001 for the slope. Rounded values may therefore look different.</div>
+  </div>
+
+  <div class="card">
+    <h2>Formulas</h2>
+    <div class="formula" id="formula"></div>
+  </div>
+
+  <div class="card">
+    <h2>Raw data (editable)</h2>
+    <div class="data-grid" id="dataGrid"></div>
+    <div class="note">Source: F. J. Anscombe, "Graphs in Statistical Analysis", <i>The American Statistician</i> 27 (1973), 17–21. <a href="https://doi.org/10.1080/00031305.1973.10478966">doi:10.1080/00031305.1973.10478966</a></div>
+  </div>
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/">Back to Collection</a></p>
+<div id="tip"></div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  const X123 = [10, 8, 13, 9, 11, 14, 6, 4, 12, 7, 5];
+  const DEFAULT = [
+    { x: X123.slice(), y: [8.04, 6.95, 7.58, 8.81, 8.33, 9.96, 7.24, 4.26, 10.84, 4.82, 5.68] },
+    { x: X123.slice(), y: [9.14, 8.14, 8.74, 8.77, 9.26, 8.10, 6.13, 3.10, 9.13, 7.26, 4.74] },
+    { x: X123.slice(), y: [7.46, 6.77, 12.74, 7.11, 7.81, 8.84, 6.08, 5.39, 8.15, 6.42, 5.73] },
+    { x: [8, 8, 8, 8, 8, 8, 8, 19, 8, 8, 8], y: [6.58, 5.76, 7.71, 8.84, 8.47, 7.04, 5.25, 12.50, 5.56, 7.91, 6.89] }
+  ];
+  const NAMES = ['I', 'II', 'III', 'IV'];
+  const COL = ['var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'];
+  let data = [];
+
+  // plot geometry (shared axes so the four pictures are comparable)
+  const W = 300, H = 230, L = 34, R = 10, T = 12, B = 30;
+  const XMIN = 2, XMAX = 20, YMIN = 2, YMAX = 14;
+  const sx = x => L + (x - XMIN) / (XMAX - XMIN) * (W - L - R);
+  const sy = y => T + (YMAX - y) / (YMAX - YMIN) * (H - T - B);
+  const ix = px => XMIN + (px - L) / (W - L - R) * (XMAX - XMIN);
+  const iy = py => YMAX - (py - T) / (H - T - B) * (YMAX - YMIN);
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+  // ---------- statistics ----------
+  function stats(d) {
+    const n = d.x.length;
+    let Sx = 0, Sy = 0, Sxx = 0, Syy = 0, Sxy = 0;
+    for (let i = 0; i < n; i++) {
+      Sx += d.x[i];
+      Sy += d.y[i];
+      Sxx += d.x[i] * d.x[i];
+      Syy += d.y[i] * d.y[i];
+      Sxy += d.x[i] * d.y[i];
+    }
+
+    const mx = Sx / n, my = Sy / n;
+    let ssx = 0, ssy = 0, sxy = 0;
+    for (let i = 0; i < n; i++) {
+      const dx = d.x[i] - mx;
+      const dy = d.y[i] - my;
+      ssx += dx * dx;
+      ssy += dy * dy;
+      sxy += dx * dy;
+    }
+
+    const eps = 1e-12;
+    if (ssx < eps) ssx = 0;
+    if (ssy < eps) ssy = 0;
+    if (ssx === 0 || ssy === 0) sxy = 0;
+
+    const vx = ssx / (n - 1), vy = ssy / (n - 1);
+    const r = (ssx > 0 && ssy > 0) ? clamp(sxy / Math.sqrt(ssx * ssy), -1, 1) : NaN;
+    const b = ssx > 0 ? sxy / ssx : NaN;
+    const a = isFinite(b) ? my - b * mx : NaN;
+    return { n, Sx, Sy, Sxx, Syy, Sxy, mx, my, vx, vy, sx: Math.sqrt(vx), sy: Math.sqrt(vy), r, a, b, r2: r * r };
+  }
+
+  // ---------- helpers ----------
+  function el(tag, attrs, txt) {
+    const e = document.createElementNS(SVG, tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+  const tip = $('tip');
+  function showTip(e, html) {
+    tip.innerHTML = html; tip.style.display = 'block';
+    tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 180) + 'px';
+    tip.style.top = (e.clientY + 14) + 'px';
+  }
+  const hideTip = () => tip.style.display = 'none';
+  const f2 = v => isFinite(v) ? v.toFixed(2) : '—';
+  const f3 = v => isFinite(v) ? v.toFixed(3) : '—';
+
+  // ---------- build panels once ----------
+  const panels = [];
+  function buildPanels() {
+    const quad = $('quad'); quad.innerHTML = ''; panels.length = 0;
+    for (let k = 0; k < 4; k++) {
+      const p = document.createElement('div'); p.className = 'panel';
+      const h = document.createElement('h3'); h.innerHTML = '<span style="color:' + COL[k] + '">Data set ' + NAMES[k] + '</span><span class="stat" id="pstat' + k + '"></span>';
+      const svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': 'Scatter plot of data set ' + NAMES[k] });
+      p.appendChild(h); p.appendChild(svg); quad.appendChild(p);
+      // axes
+      for (let gx = 4; gx <= 20; gx += 4) {
+        svg.appendChild(el('line', { x1: sx(gx), x2: sx(gx), y1: T, y2: H-B, stroke: 'var(--grid)' }));
+        svg.appendChild(el('text', { x: sx(gx), y: H-B+14, 'text-anchor': 'middle', 'font-size': 9.5, fill: 'var(--muted)' }, gx));
+      }
+      for (let gy = 4; gy <= 14; gy += 2) {
+        svg.appendChild(el('line', { x1: L, x2: W-R, y1: sy(gy), y2: sy(gy), stroke: 'var(--grid)' }));
+        svg.appendChild(el('text', { x: L-5, y: sy(gy)+3.5, 'text-anchor': 'end', 'font-size': 9.5, fill: 'var(--muted)' }, gy));
+      }
+      svg.appendChild(el('line', { x1: L, x2: W-R, y1: H-B, y2: H-B, stroke: 'var(--baseline)' }));
+      svg.appendChild(el('line', { x1: L, x2: L, y1: T, y2: H-B, stroke: 'var(--baseline)' }));
+      svg.appendChild(el('text', { x: W-R, y: H-4, 'text-anchor': 'end', 'font-size': 9.5, fill: 'var(--muted)' }, 'x'));
+      svg.appendChild(el('text', { x: L+6, y: T+9, 'font-size': 9.5, fill: 'var(--muted)' }, 'y'));
+      // dynamic layers
+      const defs = el('defs', {});
+      const clip = el('clipPath', { id: 'plotClip' + k });
+      clip.appendChild(el('rect', { x: L, y: T, width: W - L - R, height: H - T - B }));
+      defs.appendChild(clip);
+      svg.appendChild(defs);
+      const clipped = { 'clip-path': 'url(#plotClip' + k + ')' };
+      const gRes = el('g', clipped), gLine = el('g', clipped), gMean = el('g', {}), gPts = el('g', {});
+      svg.appendChild(gRes); svg.appendChild(gLine); svg.appendChild(gMean); svg.appendChild(gPts);
+      const pts = [];
+      for (let i = 0; i < 11; i++) {
+        const c = el('circle', { r: 5.5, fill: COL[k], stroke: 'var(--surface-1)', 'stroke-width': 1.5, class: 'pt' });
+        gPts.appendChild(c); pts.push(c);
+        attachDrag(c, k, i, svg);
+      }
+      panels.push({ svg, gRes, gLine, gMean, pts });
+    }
+  }
+
+  function attachDrag(node, k, i, svg) {
+    let dragging = false;
+    const toLocal = e => {
+      const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+      return pt.matrixTransform(svg.getScreenCTM().inverse());
+    };
+    node.addEventListener('pointerdown', e => { dragging = true; node.setPointerCapture(e.pointerId); e.preventDefault(); });
+    node.addEventListener('pointermove', e => {
+      if (dragging) {
+        const q = toLocal(e);
+        data[k].x[i] = Math.round(clamp(ix(q.x), XMIN, XMAX) * 100) / 100;
+        data[k].y[i] = Math.round(clamp(iy(q.y), YMIN, YMAX) * 100) / 100;
+        syncInputs(k, i); render();
+      }
+      showTip(e, '<b>' + NAMES[k] + '</b> point ' + (i+1) + '<br>(' + data[k].x[i] + ', ' + data[k].y[i] + ')');
+    });
+    node.addEventListener('pointerup', () => dragging = false);
+    node.addEventListener('pointercancel', () => dragging = false);
+    node.addEventListener('pointerleave', () => { if (!dragging) hideTip(); });
+  }
+
+  // ---------- raw data tables ----------
+  function buildDataTables() {
+    const g = $('dataGrid'); g.innerHTML = '';
+    for (let k = 0; k < 4; k++) {
+      let html = '<table><thead><tr><th style="color:' + COL[k] + '">' + NAMES[k] + '</th><th>x</th><th>y</th></tr></thead><tbody>';
+      for (let i = 0; i < 11; i++) {
+        html += '<tr><td>' + (i+1) + '</td><td><input type="number" step="0.01" id="x' + k + '_' + i + '"></td><td><input type="number" step="0.01" id="y' + k + '_' + i + '"></td></tr>';
+      }
+      g.insertAdjacentHTML('beforeend', html + '</tbody></table>');
+    }
+    for (let k = 0; k < 4; k++) for (let i = 0; i < 11; i++) for (const v of ['x','y']) {
+      $(v + k + '_' + i).addEventListener('change', e => {
+        let val = parseFloat(e.target.value); if (isNaN(val)) val = data[k][v][i];
+        data[k][v][i] = clamp(val, v === 'x' ? XMIN : YMIN, v === 'x' ? XMAX : YMAX);
+        syncInputs(k, i); render();
+      });
+    }
+  }
+  function syncInputs(k, i) { $('x' + k + '_' + i).value = data[k].x[i]; $('y' + k + '_' + i).value = data[k].y[i]; }
+  function syncAll() { for (let k = 0; k < 4; k++) for (let i = 0; i < 11; i++) syncInputs(k, i); }
+
+  // ---------- render ----------
+  function render() {
+    const S = data.map(stats);
+    const showLine = $('showLine').checked, showMean = $('showMean').checked, showRes = $('showRes').checked;
+    for (let k = 0; k < 4; k++) {
+      const p = panels[k], d = data[k], s = S[k];
+      for (let i = 0; i < 11; i++) { p.pts[i].setAttribute('cx', sx(d.x[i])); p.pts[i].setAttribute('cy', sy(d.y[i])); }
+      p.gLine.innerHTML = ''; p.gMean.innerHTML = ''; p.gRes.innerHTML = '';
+      if (showLine && isFinite(s.b)) {
+        p.gLine.appendChild(el('line', { x1: sx(XMIN), y1: sy(s.a + s.b*XMIN), x2: sx(XMAX), y2: sy(s.a + s.b*XMAX), stroke: COL[k], 'stroke-width': 1.8, opacity: .8 }));
+      }
+      if (showRes && isFinite(s.b)) {
+        for (let i = 0; i < 11; i++) {
+          p.gRes.appendChild(el('line', { x1: sx(d.x[i]), y1: sy(d.y[i]), x2: sx(d.x[i]), y2: sy(s.a + s.b*d.x[i]), stroke: 'var(--warn)', 'stroke-width': 1.2, 'stroke-dasharray': '3 2', opacity: .8 }));
+        }
+      }
+      if (showMean) {
+        p.gMean.appendChild(el('line', { x1: sx(s.mx), x2: sx(s.mx), y1: T, y2: H-B, stroke: 'var(--muted)', 'stroke-dasharray': '4 3', opacity: .7 }));
+        p.gMean.appendChild(el('line', { x1: L, x2: W-R, y1: sy(s.my), y2: sy(s.my), stroke: 'var(--muted)', 'stroke-dasharray': '4 3', opacity: .7 }));
+      }
+      const slopeSign = s.b < 0 ? ' − ' : ' + ';
+      $('pstat' + k).textContent = isFinite(s.b) ? 'ŷ = ' + f2(s.a) + slopeSign + f3(Math.abs(s.b)) + ' x,  r = ' + f2(s.r) : 'slope undefined';
+    }
+    drawTable(S); drawFormula(S);
+  }
+
+  function drawTable(S) {
+    const rows = [
+      ['mean of x  (x̄)', s => s.mx, f2],
+      ['mean of y  (ȳ)', s => s.my, f2],
+      ['sample variance of x', s => s.vx, f2],
+      ['sample variance of y', s => s.vy, f2],
+      ['correlation r', s => s.r, f2],
+      ['regression slope b', s => s.b, f3],
+      ['regression intercept a', s => s.a, f2],
+      ['R² = r²', s => s.r2, f2]
+    ];
+    let html = '', allSame = true;
+    for (const [name, get, fmt] of rows) {
+      const raw = S.map(get), vals = raw.map(fmt);
+      const tol = fmt === f3 ? 0.001 : 0.01;
+      const same = raw.every(isFinite) && Math.max(...raw) - Math.min(...raw) < tol;
+      if (!same) allSame = false;
+      html += '<tr><td class="rowhead">' + name + '</td>' + vals.map(v => '<td class="' + (same ? 'same' : 'diff') + '">' + v + '</td>').join('') + '</tr>';
+    }
+    $('statsBody').innerHTML = html;
+    const v = $('verdict');
+    v.className = 'verdict ' + (allSame ? 'same' : 'diff');
+    v.innerHTML = allSame
+      ? '<strong>The statistics agree within the stated tolerances.</strong>'
+      : '<strong>The statistics no longer agree within the stated tolerances.</strong>';
+  }
+
+  function drawFormula(S) {
+    const frac = (a, b) => '<span class="frac"><span class="top">' + a + '</span><span class="bot">' + b + '</span></span>';
+    const s = S[0];
+    const sums = S.map((t, k) => '<span style="color:' + COL[k] + ';font-weight:600">' + NAMES[k] + '</span>: Σx = ' + f2(t.Sx) + ', Σy = ' + f2(t.Sy) + ', Σx² = ' + f2(t.Sxx) + ', Σy² = ' + f2(t.Syy) + ', Σxy = ' + f2(t.Sxy)).join('<br>');
+    $('formula').innerHTML =
+      '<div class="row" style="font-size:.9rem;line-height:1.7">' + sums + '</div>' +
+      '<div class="row">x̄ = ' + frac('Σx', 'n') + ', &nbsp; ȳ = ' + frac('Σy', 'n') + ', &nbsp; s<sub>x</sub>² = ' + frac('Σx² − n x̄²', 'n − 1') + ', &nbsp; s<sub>y</sub>² = ' + frac('Σy² − n ȳ²', 'n − 1') + '</div>' +
+      '<div class="row">r = ' + frac('Σxy − n x̄ ȳ', '√(Σx² − n x̄²) · √(Σy² − n ȳ²)') + ', &nbsp; b = ' + frac('Σxy − n x̄ ȳ', 'Σx² − n x̄²') + ' = r · ' + frac('s<sub>y</sub>', 's<sub>x</sub>') + ', &nbsp; a = ȳ − b x̄</div>' +
+      '<div class="row" style="font-size:.9rem;color:var(--text-secondary)">For data set I: x̄ = ' + f2(s.mx) + ', ȳ = ' + f2(s.my) + ', r = ' + f3(s.r) + ', b = ' + f3(s.b) + ', a = ' + f3(s.a) + '.</div>';
+  }
+
+  // ---------- events ----------
+  function loadDefault() {
+    data = DEFAULT.map(d => ({ x: d.x.slice(), y: d.y.slice() }));
+    syncAll(); render();
+  }
+  $('resetBtn').addEventListener('click', loadDefault);
+  for (const id of ['showLine', 'showMean', 'showRes']) $(id).addEventListener('change', render);
+  if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+
+  buildPanels(); buildDataTables(); loadDefault();
+})();
+</script>
+</body>
+</html>

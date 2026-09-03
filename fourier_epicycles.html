@@ -1,0 +1,722 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fourier Epicycles — Drawing a Closed Curve</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --series-1:       #2a78d6;   /* circles (epicycles) */
+    --series-2:       #eb6834;   /* moving tip */
+    --series-3:       #1baf7a;   /* traced approximation */
+    --accent-bg:      #2a78d6;
+    --accent-fg:      #ffffff;
+    --accent:         #2a78d6;
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --series-1:       #3987e5;
+      --series-2:       #d95926;
+      --series-3:       #199e70;
+      --accent-bg:      #3987e5;
+      --accent-fg:      #ffffff;
+      --accent:         #3987e5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    line-height: 1.55;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 20px; font-size: 0.95rem; }
+  i, .disp i { font-family: Georgia, "Times New Roman", serif; }
+  .disp {
+    text-align: center; font-size: 1.15rem; color: var(--text-primary);
+    margin: 14px 0; font-variant-numeric: tabular-nums; overflow-x: auto;
+  }
+  .sum { display: inline-block; vertical-align: middle; text-align: center; line-height: 1.05; margin: 0 3px; }
+  .sum .sig { font-size: 1.6em; }
+  .sum .lim { display: block; font-size: 0.65em; }
+  .intg { font-size: 1.5em; vertical-align: -0.15em; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.02rem; margin: 0 0 2px; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; display: block; touch-action: none; border-radius: 6px; }
+  .controls-row {
+    display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center;
+    margin: 8px 0 6px;
+  }
+  .ctrl { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); }
+  .ctrl output { min-width: 3.2em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  input[type="range"] { accent-color: var(--series-1); width: 170px; }
+  select {
+    font: inherit; font-size: 0.88rem; color: var(--text-primary);
+    background: var(--page); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px;
+  }
+  button {
+    font: inherit; font-size: 0.85rem; padding: 5px 12px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--border); background: var(--page); color: var(--text-primary);
+  }
+  button.primary { background: var(--accent-bg); color: var(--accent-fg); border-color: transparent; }
+  button:hover { border-color: var(--accent); }
+  .btns { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .btns .lab { font-size: 0.82rem; color: var(--text-muted); margin-right: 4px; }
+  .panels { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 760px) { .panels { grid-template-columns: 1fr; } }
+  .panel h3 { font-size: 0.9rem; margin: 0 0 6px; font-weight: 600; }
+  .panel h3 .dot {
+    display: inline-block; width: 10px; height: 10px; border-radius: 3px;
+    margin-right: 6px; vertical-align: baseline;
+  }
+  .rd {
+    font-size: 0.92rem; color: var(--text-secondary); margin-top: 8px;
+    font-variant-numeric: tabular-nums; line-height: 1.8;
+  }
+  .rd b { color: var(--text-primary); }
+  .legend { display: flex; gap: 16px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 14px; height: 8px;
+    border-radius: 2px; margin-right: 6px; vertical-align: middle; opacity: 0.85;
+  }
+  .lg-target::before { background: var(--baseline); }
+  .lg-circle::before { background: var(--series-1); }
+  .lg-tip::before    { background: var(--series-2); }
+  .lg-trace::before  { background: var(--series-3); }
+  .formula {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0 0; font-size: 0.98rem; overflow-x: auto;
+    color: var(--text-primary);
+  }
+  table { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 0.9rem; }
+  th, td {
+    text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid);
+    font-variant-numeric: tabular-nums;
+  }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; }
+  td.num, th.num { text-align: right; }
+  tr.in td { color: var(--text-primary); }
+  tr.out td { color: var(--text-muted); }
+  .warn { color: var(--series-2); font-size: 0.84rem; margin-top: 8px; min-height: 1.3em; }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
+  details p, details li { font-size: 0.92rem; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Drawing a Closed Curve with Fourier Epicycles</h1>
+  </header>
+  <p class="subtitle">
+    A closed plane curve can be parametrized by a continuous, 1-periodic complex-valued function
+    <i>z</i>(<i>t</i>) = <i>x</i>(<i>t</i>) + <i>i</i>&thinsp;<i>y</i>(<i>t</i>), with
+    <i>z</i>(<i>t</i> + 1) = <i>z</i>(<i>t</i>). For the piecewise-smooth parametrizations used here,
+    <i>z</i>(<i>t</i>) equals its Fourier series:
+  </p>
+  <p class="disp">
+    <i>z</i>(<i>t</i>) &nbsp;=&nbsp;
+    <span class="sum"><span class="lim">∞</span><span class="sig">Σ</span><span class="lim"><i>k</i> = −∞</span></span>
+    <i>a</i><sub><i>k</i></sub>&thinsp;<i>e</i><sup>2π<i>ikt</i></sup>,
+    &nbsp;&nbsp;&nbsp;
+    <i>a</i><sub><i>k</i></sub> &nbsp;=&nbsp; <span class="intg">∫</span><sub>0</sub><sup>1</sup>
+    <i>z</i>(<i>t</i>)&thinsp;<i>e</i><sup>−2π<i>ikt</i></sup> d<i>t</i>.
+  </p>
+  <div class="formula">
+    In this demo, the curve is sampled at <i>N</i> = 511 points
+    <i>z</i><sub><i>n</i></sub> = <i>z</i>(<i>n</i>/<i>N</i>), equally spaced along its length.
+    The discrete coefficients are
+    <span style="white-space:nowrap">
+      <i>c</i><sub><i>k</i></sub> = (1/<i>N</i>)
+      <span class="sum"><span class="lim"><i>N</i>−1</span><span class="sig">Σ</span><span class="lim"><i>n</i> = 0</span></span>
+      <i>z</i><sub><i>n</i></sub>&thinsp;<i>e</i><sup>−2π<i>ikn</i>/<i>N</i></sup>
+    </span>
+    for integers <i>k</i> with −255 ≤ <i>k</i> ≤ 255. They approximate the continuous coefficients
+    <i>a</i><sub><i>k</i></sub> above.
+  </div>
+  <div class="card">
+    <h2>1. The curve and its epicycles</h2>
+    <p class="hint">Draw on the left. The right panel shows an <i>M</i>-term Fourier approximation.</p>
+    <div class="panels">
+      <div class="panel">
+        <h3><span class="dot" style="background:var(--baseline)"></span>Your curve <i>z</i>(<i>t</i>)</h3>
+        <canvas id="cvDraw" width="800" height="600" aria-label="Drawing area for a closed curve"></canvas>
+        <div class="controls-row">
+          <div class="btns">
+            <span class="lab">presets</span>
+            <button data-preset="heart">heart</button>
+            <button data-preset="star">star</button>
+            <button data-preset="square">square</button>
+            <button data-preset="eight">figure eight</button>
+            <button data-preset="blob">random blob</button>
+            <button id="clearBtn">clear</button>
+          </div>
+        </div>
+        <div class="rd" id="rdCurve"></div>
+      </div>
+      <div class="panel">
+        <h3><span class="dot" style="background:var(--series-3)"></span>Fourier approximation with <i>M</i> = <output id="mOutTitle">21</output> terms</h3>
+        <canvas id="cvAnim" width="800" height="600" aria-label="Epicycle animation reconstructing the curve"></canvas>
+        <div class="controls-row">
+          <label class="ctrl"><i>M</i>
+            <input type="range" id="mSl" min="1" max="511" step="1" value="21">
+            <output id="mOut">21</output>
+          </label>
+          <div class="btns">
+            <button data-m="1">1</button><button data-m="3">3</button><button data-m="5">5</button>
+            <button data-m="11">11</button><button data-m="21">21</button><button data-m="51">51</button>
+            <button data-m="101">101</button><button data-m="511">all</button>
+          </div>
+        </div>
+        <div class="controls-row">
+          <label class="ctrl">term order
+            <select id="orderSel">
+              <option value="amp">largest |c<sub>k</sub>| first</option>
+              <option value="freq">lowest |k| first</option>
+            </select>
+          </label>
+          <label class="ctrl">animation period
+            <input type="range" id="perSl" min="3" max="30" step="0.5" value="8">
+            <output id="perOut">8 s</output>
+          </label>
+          <label class="ctrl"><input type="checkbox" id="circChk" checked> show circles</label>
+          <button id="playBtn" class="primary">pause</button>
+        </div>
+        <div class="legend">
+          <span class="lg-target">target curve</span>
+          <span class="lg-circle">circles |<i>c</i><sub><i>k</i></sub>|</span>
+          <span class="lg-tip">tip of the chain</span>
+          <span class="lg-trace">traced approximation</span>
+        </div>
+        <div class="rd" id="rdErr"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2. Fourier amplitudes |<i>c</i><sub><i>k</i></sub>|</h2>
+    <p class="hint">Highlighted bars are included in the current approximation. A phase is shown as — when the displayed amplitude is 0.00.</p>
+    <div class="controls-row">
+      <label class="ctrl">frequencies shown |<i>k</i>| ≤
+        <input type="range" id="specSl" min="5" max="255" step="1" value="40">
+        <output id="specOut">40</output>
+      </label>
+    </div>
+    <canvas id="cvSpec" width="1000" height="260" aria-label="Bar chart of Fourier coefficient magnitudes"></canvas>
+    <table aria-label="Fourier coefficients in the current order">
+      <thead>
+        <tr><th>#</th><th class="num"><i>k</i></th><th class="num">|<i>c</i><sub><i>k</i></sub>| (px)</th><th class="num">arg <i>c</i><sub><i>k</i></sub></th><th>included</th></tr>
+      </thead>
+      <tbody id="coefBody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">Back to Collection</a></p>
+
+<script>
+"use strict";
+
+/* ---------- constants ---------- */
+const N = 511;                 /* samples along the curve (odd, so k = -K..K is complete) */
+const K = (N - 1) / 2;         /* 255 */
+const TRACE_PTS = 900;         /* resolution of the traced approximation */
+const cvDraw = document.getElementById('cvDraw');
+const cvAnim = document.getElementById('cvAnim');
+const cvSpec = document.getElementById('cvSpec');
+const W = cvDraw.width, H = cvDraw.height;
+
+/* ---------- palette from CSS ---------- */
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+let C = {};
+function refreshColors() {
+  C = {
+    surface:  cssVar('--surface-1'),
+    page:     cssVar('--page'),
+    grid:     cssVar('--grid'),
+    baseline: cssVar('--baseline'),
+    muted:    cssVar('--text-muted'),
+    ink:      cssVar('--text-primary'),
+    s1:       cssVar('--series-1'),
+    s2:       cssVar('--series-2'),
+    s3:       cssVar('--series-3')
+  };
+}
+refreshColors();
+if (window.matchMedia) {
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    refreshColors(); drawDrawing(); drawSpectrum(); drawFrame();
+  });
+}
+function withAlpha(hex, al) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + al + ')';
+}
+
+/* ---------- coordinates: math coords (origin at centre, y up) <-> canvas ---------- */
+const px = x => W / 2 + x;
+const py = y => H / 2 - y;
+
+/* ---------- state ---------- */
+let rawPts = [];        /* points being drawn (math coords) */
+let drawing = false;
+let samples = null;     /* N resampled points [x,y] */
+let coefs = [];         /* all 2K+1 terms {k, re, im, amp, phase} */
+let ordered = [];       /* coefs in the chosen order */
+let M = 21;
+let order = 'amp';
+let period = 8;
+let showCircles = true;
+let playing = true;
+let t = 0, cycles = 0, lastTs = null;
+let trace = [];         /* precomputed approximation on a grid of TRACE_PTS */
+let errRms = 0, errParseval = 0, bboxScale = 1, curveLength = 0;
+
+/* ---------- resampling by arc length ---------- */
+function closedPolylineLength(pts) {
+  let total = 0;
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i], b = pts[(i + 1) % pts.length];
+    total += Math.hypot(b[0] - a[0], b[1] - a[1]);
+  }
+  return total;
+}
+
+function resample(pts, n) {
+  const m = pts.length;
+  const segs = []; let total = 0;
+  for (let i = 0; i < m; i++) {
+    const a = pts[i], b = pts[(i + 1) % m];
+    const d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    segs.push(d); total += d;
+  }
+  if (total < 1e-6) return null;
+  const out = []; let i = 0, acc = 0;
+  for (let j = 0; j < n; j++) {
+    const s = total * j / n;
+    while (i < m - 1 && acc + segs[i] < s) { acc += segs[i]; i++; }
+    const a = pts[i], b = pts[(i + 1) % m];
+    const u = segs[i] > 0 ? Math.min(1, (s - acc) / segs[i]) : 0;
+    out.push([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]);
+  }
+  return out;
+}
+
+/* ---------- discrete Fourier transform ---------- */
+function dft(z) {
+  const n = z.length, out = [];
+  for (let k = -K; k <= K; k++) {
+    let re = 0, im = 0;
+    for (let j = 0; j < n; j++) {
+      const ang = -2 * Math.PI * k * j / n;
+      const c = Math.cos(ang), s = Math.sin(ang);
+      re += z[j][0] * c - z[j][1] * s;
+      im += z[j][0] * s + z[j][1] * c;
+    }
+    re /= n; im /= n;
+    out.push({ k, re, im, amp: Math.hypot(re, im), phase: Math.atan2(im, re) });
+  }
+  return out;
+}
+
+function reorder() {
+  ordered = coefs.slice();
+  if (order === 'amp') {
+    ordered.sort((p, q) => (q.amp - p.amp) || (Math.abs(p.k) - Math.abs(q.k)) || (q.k - p.k));
+  } else {
+    ordered.sort((p, q) => (Math.abs(p.k) - Math.abs(q.k)) || (q.k - p.k));
+  }
+}
+
+/* M-term approximation in the selected order at parameter t */
+function partialSum(tt) {
+  let x = 0, y = 0;
+  for (let j = 0; j < M; j++) {
+    const c = ordered[j];
+    const ang = 2 * Math.PI * c.k * tt;
+    x += c.re * Math.cos(ang) - c.im * Math.sin(ang);
+    y += c.re * Math.sin(ang) + c.im * Math.cos(ang);
+  }
+  return [x, y];
+}
+
+function recomputePartial() {
+  if (!samples) { trace = []; updateReadouts(); drawSpectrum(); return; }
+  M = Math.min(M, ordered.length);
+  trace = [];
+  for (let j = 0; j <= TRACE_PTS; j++) trace.push(partialSum(j / TRACE_PTS));
+  /* discrete RMS error at the sample points, and the Parseval value */
+  let se = 0;
+  for (let n = 0; n < N; n++) {
+    const p = partialSum(n / N);
+    se += (p[0] - samples[n][0]) ** 2 + (p[1] - samples[n][1]) ** 2;
+  }
+  errRms = Math.sqrt(se / N);
+  let om = 0;
+  for (let j = M; j < ordered.length; j++) om += ordered[j].amp ** 2;
+  errParseval = Math.sqrt(om);
+  t = 0; cycles = 0;
+  updateReadouts();
+  drawSpectrum();
+}
+
+function setCurve(pts) {
+  curveLength = closedPolylineLength(pts);
+  const s = resample(pts, N);
+  if (!s) {
+    samples = null; coefs = []; ordered = []; trace = []; curveLength = 0; bboxScale = 1;
+    updateReadouts(); drawSpectrum(); return;
+  }
+  samples = s;
+  let minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+  for (const p of s) { minx = Math.min(minx, p[0]); maxx = Math.max(maxx, p[0]); miny = Math.min(miny, p[1]); maxy = Math.max(maxy, p[1]); }
+  bboxScale = Math.max(maxx - minx, maxy - miny);
+  coefs = dft(s);
+  reorder();
+  recomputePartial();
+}
+
+/* ---------- presets (math coords, canvas is 800 x 600) ---------- */
+function preset(name) {
+  const pts = [];
+  const R = 230;
+  if (name === 'heart') {
+    for (let i = 0; i < 400; i++) {
+      const th = -2 * Math.PI * i / 400;   /* negative: traverse counterclockwise */
+      const x = 16 * Math.sin(th) ** 3;
+      const y = 13 * Math.cos(th) - 5 * Math.cos(2 * th) - 2 * Math.cos(3 * th) - Math.cos(4 * th);
+      pts.push([x * 15, y * 15 + 20]);
+    }
+  } else if (name === 'star') {
+    for (let i = 0; i < 10; i++) {
+      const th = Math.PI / 2 + 2 * Math.PI * i / 10;
+      const r = i % 2 === 0 ? R : R * 0.42;
+      pts.push([r * Math.cos(th), r * Math.sin(th)]);
+    }
+  } else if (name === 'square') {
+    const a = 200;
+    pts.push([a, a], [-a, a], [-a, -a], [a, -a]);
+  } else if (name === 'eight') {
+    for (let i = 0; i < 400; i++) {
+      const th = 2 * Math.PI * i / 400;
+      pts.push([330 * Math.sin(th), 210 * Math.sin(th) * Math.cos(th)]);
+    }
+  } else if (name === 'blob') {
+    const J = 6, amp = [], ph = [];
+    for (let j = 2; j <= J; j++) { amp[j] = (Math.random() * 0.5) / j; ph[j] = Math.random() * 2 * Math.PI; }
+    for (let i = 0; i < 400; i++) {
+      const th = 2 * Math.PI * i / 400;
+      let r = 1;
+      for (let j = 2; j <= J; j++) r += amp[j] * Math.cos(j * th + ph[j]);
+      pts.push([R * r * Math.cos(th), R * r * Math.sin(th)]);
+    }
+  }
+  rawPts = pts;
+  setCurve(pts);
+  drawDrawing();
+}
+
+/* ---------- drawing canvas ---------- */
+function drawAxes(ctx) {
+  ctx.fillStyle = C.surface; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = C.grid; ctx.lineWidth = 1;
+  for (let x = -400; x <= 400; x += 100) { ctx.beginPath(); ctx.moveTo(px(x), 0); ctx.lineTo(px(x), H); ctx.stroke(); }
+  for (let y = -300; y <= 300; y += 100) { ctx.beginPath(); ctx.moveTo(0, py(y)); ctx.lineTo(W, py(y)); ctx.stroke(); }
+  ctx.strokeStyle = C.baseline;
+  ctx.beginPath(); ctx.moveTo(px(0), 0); ctx.lineTo(px(0), H); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, py(0)); ctx.lineTo(W, py(0)); ctx.stroke();
+}
+function strokePath(ctx, pts, close) {
+  if (pts.length < 2) return;
+  ctx.beginPath();
+  ctx.moveTo(px(pts[0][0]), py(pts[0][1]));
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(px(pts[i][0]), py(pts[i][1]));
+  if (close) ctx.closePath();
+  ctx.stroke();
+}
+function drawDrawing() {
+  const ctx = cvDraw.getContext('2d');
+  drawAxes(ctx);
+  if (rawPts.length === 0) {
+    ctx.fillStyle = C.muted; ctx.font = '22px ' + cssVar('--font-ui');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('draw a closed curve here', W / 2, H / 2);
+    return;
+  }
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  if (drawing) {
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+    strokePath(ctx, rawPts, false);
+    /* dashed closing segment */
+    ctx.setLineDash([6, 6]); ctx.strokeStyle = C.muted; ctx.lineWidth = 2;
+    const a = rawPts[rawPts.length - 1], b = rawPts[0];
+    ctx.beginPath(); ctx.moveTo(px(a[0]), py(a[1])); ctx.lineTo(px(b[0]), py(b[1])); ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 3;
+    strokePath(ctx, rawPts, true);
+    /* direction marker: start point + arrow direction */
+    if (samples) {
+      const s0 = samples[0], s1 = samples[3];
+      ctx.fillStyle = C.s2;
+      ctx.beginPath(); ctx.arc(px(s0[0]), py(s0[1]), 6, 0, 2 * Math.PI); ctx.fill();
+      const ang = Math.atan2(-(s1[1] - s0[1]), s1[0] - s0[0]);
+      ctx.save(); ctx.translate(px(s0[0]), py(s0[1])); ctx.rotate(ang);
+      ctx.beginPath(); ctx.moveTo(22, 0); ctx.lineTo(10, -7); ctx.lineTo(10, 7); ctx.closePath(); ctx.fill();
+      ctx.restore();
+    }
+  }
+}
+
+function toMath(ev, cv) {
+  const r = cv.getBoundingClientRect();
+  const x = (ev.clientX - r.left) * (W / r.width) - W / 2;
+  const y = H / 2 - (ev.clientY - r.top) * (H / r.height);
+  return [Math.max(-W / 2, Math.min(W / 2, x)), Math.max(-H / 2, Math.min(H / 2, y))];
+}
+cvDraw.style.cursor = 'crosshair';
+cvDraw.addEventListener('pointerdown', ev => {
+  drawing = true; cvDraw.setPointerCapture(ev.pointerId);
+  rawPts = [toMath(ev, cvDraw)];
+  samples = null; coefs = []; ordered = []; trace = []; curveLength = 0; bboxScale = 1;
+  updateReadouts(); drawSpectrum(); drawDrawing();
+});
+cvDraw.addEventListener('pointermove', ev => {
+  if (!drawing) return;
+  const p = toMath(ev, cvDraw), q = rawPts[rawPts.length - 1];
+  if (Math.hypot(p[0] - q[0], p[1] - q[1]) >= 1.5) { rawPts.push(p); drawDrawing(); }
+});
+function endDraw() {
+  if (!drawing) return;
+  drawing = false;
+  if (rawPts.length >= 3) setCurve(rawPts);
+  else {
+    rawPts = []; samples = null; coefs = []; ordered = []; trace = [];
+    curveLength = 0; bboxScale = 1; updateReadouts(); drawSpectrum();
+  }
+  drawDrawing();
+}
+cvDraw.addEventListener('pointerup', endDraw);
+cvDraw.addEventListener('pointercancel', endDraw);
+
+document.querySelectorAll('[data-preset]').forEach(b => b.addEventListener('click', () => preset(b.dataset.preset)));
+document.getElementById('clearBtn').addEventListener('click', () => {
+  rawPts = []; samples = null; coefs = []; ordered = []; trace = [];
+  curveLength = 0; bboxScale = 1;
+  drawDrawing(); updateReadouts(); drawSpectrum();
+});
+
+/* ---------- animation canvas ---------- */
+function drawFrame() {
+  const ctx = cvAnim.getContext('2d');
+  drawAxes(ctx);
+  if (!samples) {
+    ctx.fillStyle = C.muted; ctx.font = '22px ' + cssVar('--font-ui');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('waiting for a curve', W / 2, H / 2);
+    return;
+  }
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  /* target */
+  ctx.strokeStyle = C.baseline; ctx.lineWidth = 2.5;
+  strokePath(ctx, samples, true);
+  /* trace of the M-term approximation */
+  const upto = cycles >= 1 ? TRACE_PTS : Math.floor(t * TRACE_PTS);
+  if (upto >= 1) {
+    ctx.strokeStyle = C.s3; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(px(trace[0][0]), py(trace[0][1]));
+    for (let j = 1; j <= upto; j++) ctx.lineTo(px(trace[j][0]), py(trace[j][1]));
+    if (cycles >= 1) ctx.closePath();
+    ctx.stroke();
+  }
+  /* epicycle chain */
+  let cx = 0, cy = 0;
+  for (let j = 0; j < M; j++) {
+    const c = ordered[j];
+    const ang = 2 * Math.PI * c.k * t;
+    const dx = c.re * Math.cos(ang) - c.im * Math.sin(ang);
+    const dy = c.re * Math.sin(ang) + c.im * Math.cos(ang);
+    if (showCircles && c.k !== 0 && c.amp > 0.6) {
+      ctx.strokeStyle = withAlpha(C.s1, 0.55); ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(px(cx), py(cy), c.amp, 0, 2 * Math.PI); ctx.stroke();
+    }
+    ctx.strokeStyle = withAlpha(C.ink, 0.75); ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(px(cx), py(cy)); ctx.lineTo(px(cx + dx), py(cy + dy)); ctx.stroke();
+    cx += dx; cy += dy;
+  }
+  ctx.fillStyle = C.s2;
+  ctx.beginPath(); ctx.arc(px(cx), py(cy), 6, 0, 2 * Math.PI); ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = C.surface; ctx.stroke();
+  /* time readout */
+  ctx.fillStyle = C.muted; ctx.font = '18px ' + cssVar('--font-ui');
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('t = ' + t.toFixed(3) + (cycles >= 1 ? '   (cycle ' + (cycles + 1) + ')' : ''), 12, 10);
+}
+
+function loop(ts) {
+  if (lastTs === null) lastTs = ts;
+  const dt = Math.min(0.1, (ts - lastTs) / 1000);
+  lastTs = ts;
+  if (playing && samples) {
+    t += dt / period;
+    if (t >= 1) { t -= 1; cycles++; }
+  }
+  drawFrame();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- spectrum ---------- */
+let specWin = 40;
+function drawSpectrum() {
+  const cv = cvSpec, ctx = cv.getContext('2d');
+  const SW = cv.width, SH = cv.height;
+  const ML = 56, MR = 14, MT = 14, MB = 40;
+  const pw = SW - ML - MR, ph = SH - MT - MB;
+  ctx.fillStyle = C.surface; ctx.fillRect(0, 0, SW, SH);
+  const body = document.getElementById('coefBody');
+  body.innerHTML = '';
+  if (!samples) return;
+  const included = new Set();
+  for (let j = 0; j < M; j++) included.add(ordered[j].k);
+  const byK = new Map(coefs.map(c => [c.k, c]));
+  let maxAmp = 0;
+  for (const c of coefs) if (c.k !== 0 && Math.abs(c.k) <= specWin) maxAmp = Math.max(maxAmp, c.amp);
+  if (maxAmp <= 0) maxAmp = 1;
+  const n = 2 * specWin + 1;
+  const bw = pw / n;
+  /* axis */
+  ctx.strokeStyle = C.baseline; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(ML, MT + ph); ctx.lineTo(ML + pw, MT + ph); ctx.stroke();
+  ctx.font = '15px ' + cssVar('--font-ui'); ctx.fillStyle = C.muted;
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText(maxAmp.toFixed(0), ML - 8, MT);
+  ctx.fillText('0', ML - 8, MT + ph);
+  ctx.strokeStyle = C.grid;
+  ctx.beginPath(); ctx.moveTo(ML, MT); ctx.lineTo(ML + pw, MT); ctx.stroke();
+  const tickStep = specWin <= 20 ? 5 : specWin <= 60 ? 10 : specWin <= 120 ? 20 : 50;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  for (let k = -specWin; k <= specWin; k++) {
+    const c = byK.get(k);
+    const x0 = ML + (k + specWin) * bw;
+    const h = Math.min(ph, c.amp / maxAmp * ph);
+    ctx.fillStyle = included.has(k) ? C.s1 : C.baseline;
+    ctx.fillRect(x0 + bw * 0.15, MT + ph - h, Math.max(1, bw * 0.7), h);
+    if (c.k === 0 && c.amp > maxAmp) {           /* clipped DC bar marker */
+      ctx.fillStyle = C.muted; ctx.fillText('▲', x0 + bw / 2, MT - 12);
+    }
+    if (k % tickStep === 0) {
+      ctx.fillStyle = C.muted; ctx.fillText(String(k), x0 + bw / 2, MT + ph + 6);
+    }
+  }
+  ctx.fillStyle = C.muted; ctx.font = 'italic 17px Georgia, serif';
+  ctx.fillText('k', ML + pw / 2, MT + ph + 22);
+  ctx.save(); ctx.translate(14, MT + ph / 2); ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('|cₖ|', 0, 0); ctx.restore();
+
+  /* table of the first terms in the current order */
+  let html = '';
+  const rows = Math.min(12, ordered.length);
+  for (let j = 0; j < rows; j++) {
+    const c = ordered[j];
+    const ampText = c.amp.toFixed(2);
+    const deg = ampText === '0.00' ? '—' : (c.phase * 180 / Math.PI).toFixed(1).replace('-', '−') + '°';
+    html += '<tr class="' + (j < M ? 'in' : 'out') + '"><td>' + (j + 1) + '</td><td class="num">' +
+      String(c.k).replace('-', '−') + '</td><td class="num">' + ampText + '</td><td class="num">' + deg +
+      '</td><td>' + (j < M ? '✓' : '') + '</td></tr>';
+  }
+  body.innerHTML = html;
+}
+
+/* ---------- readouts ---------- */
+function fmtPx(v) { return v.toFixed(2); }
+function fmt1(v) { const r = v.toFixed(1); return r === '-0.0' ? '0.0' : r.replace('-', '−'); }
+function updateReadouts() {
+  document.getElementById('mOut').textContent = M;
+  document.getElementById('mOutTitle').textContent = M;
+  document.getElementById('mSl').value = M;
+  const rc = document.getElementById('rdCurve');
+  const re = document.getElementById('rdErr');
+  if (!samples) {
+    rc.innerHTML = 'No curve yet — draw one or pick a preset.';
+    re.innerHTML = '';
+    return;
+  }
+  const c0 = coefs[K];
+  rc.innerHTML = '<i>N</i> = ' + N + ' samples equally spaced along the path; path length ' + curveLength.toFixed(0) + ' px. ' +
+    'Orange marks <i>t</i> = 0 and the direction.<br>' +
+    'Mean sample position <i>c</i><sub>0</sub> = (' + fmt1(c0.re) + ', ' + fmt1(c0.im) + ').';
+  const kList = ordered.slice(0, Math.min(M, 6)).map(c => String(c.k).replace('-', '−')).join(', ') + (M > 6 ? ', …' : '');
+  re.innerHTML =
+    'Frequencies used: <i>k</i> = ' + kList;
+}
+
+/* ---------- controls ---------- */
+const mSl = document.getElementById('mSl');
+mSl.addEventListener('input', () => { M = Number(mSl.value); recomputePartial(); });
+document.querySelectorAll('[data-m]').forEach(b => b.addEventListener('click', () => {
+  M = Math.min(Number(b.dataset.m), 2 * K + 1); recomputePartial();
+}));
+document.getElementById('orderSel').addEventListener('change', ev => {
+  order = ev.target.value; if (samples) { reorder(); recomputePartial(); }
+});
+const perSl = document.getElementById('perSl');
+perSl.addEventListener('input', () => {
+  period = Number(perSl.value);
+  document.getElementById('perOut').textContent = period + ' s';
+});
+document.getElementById('circChk').addEventListener('change', ev => { showCircles = ev.target.checked; });
+const playBtn = document.getElementById('playBtn');
+playBtn.addEventListener('click', () => {
+  playing = !playing; playBtn.textContent = playing ? 'pause' : 'play';
+});
+const specSl = document.getElementById('specSl');
+specSl.addEventListener('input', () => {
+  specWin = Number(specSl.value);
+  document.getElementById('specOut').textContent = specWin;
+  drawSpectrum();
+});
+
+/* ---------- init ---------- */
+preset('heart');
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
