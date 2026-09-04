@@ -1,0 +1,477 @@
+<!-- Part of https://github.com/so-okada/math_teaching_materials -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Huygens' Cycloidal Pendulum — Interactive Demo</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface-1:      #fcfcfb;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --grid:           #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+    --accent:         #2a78d6;
+    --amp-1:          #2a78d6;
+    --amp-2:          #eb6834;
+    --amp-3:          #b33bd1;
+    --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --page:           #0d0d0d;
+      --surface-1:      #1a1a19;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --grid:           #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+      --accent:         #3987e5;
+      --amp-1:          #3987e5;
+      --amp-2:          #ee7a4c;
+      --amp-3:          #c25ddb;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--text-primary);
+    font-family: var(--font-ui); line-height: 1.55;
+  }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; }
+  .subtitle { color: var(--text-secondary); margin: 0 0 20px; font-size: 0.95rem; }
+  .disp { text-align: center; font-size: 1.1rem; margin: 12px 0; font-variant-numeric: tabular-nums; }
+  .math { overflow-x: auto; font-size: 1.05rem; margin: 4px 0 8px; }
+  i, .disp i { font-family: Georgia, "Times New Roman", serif; }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 1.02rem; margin: 0 0 2px; }
+  .hint { color: var(--text-muted); font-size: 0.82rem; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 6px; }
+  .controls-row { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; margin: 8px 0 4px; }
+  .ctrl { display: flex; align-items: center; gap: 8px; font-size: 0.88rem; color: var(--text-secondary); }
+  .ctrl output { min-width: 3.5em; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  input[type="range"] { accent-color: var(--accent); width: 130px; }
+  button {
+    font: inherit; font-size: 0.88rem; padding: 5px 12px; border-radius: 6px;
+    border: 1px solid var(--border); background: var(--page); color: var(--text-primary); cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); min-width: 5.5em; }
+  button.on { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .panels { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  @media (max-width: 760px) { .panels { grid-template-columns: 1fr; } }
+  .panel h3 { font-size: 0.9rem; margin: 0 0 6px; font-weight: 600; }
+  .status {
+    background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 14px; margin: 10px 0 0; font-size: 0.95rem;
+  }
+  .status .tag {
+    display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.8rem;
+    font-weight: 600; color: #fff; background: var(--accent); margin-right: 6px;
+  }
+  .status ul { margin: 6px 0 0 1.25em; padding-left: 1em; }
+  .status li + li { margin-top: 3px; }
+  .legend { display: flex; gap: 14px; font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; flex-wrap: wrap; }
+  .legend span::before {
+    content: ""; display: inline-block; width: 14px; height: 8px; border-radius: 2px;
+    margin-right: 6px; vertical-align: middle; opacity: 0.85;
+  }
+  .lg-1::before { background: var(--amp-1); } .lg-2::before { background: var(--amp-2); } .lg-3::before { background: var(--amp-3); }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; font-variant-numeric: tabular-nums; margin-top: 8px; }
+  th, td { padding: 5px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; }
+  td:first-child, th:first-child { text-align: left; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .tblwrap { overflow-x: auto; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; }
+  details p { font-size: 0.9rem; color: var(--text-secondary); }
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+  .presets button { font-size: 0.8rem; padding: 3px 9px; }
+</style>
+<script>
+  window.MathJax = { tex: { displayMath: [['\\[', '\\]']] }, options: { enableMenu: false } };
+</script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>The Pendulum Is Not Isochronous — Unless It Swings on a Cycloid</h1></header>
+  <p class="subtitle">
+    For an ordinary pendulum of fixed length, a large-amplitude oscillation has a longer period than a small-amplitude one.
+    Thus ordinary pendulums with different amplitudes slowly fall out of step.
+    Huygens (1629–1695) fixed this by making the bob move on a <em>cycloid</em> instead of a circle.
+    In the ideal model, every complete oscillation, large or small, then has exactly the same period.
+    Below, two pendulums of each kind start together: one with a small amplitude and one with a large amplitude.
+    Let them run for a long time and see which family stays in step.
+  </p>
+
+  <div class="card">
+    <h2>1. Release, then let time run</h2>
+    <div class="controls-row">
+      <label class="ctrl"><span class="sw" style="background:var(--amp-1)"></span>amplitude 1
+        <input type="range" id="amp1Sl" min="1" max="89.9" step="0.1" value="10">
+        <output id="amp1Out">10°</output></label>
+      <label class="ctrl"><span class="sw" style="background:var(--amp-2)"></span>amplitude 2
+        <input type="range" id="amp2Sl" min="1" max="89.9" step="0.1" value="88">
+        <output id="amp2Out">88°</output></label>
+    </div>
+    <div class="controls-row">
+      <button class="primary" id="btnRun">Start</button>
+      <button id="btnJump">Jump +60 s</button>
+      <button id="btnReset">Reset</button>
+      <span class="ctrl">speed
+        <button data-s="1" class="spd on">1×</button><button data-s="5" class="spd">5×</button>
+        <button data-s="20" class="spd">20×</button><button data-s="100" class="spd">100×</button>
+      </span>
+      <label class="ctrl"><input type="checkbox" id="cheekChk" checked> draw the cycloidal cheeks</label>
+      <label class="ctrl"><input type="checkbox" id="pathChk" checked> draw the paths</label>
+    </div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Two families, side by side</h2>
+    <div class="panels">
+      <div class="panel">
+        <h3>Ordinary pendulums — bob on a circle</h3>
+        <canvas id="cvA" width="640" height="420" aria-label="Animation of two ordinary pendulums"></canvas>
+        <h3 style="margin-top:10px">Position over time (fraction of the swing)</h3>
+        <canvas id="cvTsA" width="640" height="260" aria-label="Time series of the normalised angles of the ordinary pendulums"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Huygens' pendulums — bob on a cycloid</h3>
+        <canvas id="cvB" width="640" height="420" aria-label="Animation of two cycloidal pendulums"></canvas>
+        <h3 style="margin-top:10px">Position over time (fraction of the swing)</h3>
+        <canvas id="cvTsB" width="640" height="260" aria-label="Time series of the normalised arc lengths of the cycloidal pendulums"></canvas>
+      </div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <h3 style="margin-top:14px; font-size:0.9rem">Periods and elapsed cycles</h3>
+    <div class="tblwrap"><table id="tbl"></table></div>
+    <p class="hint" style="margin-top:14px">Ordinary pendulum, released from rest at angle <i>θ</i><sub>0</sub> from the downward vertical:</p>
+    <div class="math">\[
+      T(\theta_0) = 4\sqrt{\frac{L}{g}}\;K\!\left(\sin\frac{\theta_0}{2}\right),\qquad
+      K(k) = \int_0^{\pi/2} \frac{d\varphi}{\sqrt{1 - k^2 \sin^2\varphi}}
+           = \frac{\pi}{2}\left(1 + \frac{k^2}{4} + \frac{9k^4}{64} + \cdots\right).
+    \]</div>
+    <p class="hint">Huygens' pendulum, whose bob follows a cycloid generated by a circle of radius <i>a</i>, with string length <i>L</i> = 4<i>a</i>:</p>
+    <div class="math">\[
+      T = 2\pi\sqrt{\frac{4a}{g}} = 2\pi\sqrt{\frac{L}{g}} = T_0 .
+    \]</div>
+  </div>
+
+</div>
+
+<footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
+  <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
+  <a href="https://github.com/so-okada/math_teaching_materials" style="color:var(--accent);">https://github.com/so-okada/math_teaching_materials</a>
+</footer>
+<p style="text-align:center"><a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">Back to Collection</a></p>
+
+<script>
+"use strict";
+
+/* ---------- parameters ---------- */
+const g = 9.81, L = 1, a = L / 4;
+const w0 = Math.sqrt(g / L), T0 = 2 * Math.PI / w0;
+const DT = 1 / 1000, WINDOW = 20;
+let amps = [10, 88];        /* release angles in degrees */
+let speed = 1, running = false, showCheeks = true, showPaths = true;
+let t = 0, hist = [], nextRecordTime = 0.01; /* hist: {t, a: [..2], b: [..2]} */
+let simple, cyclo;                       /* arrays of states */
+
+/* exact period of the ordinary pendulum via AGM */
+function ellK(k) {
+  let x = 1, y = Math.sqrt(1 - k * k);
+  for (let i = 0; i < 40 && Math.abs(x - y) > 1e-15; i++) { const m = (x + y) / 2; y = Math.sqrt(x * y); x = m; }
+  return Math.PI / (2 * x);
+}
+const periodSimple = th0 => 4 / w0 * ellK(Math.sin(th0 / 2));
+
+function reset() {
+  running = false; btnRun.textContent = 'Start'; t = 0; hist = []; nextRecordTime = 0.01;
+  simple = amps.map(d => { const th0 = d * Math.PI / 180; return { th0, th: th0, w: 0, T: periodSimple(th0) }; });
+  cyclo  = amps.map(d => { const al = d * Math.PI / 180, s0 = 4 * a * Math.sin(al); return { s0, s: s0, v: 0, T: T0 }; });
+  record(); buildLegend(); updateAll();
+}
+
+/* ---------- physics ---------- */
+function stepSimple(p, h) {
+  const f = (th, w) => [w, -(g / L) * Math.sin(th)];
+  const k1 = f(p.th, p.w), k2 = f(p.th + h / 2 * k1[0], p.w + h / 2 * k1[1]);
+  const k3 = f(p.th + h / 2 * k2[0], p.w + h / 2 * k2[1]), k4 = f(p.th + h * k3[0], p.w + h * k3[1]);
+  const th = p.th + h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+  p.th = th; p.w += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+}
+function stepCyclo(p, h) {
+  const c = -g / (4 * a);
+  const f = (s, v) => [v, c * s];
+  const k1 = f(p.s, p.v), k2 = f(p.s + h / 2 * k1[0], p.v + h / 2 * k1[1]);
+  const k3 = f(p.s + h / 2 * k2[0], p.v + h / 2 * k2[1]), k4 = f(p.s + h * k3[0], p.v + h * k3[1]);
+  const s = p.s + h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+  p.s = s; p.v += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+}
+function record() {
+  hist.push({ t, a: simple.map(p => p.th / p.th0), b: cyclo.map(p => p.s / p.s0) });
+  while (hist.length && hist[0].t < t - WINDOW) hist.shift();
+}
+function advance(seconds) {
+  const target = t + seconds;
+  while (t < target - 1e-12) {
+    const h = Math.min(DT, target - t);
+    for (const p of simple) stepSimple(p, h);
+    for (const p of cyclo) stepCyclo(p, h);
+    t += h;
+    if (t + 1e-12 >= nextRecordTime) {
+      record();
+      while (nextRecordTime <= t + 1e-12) nextRecordTime += 0.01;
+    }
+  }
+}
+
+/* geometry of the cycloidal pendulum, pivot at origin, y downward */
+const phiOf = s => 2 * Math.asin(Math.max(-1, Math.min(1, s / (4 * a))));
+const bobCyclo = phi => [a * (phi + Math.sin(phi)), a * (3 + Math.cos(phi))];
+const cheek    = phi => [a * (phi - Math.sin(phi)), a * (1 - Math.cos(phi))];
+const bobSimple = th => [L * Math.sin(th), L * Math.cos(th)];
+
+/* ---------- palette ---------- */
+function cssVar(n) { return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
+let C = {};
+function refreshColors() {
+  C = { surface: cssVar('--surface-1'), grid: cssVar('--grid'), baseline: cssVar('--baseline'),
+        muted: cssVar('--text-muted'), ink: cssVar('--text-primary'),
+        amp: [1, 2].map(i => cssVar('--amp-' + i)) };
+}
+refreshColors();
+if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { refreshColors(); updateAll(); });
+function withAlpha(hex, al) {
+  const n = parseInt(hex.slice(1), 16);
+  return 'rgba(' + (n >> 16) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + al + ')';
+}
+function fmt(v, d) {
+  if (!Number.isFinite(v)) return '—';
+  const s = v.toFixed(d === undefined ? 3 : d);
+  return /^-0(\.0+)?$/.test(s) ? s.slice(1) : s.replace('-', '−');
+}
+function fmtTime(sec) {
+  if (!Number.isFinite(sec)) return '—';
+  const roundedTenths = Math.round(sec * 10) / 10;
+  if (roundedTenths < 60) return fmt(roundedTenths, 1) + ' s';
+  const totalSeconds = Math.round(sec);
+  const m = Math.floor(totalSeconds / 60), s = totalSeconds % 60;
+  return m + ' min ' + String(s).padStart(2, '0') + ' s';
+}
+
+/* ---------- pendulum pictures ---------- */
+const cvA = document.getElementById('cvA'), cvB = document.getElementById('cvB');
+function pendMap(cv) {
+  const W = cv.width, H = cv.height, top = 36;
+  const scale = Math.min((W / 2 - 24) / L, (H - top - 30) / L);
+  return { sx: x => W / 2 + x * scale, sy: y => top + y * scale, scale };
+}
+function drawPictureFrame(cv) {
+  const ctx = cv.getContext('2d'), mp = pendMap(cv);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = C.surface; ctx.fillRect(0, 0, cv.width, cv.height);
+  /* vertical reference and bottom mark */
+  ctx.strokeStyle = C.baseline; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(mp.sx(0), mp.sy(0)); ctx.lineTo(mp.sx(0), mp.sy(L)); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = C.muted; ctx.font = '15px system-ui, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('t = ' + fmtTime(t), 12, 10);
+  return { ctx, mp };
+}
+function drawSimple() {
+  const { ctx, mp } = drawPictureFrame(cvA);
+  if (showPaths) {
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(mp.sx(0), mp.sy(0), L * mp.scale, 0, Math.PI); ctx.stroke();
+  }
+  simple.forEach((p, i) => {
+    const [x, y] = bobSimple(p.th), col = C.amp[i];
+    ctx.strokeStyle = withAlpha(col, 0.9); ctx.lineWidth = 5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(mp.sx(0), mp.sy(0)); ctx.lineTo(mp.sx(x), mp.sy(y)); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(mp.sx(x), mp.sy(y), 9, 0, 2 * Math.PI); ctx.fill();
+  });
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(mp.sx(0), mp.sy(0), 5, 0, 2 * Math.PI); ctx.fill();
+}
+function drawCyclo() {
+  const { ctx, mp } = drawPictureFrame(cvB);
+  if (showPaths) {
+    ctx.strokeStyle = C.grid; ctx.lineWidth = 1.5; ctx.beginPath();
+    for (let k = 0; k <= 200; k++) { const [x, y] = bobCyclo(-Math.PI + 2 * Math.PI * k / 200); k ? ctx.lineTo(mp.sx(x), mp.sy(y)) : ctx.moveTo(mp.sx(x), mp.sy(y)); }
+    ctx.stroke();
+  }
+  if (showCheeks) {
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 7; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.beginPath();
+    for (let k = 0; k <= 200; k++) { const [x, y] = cheek(-Math.PI + 2 * Math.PI * k / 200); k ? ctx.lineTo(mp.sx(x), mp.sy(y)) : ctx.moveTo(mp.sx(x), mp.sy(y)); }
+    ctx.stroke();
+  }
+  cyclo.forEach((p, i) => {
+    const phi = phiOf(p.s), col = C.amp[i];
+    const [bx, by] = bobCyclo(phi), [cx, cy] = cheek(phi);
+    ctx.strokeStyle = withAlpha(col, 0.9); ctx.lineWidth = 5; ctx.lineCap = 'round';
+    /* wrapped part of the string: along the cheek from the cusp to the tangent point */
+    ctx.beginPath(); ctx.moveTo(mp.sx(0), mp.sy(0));
+    const n = 40;
+    for (let k = 1; k <= n; k++) { const [x, y] = cheek(phi * k / n); ctx.lineTo(mp.sx(x), mp.sy(y)); }
+    ctx.lineTo(mp.sx(bx), mp.sy(by)); ctx.stroke();
+    ctx.fillStyle = col; ctx.beginPath(); ctx.arc(mp.sx(bx), mp.sy(by), 9, 0, 2 * Math.PI); ctx.fill();
+  });
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(mp.sx(0), mp.sy(0), 5, 0, 2 * Math.PI); ctx.fill();
+}
+
+/* ---------- time series ---------- */
+const M = { l: 56, r: 18, t: 14, b: 44 };
+function makeMap(cv, xr, yr) {
+  const pw = cv.width - M.l - M.r, ph = cv.height - M.t - M.b;
+  return { px: x => M.l + (x - xr[0]) / (xr[1] - xr[0]) * pw, py: y => M.t + ph - (y - yr[0]) / (yr[1] - yr[0]) * ph, pw, ph };
+}
+function fmtTick(v) { const s = (Math.round(v * 1000) / 1000).toString(); return s === '-0' ? '0' : s.replace('-', '−'); }
+function timeRange() { const t1 = Math.max(WINDOW, t); return [t1 - WINDOW, t1]; }
+function drawTs(cv, key) {
+  const ctx = cv.getContext('2d'), xr = timeRange(), yr = [-1.15, 1.15], mp = makeMap(cv, xr, yr);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = C.surface; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.lineWidth = 1; ctx.font = '14px system-ui, sans-serif';
+  /* x grid every 2 s, with T0 ticks marked as the ideal clock */
+  for (let v = Math.ceil(xr[0] / 2) * 2; v <= xr[1] + 1e-9; v += 2) {
+    const p = mp.px(v);
+    ctx.strokeStyle = C.grid; ctx.beginPath(); ctx.moveTo(p, M.t); ctx.lineTo(p, M.t + mp.ph); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(fmtTick(v), p, M.t + mp.ph + 5);
+  }
+  for (const [v, lab] of [[-1, '−1'], [0, '0'], [1, '1']]) {
+    const p = mp.py(v);
+    ctx.strokeStyle = v === 0 ? C.baseline : C.grid; ctx.beginPath(); ctx.moveTo(M.l, p); ctx.lineTo(M.l + mp.pw, p); ctx.stroke();
+    ctx.fillStyle = C.muted; ctx.textAlign = 'right'; ctx.textBaseline = 'middle'; ctx.fillText(lab, M.l - 8, p);
+  }
+  /* ticks of the ideal small-angle clock: multiples of T0 */
+  ctx.strokeStyle = withAlpha(C.ink, 0.35); ctx.setLineDash([2, 3]);
+  for (let k = Math.ceil(xr[0] / T0); k * T0 <= xr[1]; k++) {
+    const p = mp.px(k * T0); ctx.beginPath(); ctx.moveTo(p, mp.py(1)); ctx.lineTo(p, mp.py(1.15)); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.strokeStyle = C.baseline; ctx.strokeRect(M.l, M.t, mp.pw, mp.ph);
+  ctx.fillStyle = C.muted; ctx.font = 'italic 17px Georgia, serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('t (s)', M.l + mp.pw / 2, M.t + mp.ph + 22);
+  ctx.save(); ctx.beginPath(); ctx.rect(M.l, M.t, mp.pw, mp.ph); ctx.clip();
+  for (let i = 0; i < amps.length; i++) {
+    ctx.strokeStyle = C.amp[i]; ctx.lineWidth = 1.8; ctx.beginPath();
+    hist.forEach((h, j) => j ? ctx.lineTo(mp.px(h.t), mp.py(h[key][i])) : ctx.moveTo(mp.px(h.t), mp.py(h[key][i])));
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.fillStyle = C.muted; ctx.font = '13px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+  ctx.fillText('dashes above the frame: multiples of T₀', M.l + mp.pw, M.t + mp.ph + 24);
+}
+
+/* ---------- legend, table, status ---------- */
+const $ = id => document.getElementById(id);
+function buildLegend() {
+  $('legend').innerHTML = amps.map((d, i) => '<span class="lg-' + (i + 1) + '">released at ' + fmt(d, d % 1 ? 1 : 0) + '°</span>').join('');
+}
+function updateTable() {
+  let h = '<tr><th>release angle from vertical</th><th>ordinary: ≈ <i>T</i>(<i>θ</i><sub>0</sub>)</th><th>≈ <i>T</i>/<i>T</i><sub>0</sub></th><th>elapsed cycles</th><th>lag behind cycloid (cycles)</th><th>cycloid: ≈ <i>T</i></th><th>elapsed cycles</th></tr>';
+  amps.forEach((d, i) => {
+    const p = simple[i], q = cyclo[i];
+    const lag = t / T0 - t / p.T;
+    h += '<tr><td><span class="sw" style="background:' + C.amp[i] + '"></span>' + fmt(d, d % 1 ? 1 : 0) + '°</td>'
+       + '<td>' + fmt(p.T, 4) + ' s</td><td>' + fmt(p.T / T0, 4) + '</td><td>' + fmt(t / p.T, 2) + '</td><td>' + fmt(lag, 2) + '</td>'
+       + '<td>' + fmt(q.T, 4) + ' s</td><td>' + fmt(t / q.T, 2) + '</td></tr>';
+  });
+  $('tbl').innerHTML = h;
+}
+function describe() {
+  const Ts = simple.map(p => p.T);
+  const fast = Ts[0] <= Ts[1] ? 0 : 1, slow = 1 - fast;
+  const Tmin = Ts[fast], Tmax = Ts[slow];
+  const rateDifference = 1 / Tmin - 1 / Tmax;
+  let tag, text;
+
+  if (Math.abs(rateDifference) < 1e-14) {
+    tag = 'in step';
+    if (t === 0) {
+      text = 'The two ordinary pendulums have the same release angle and period <b>' + fmt(Tmin, 3) + ' s</b>, so they remain in step. Both cycloidal pendulums have period <b>' + fmt(T0, 3) + ' s</b> and also remain in phase.';
+    } else {
+      text = 'After ' + fmtTime(t) + ' the two ordinary pendulums remain in step because their amplitudes and periods are equal. The two cycloidal pendulums also remain in phase.';
+    }
+    return '<span class="tag">' + tag + '</span>' + text;
+  }
+
+  const cycleLead = t * rateDifference;
+  const fractionalLead = cycleLead - Math.floor(cycleLead);
+  const phaseSeparation = Math.min(fractionalLead, 1 - fractionalLead);
+  const tOneCycle = 1 / rateDifference;
+
+  if (t === 0) {
+    tag = 'ready';
+    text = '<ul>'
+      + '<li>The ordinary pendulum released at ' + fmt(amps[fast], amps[fast] % 1 ? 1 : 0) + '° has period <b>' + fmt(Tmin, 3) + ' s</b>, while the one released at ' + fmt(amps[slow], amps[slow] % 1 ? 1 : 0) + '° has period <b>' + fmt(Tmax, 3) + ' s</b>.</li>'
+      + '<li>The smaller-amplitude pendulum accumulates a lead of one complete cycle after about <b>' + fmtTime(tOneCycle) + '</b>.</li>'
+      + '<li>Both cycloidal pendulums have period <b>' + fmt(T0, 3) + ' s</b> and remain in phase.</li>'
+      + '</ul>';
+  } else {
+    if (phaseSeparation < 0.05) {
+      tag = 'nearly in step';
+    } else if (phaseSeparation >= 0.25) {
+      tag = 'out of step';
+    } else {
+      tag = fractionalLead < 0.5 ? 'drifting apart' : 'drifting together';
+    }
+    text = 'After ' + fmtTime(t) + ' the smaller-amplitude ordinary pendulum has accumulated a lead of <b>' + fmt(cycleLead, 2) + '</b> cycles. Modulo whole cycles, their cycle-phase separation is <b>' + fmt(phaseSeparation, 2) + '</b> of a cycle. The cycloidal pendulums remain in phase and pass the bottom together.';
+  }
+  return '<span class="tag">' + tag + '</span>' + text;
+}
+
+/* ---------- UI ---------- */
+const btnRun = $('btnRun');
+function readAmps() {
+  amps = [Number($('amp1Sl').value), Number($('amp2Sl').value)];
+  amps.forEach((d, i) => { $('amp' + (i + 1) + 'Out').textContent = fmt(d, d % 1 ? 1 : 0) + '°'; });
+}
+$('amp1Sl').addEventListener('input', () => { readAmps(); reset(); });
+$('amp2Sl').addEventListener('input', () => { readAmps(); reset(); });
+document.querySelectorAll('.spd').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.spd').forEach(x => x.classList.remove('on')); b.classList.add('on');
+  speed = Number(b.dataset.s);
+}));
+function toggleRun() {
+  running = !running;
+  btnRun.textContent = running ? 'Pause' : 'Start';
+  if (running && rafId === null) { last = null; rafId = requestAnimationFrame(frame); }
+}
+btnRun.addEventListener('click', toggleRun);
+$('btnJump').addEventListener('click', () => { advance(60); updateAll(); });
+$('btnReset').addEventListener('click', reset);
+$('cheekChk').addEventListener('change', ev => { showCheeks = ev.target.checked; drawCyclo(); });
+$('pathChk').addEventListener('change', ev => { showPaths = ev.target.checked; drawSimple(); drawCyclo(); });
+
+let last = null, rafId = null;
+function frame(now) {
+  rafId = null;
+  if (!running) return;
+  if (last !== null) advance(Math.min(0.05, (now - last) / 1000) * speed);
+  last = now;
+  updateAll();
+  rafId = requestAnimationFrame(frame);
+}
+function updateAll() {
+  drawSimple(); drawCyclo(); drawTs($('cvTsA'), 'a'); drawTs($('cvTsB'), 'b');
+  updateTable(); $('status').innerHTML = describe();
+}
+reset();
+</script>
+</body>
+</html>
