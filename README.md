@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of 49 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. The demos are subject to rounding and approximation errors.
+A collection of 50 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. The demos are subject to rounding and approximation errors.
 
 ## Contents
 
@@ -52,6 +52,7 @@ A collection of 49 interactive, browser-based visualizations for teaching mathem
 | [Catenary Curve](https://so-okada.github.io/math_teaching_materials/catenary.html) | Differential Geometry | Hyperbolic cosine, hanging chain, curvature |
 | [Bottle Flip Physics](https://so-okada.github.io/math_teaching_materials/bottle_flip_edu.html) | Mechanics | Projectile motion, angular momentum |
 | [Strandbeest (Jansen Linkage)](https://so-okada.github.io/math_teaching_materials/strandbeest_demo.html) | Mechanics | Planar linkage, circle intersection, walking curve |
+| [Involute Gear Lab](https://so-okada.github.io/math_teaching_materials/involute_gear.html) | Mechanics | Involute of a circle, tooth profile, line of action, contact ratio, rack generation, undercut |
 | [Huygens' Cycloidal Pendulum](https://so-okada.github.io/math_teaching_materials/huygens_cycloidal_pendulum.html) | Mechanics | Isochronism, cycloid, period of a pendulum, elliptic integral |
 | [Vibration (2nd-Order ODE)](https://so-okada.github.io/math_teaching_materials/vibration_demo.html) | Differential Equations | Damped harmonic oscillator, phase portraits |
 | [The Logistic Map](https://so-okada.github.io/math_teaching_materials/logistic_map.html) | Dynamical Systems | Cobweb plot, bifurcation diagram, period doubling, chaos, Lyapunov exponent |
@@ -1036,6 +1037,21 @@ and the two solutions are $J = A + \ell\,\hat{u} \pm h\,\hat{u}^{\perp}$, where 
 - **Tiny random test**: Apply small random rod perturbations; **Reset rods** restores Jansen's values
 - **Show trace, Zoom, Rod thickness**: Display options for the foot path and figure
 - **Live construction checks**: Flags any stage where the two circles fail to intersect
+
+---
+
+### [Involute Gear Lab](https://so-okada.github.io/math_teaching_materials/involute_gear.html)
+**File:** `involute_gear.html`
+
+Four tabs: the involute of a circle, the tooth profile it becomes, two gears meshing with a constant angular-speed ratio, and a rack cutter generating a gear (with undercut).
+
+**Controls:**
+- **Involute**: Parameter $t$, base radius, animation, string and normal toggles
+- **Tooth profile**: Module $m$, number of teeth $N$, pressure angle $\alpha$, with derived radii
+- **Meshing**: Teeth $N_1$, $N_2$, pressure angle, speed, play/step; readouts of gear ratio, path of contact, contact ratio, tooth pairs in contact
+- **Rack cutter**: Teeth, pressure angle, profile shift, with fillet envelope and undercut display
+
+**Reference:** [KHK, Involute Gear Profile](https://khkgears.net/new/gear_knowledge/gear_technical_reference/involute_gear_profile.html)
 
 ---
 
