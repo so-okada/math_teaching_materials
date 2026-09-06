@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Involute Gear Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef0f3; --paper:#f8f9fb; --ink:#1b2430; --ink-2:#4a5568; --ink-3:#8a94a3;
+  --rule:#cfd5dd; --grid:#dde2e8;
+  --brass:#a8781f; --brass-soft:rgba(168,120,31,.16);
+  --steel:#3a6a8f; --steel-soft:rgba(58,106,143,.14);
+  --red:#b83a2e; --green:#3b7d5a;
+  --gear-fill:#e0c98f; --gear-edge:#7a5a14; --gear2-fill:#b9cbdb; --gear2-edge:#2f5570;
+  --focus:#3a6a8f;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14181e; --paper:#1b2027; --ink:#e6e9ee; --ink-2:#aab3bf; --ink-3:#6f7986;
+    --rule:#2c343e; --grid:#252c35;
+    --brass:#d6a54a; --brass-soft:rgba(214,165,74,.18);
+    --steel:#7fb0d6; --steel-soft:rgba(127,176,214,.16);
+    --red:#e2695b; --green:#6fb58c;
+    --gear-fill:#6a5424; --gear-edge:#e6c98a; --gear2-fill:#2c4658; --gear2-edge:#a9c9e2;
+    --focus:#7fb0d6;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14181e; --paper:#1b2027; --ink:#e6e9ee; --ink-2:#aab3bf; --ink-3:#6f7986;
+  --rule:#2c343e; --grid:#252c35;
+  --brass:#d6a54a; --brass-soft:rgba(214,165,74,.18);
+  --steel:#7fb0d6; --steel-soft:rgba(127,176,214,.16);
+  --red:#e2695b; --green:#6fb58c;
+  --gear-fill:#6a5424; --gear-edge:#e6c98a; --gear2-fill:#2c4658; --gear2-edge:#a9c9e2;
+  --focus:#7fb0d6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "IBM Plex Sans",system-ui,sans-serif;}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 48px;}
+header > div{width:100%;}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+h1{font:600 30px/1.1 "IBM Plex Sans",system-ui,sans-serif;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h1 em{font-style:normal;color:var(--brass)}
+.sub{color:var(--ink-2);margin:6px 0 0;}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--rule);margin-bottom:16px}
+.tab{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:8px 14px;font:500 14px "IBM Plex Sans",sans-serif;color:var(--ink-2);cursor:pointer;letter-spacing:.01em}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--brass)}
+.tab:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.panel{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start}
+@media (max-width:860px){.panel{grid-template-columns:1fr}}
+.stage{background:var(--paper);border:1px solid var(--rule);position:relative}
+canvas{display:block;width:100%;height:auto}
+.side{display:flex;flex-direction:column;gap:14px}
+.ctl{background:var(--paper);border:1px solid var(--rule);padding:14px 16px}
+.ctl h2{font:600 15px/1.2 "IBM Plex Sans",system-ui,sans-serif;margin:0 0 10px;letter-spacing:.01em}
+.row{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;margin:8px 0}
+.row label{font-size:13px;color:var(--ink-2)}
+.row output{font:500 13px "IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;color:var(--ink)}
+.row input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--brass);margin:0}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+button.b{border:1px solid var(--rule);background:var(--bg);color:var(--ink);padding:6px 12px;font:500 13px "IBM Plex Sans",sans-serif;cursor:pointer}
+button.b.primary{background:var(--brass);border-color:var(--brass);color:#fff}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink-2);margin:6px 0}
+.chk input{accent-color:var(--steel)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:0;font-size:13px}
+dt{color:var(--ink-2)}
+dd{margin:0;font:500 13px "IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;text-align:right}
+.math{font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:14px;line-height:1.8;color:var(--ink)}
+.math i{font-style:italic}
+.math .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.05;margin:0 3px}
+.math .frac span:first-child{border-bottom:1px solid currentColor;padding:0 3px}
+.math sub,.math sup{font-size:.7em}
+.note{font-size:13px;color:var(--ink-2);margin:10px 0 0}
+.vals{grid-column:1/-1}
+.vals dl{grid-template-columns:1fr auto 1fr auto 1fr auto;column-gap:16px}
+.vals dd{padding-right:18px;white-space:nowrap}
+.eqs{grid-column:1/-1;background:var(--paper);border:1px solid var(--rule);padding:12px 16px}
+.eqs .math{font-size:15px}
+.caption{grid-column:1/-1;margin:0;font-size:14px;line-height:1.6;color:var(--ink-2)}
+.caption b{color:var(--ink);font-weight:600}
+.warn{color:var(--red);font-size:13px;margin-top:8px}
+.legend{position:absolute;left:12px;bottom:10px;display:flex;gap:14px;flex-wrap:wrap;font:12px "IBM Plex Mono",monospace;color:var(--ink-2)}
+.legend span::before{content:"";display:inline-block;width:18px;height:0;border-top:2px solid var(--c);vertical-align:middle;margin-right:6px}
+.legend .dash::before{border-top-style:dashed}
+@media(max-width:900px){.vals dl{grid-template-columns:1fr auto 1fr auto}.vals dd{padding-right:0}}
+@media(max-width:560px){.vals dl{grid-template-columns:1fr auto}.tabs{flex-wrap:wrap}.tab{padding:8px}.math{overflow-wrap:anywhere}}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>Involute <em>Gear</em> Lab</h1>
+    <p class="sub">The involute of a circle, the tooth it becomes, and why two gears mesh with a constant angular-speed ratio. Drag the sliders; every quantity is recomputed live (rounded if necessary).</p>
+  </div>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab" role="tab" aria-selected="true" data-tab="inv">1 · Involute of a circle</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="tooth">2 · Tooth profile</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="mesh">3 · Two gears meshing</button>
+  <button class="tab" role="tab" aria-selected="false" data-tab="rack">4 · Rack cutter &amp; undercut</button>
+</div>
+
+<!-- ===== 1. Involute ===== -->
+<section class="panel" id="p-inv">
+  <div class="stage">
+    <canvas id="c-inv" width="820" height="560"></canvas>
+    <div class="legend">
+      <span style="--c:var(--steel)">base circle</span>
+      <span style="--c:var(--brass)">involute</span>
+      <span style="--c:var(--red)">string (normal)</span>
+    </div>
+  </div>
+  <div class="side">
+    <div class="ctl">
+      <h2>Unwinding a string</h2>
+      <div class="row"><label for="inv-t">parameter <i>t</i> (rad)</label><output id="inv-t-o">2.00</output>
+        <input type="range" id="inv-t" min="0" max="9.42" step="0.01" value="2"></div>
+      <div class="row"><label for="inv-r">base radius <i>r<sub>b</sub></i></label><output id="inv-r-o">45</output>
+        <input type="range" id="inv-r" min="20" max="120" step="1" value="45"></div>
+      <div class="btns"><button class="b primary" id="inv-play">Animate</button><button class="b" id="inv-reset">Reset</button></div>
+      <label class="chk"><input type="checkbox" id="inv-osc" checked> show osculating circle</label>
+      <label class="chk"><input type="checkbox" id="inv-poly"> show unwrapped polar angle inv(φ)</label>
+    </div>
+  </div>
+  <div class="ctl vals">
+    <h2>Values</h2>
+    <dl>
+      <dt>unwound length |P − T|</dt><dd id="inv-s">—</dd>
+      <dt>curvature radius ρ (t &gt; 0)</dt><dd id="inv-rho">—</dd>
+      <dt>r = |OP|</dt><dd id="inv-rr">—</dd>
+      <dt>pressure angle φ</dt><dd id="inv-phi">—</dd>
+      <dt>inv(φ) = tan φ − φ</dt><dd id="inv-inv">—</dd>
+    </dl>
+  </div>
+  <div class="eqs">
+    <div class="math">
+      <i>x</i>(<i>t</i>) = <i>r<sub>b</sub></i>(cos <i>t</i> + <i>t</i> sin <i>t</i>)<br>
+      <i>y</i>(<i>t</i>) = <i>r<sub>b</sub></i>(sin <i>t</i> − <i>t</i> cos <i>t</i>)<br>
+      |<i>P</i> − <i>T</i>| = <i>r<sub>b</sub></i>·<i>t</i> = arc length unwound<br>
+      <i>r</i> = <i>r<sub>b</sub></i>√(1+<i>t</i>²), &nbsp; tan φ = <i>t</i><br>
+      unwrapped polar angle θ = <i>t</i> − arctan <i>t</i> = inv(φ)<br>
+      ρ = <i>r<sub>b</sub>t</i> for <i>t</i> &gt; 0; the endpoint <i>t</i> = 0 is singular
+    </div>
+  </div>
+  <p class="caption"><b>Involute of a circle.</b> Unwind a taut string from the base circle: its free end traces the involute. For <i>t</i> &gt; 0, the string is tangent to the base circle and <em>normal</em> to the involute, with length and curvature radius <i>r<sub>b</sub>t</i>. The unwrapped angle records complete turns as well as the final direction.</p>
+</section>
+
+<!-- ===== 2. Tooth ===== -->
+<section class="panel" id="p-tooth" hidden>
+  <div class="stage">
+    <canvas id="c-tooth" width="820" height="560"></canvas>
+    <div class="legend">
+      <span style="--c:var(--steel)">base</span>
+      <span class="dash" style="--c:var(--ink-2)">pitch</span>
+      <span style="--c:var(--ink-3)">root / addendum</span>
+      <span style="--c:var(--brass)">involute flank</span>
+      <span class="dash" style="--c:var(--red)">radial flank</span>
+    </div>
+  </div>
+  <div class="side">
+    <div class="ctl">
+      <h2>Unshifted gear model</h2>
+      <div class="row"><label for="th-m">module <i>m</i> (px)</label><output id="th-m-o">14</output>
+        <input type="range" id="th-m" min="6" max="30" step="1" value="14"></div>
+      <div class="row"><label for="th-N">teeth <i>N</i></label><output id="th-N-o">18</output>
+        <input type="range" id="th-N" min="6" max="60" step="1" value="18"></div>
+      <div class="row"><label for="th-a">pressure angle α (°)</label><output id="th-a-o">20</output>
+        <input type="range" id="th-a" min="10" max="30" step="0.5" value="20"></div>
+      <label class="chk"><input type="checkbox" id="th-cons" checked> dissect one tooth (zoom inset)</label>
+      <label class="chk"><input type="checkbox" id="th-spin"> rotate</label>
+    </div>
+  </div>
+  <div class="ctl vals">
+    <h2>Derived radii</h2>
+    <dl>
+      <dt>pitch radius r<sub>p</sub></dt><dd id="th-rp">—</dd>
+      <dt>base radius r<sub>b</sub></dt><dd id="th-rb">—</dd>
+      <dt>addendum radius r<sub>a</sub></dt><dd id="th-ra">—</dd>
+      <dt>root radius r<sub>d</sub></dt><dd id="th-rd">—</dd>
+      <dt>circular pitch πm</dt><dd id="th-p">—</dd>
+      <dt>base pitch πm cos α</dt><dd id="th-pb">—</dd>
+      <dt>tip half-angle ψ(r<sub>a</sub>)</dt><dd id="th-psi">—</dd>
+    </dl>
+  </div>
+  <div class="eqs">
+    <div class="math">
+      <i>r<sub>p</sub></i> = <i>mN</i>/2, &nbsp; <i>r<sub>b</sub></i> = <i>r<sub>p</sub></i> cos α<br>
+      <i>r<sub>a</sub></i> = <i>r<sub>p</sub></i> + <i>m</i>, &nbsp; <i>r<sub>d</sub></i> = <i>r<sub>p</sub></i> − 1.25<i>m</i><br>
+      half-tooth angle on the involute, max(<i>r<sub>b</sub></i>, <i>r<sub>d</sub></i>) ≤ <i>r</i> ≤ <i>r<sub>a</sub></i>:<br>
+      ψ(<i>r</i>) = <span class="frac"><span>π</span><span>2<i>N</i></span></span> + inv α − inv(arccos(<i>r<sub>b</sub></i>/<i>r</i>))
+    </div>
+  </div>
+  <p class="caption"><b>Tooth profile.</b> Each brass flank is an involute segment from max(<i>r<sub>b</sub></i>, <i>r<sub>d</sub></i>) to the addendum circle. The dotted strings are tangent to the base circle and normal to the flank. When the root circle is below the base circle, red dashed radial segments serve as placeholders, not cutter-generated root fillets. The tip follows the addendum circle; generated roots and undercut are shown in Tab 4.</p>
+</section>
+
+<!-- ===== 3. Mesh ===== -->
+<section class="panel" id="p-mesh" hidden>
+  <div class="stage">
+    <canvas id="c-mesh" width="820" height="560"></canvas>
+    <div class="legend">
+      <span style="--c:var(--steel)">base circles</span>
+      <span class="dash" style="--c:var(--ink-2)">pitch circles</span>
+      <span style="--c:var(--red)">line of action</span>
+      <span style="--c:var(--green)">contact points</span>
+    </div>
+  </div>
+  <div class="side">
+    <div class="ctl">
+      <h2>Conjugate action</h2>
+      <div class="row"><label for="me-N1">teeth <i>N</i><sub>1</sub> (driver)</label><output id="me-N1-o">14</output>
+        <input type="range" id="me-N1" min="8" max="40" step="1" value="14"></div>
+      <div class="row"><label for="me-N2">teeth <i>N</i><sub>2</sub></label><output id="me-N2-o">22</output>
+        <input type="range" id="me-N2" min="8" max="60" step="1" value="22"></div>
+      <div class="row"><label for="me-a">pressure angle α (°)</label><output id="me-a-o">20</output>
+        <input type="range" id="me-a" min="14" max="30" step="0.5" value="20"></div>
+      <div class="row"><label for="me-w">speed ω<sub>1</sub> (rad/s)</label><output id="me-w-o">0.6</output>
+        <input type="range" id="me-w" min="0" max="2" step="0.05" value="0.6"></div>
+      <div class="btns"><button class="b primary" id="me-play">Pause</button><button class="b" id="me-step">Step</button></div>
+      <label class="chk"><input type="checkbox" id="me-circ" checked> show base &amp; pitch circles</label>
+      <div class="warn" id="me-warn" hidden></div>
+    </div>
+  </div>
+  <div class="ctl vals">
+    <h2>Readouts</h2>
+    <dl>
+      <dt>gear ratio N<sub>2</sub>/N<sub>1</sub></dt><dd id="me-ratio">—</dd>
+      <dt>centre distance C</dt><dd id="me-C">—</dd>
+      <dt>path of contact</dt><dd id="me-path">—</dd>
+      <dt>contact ratio ε</dt><dd id="me-eps">—</dd>
+      <dt>tooth pairs in contact now</dt><dd id="me-now">—</dd>
+    </dl>
+  </div>
+  <div class="eqs">
+    <div class="math">
+      ω<sub>2</sub> = −(<i>N</i><sub>1</sub>/<i>N</i><sub>2</sub>)ω<sub>1</sub> = −(<i>r</i><sub>b1</sub>/<i>r</i><sub>b2</sub>)ω<sub>1</sub><br>
+      centre distance <i>C</i> = <i>m</i>(<i>N</i><sub>1</sub>+<i>N</i><sub>2</sub>)/2<br>
+      for interference-free meshing: ε = (path of contact) / (π<i>m</i> cos α)
+    </div>
+  </div>
+  <p class="caption"><b>Two gears meshing.</b> For interference-free involute contact, the common normal is the line of action through the pitch point <i>P</i>, tangent to both base circles. The red segment is limited by the two drawn involute flanks. Its length divided by the base pitch π<i>m</i> cos α gives the contact ratio, the average number of tooth pairs in contact. The pitch circles roll without slipping; the tooth surfaces generally slide except at <i>P</i>. Interfering settings are shown only as a geometric construction, not a working gear pair.</p>
+</section>
+
+<!-- ===== 4. Rack cutter ===== -->
+<section class="panel" id="p-rack" hidden>
+  <div class="stage">
+    <canvas id="c-rack" width="820" height="560"></canvas>
+    <div class="legend">
+      <span style="--c:var(--steel)">rack cutter</span>
+      <span class="dash" style="--c:var(--red)">path of flank–fillet junction</span>
+      <span style="--c:var(--green)">generated root fillet (envelope curve)</span>
+      <span style="--c:var(--brass)">ideal involute</span>
+      <span class="dash" style="--c:var(--ink-2)">pitch line / circle</span>
+    </div>
+  </div>
+  <div class="side">
+    <div class="ctl">
+      <h2>Generating cut</h2>
+      <div class="row"><label for="rk-N">teeth <i>N</i></label><output id="rk-N-o">12</output>
+        <input type="range" id="rk-N" min="6" max="40" step="1" value="12"></div>
+      <div class="row"><label for="rk-a">pressure angle α (°)</label><output id="rk-a-o">20</output>
+        <input type="range" id="rk-a" min="14" max="30" step="0.5" value="20"></div>
+      <div class="row"><label for="rk-x">profile shift <i>x</i> (× <i>m</i>)</label><output id="rk-x-o">0.00</output>
+        <input type="range" id="rk-x" min="-0.3" max="0.8" step="0.05" value="0"></div>
+      <div class="btns"><button class="b primary" id="rk-play">Pause</button></div>
+      <label class="chk"><input type="checkbox" id="rk-ideal" checked> overlay ideal involute + radial placeholder</label>
+      <label class="chk"><input type="checkbox" id="rk-positions" checked> show rack positions</label>
+      <label class="chk"><input type="checkbox" id="rk-env" checked> generated root fillet (envelope curve)</label>
+      <div class="warn" id="rk-warn" hidden></div>
+    </div>
+  </div>
+  <div class="ctl vals">
+    <h2>Values</h2>
+    <dl>
+      <dt>undercut threshold N<sub>crit</sub></dt><dd id="rk-nmin">—</dd>
+      <dt>minimum integer N</dt><dd id="rk-nint">—</dd>
+      <dt>flank-end depth (h−x)m</dt><dd id="rk-end">—</dd>
+      <dt>rack tip depth (1.25−x)m</dt><dd id="rk-tip">—</dd>
+      <dt>depth of T: r<sub>p</sub> sin²α</dt><dd id="rk-T">—</dd>
+      <dt>nominal tooth thickness at pitch</dt><dd id="rk-s">—</dd>
+      <dt>cutter-tip radius ρ/m</dt><dd id="rk-rho">—</dd>
+      <dt>flank-end coefficient h</dt><dd id="rk-h">—</dd>
+      <dt>blank r<sub>a</sub>, root r<sub>d</sub> (× m)</dt><dd id="rk-r">—</dd>
+    </dl>
+  </div>
+  <div class="eqs">
+    <div class="math">
+      with cutter-tip radius ρ, let <i>h</i> = 1.25 − (ρ/<i>m</i>)(1 − sin α)<br>
+      straight-flank end depth: (<i>h</i> − <i>x</i>)<i>m</i>; full tip depth: (1.25 − <i>x</i>)<i>m</i><br>
+      interference point <i>T</i> lies at depth <i>r<sub>p</sub></i> sin²α<br>
+      no undercut ⇔ (<i>h</i> − <i>x</i>)<i>m</i> ≤ <i>r<sub>p</sub></i> sin²α ⇔ <i>N</i> ≥ <i>N</i><sub>crit</sub> = <span class="frac"><span>2(<i>h</i> − <i>x</i>)</span><span>sin²α</span></span>
+      <br><i>h</i> = 1 unless the tip radius is reduced to keep the cutter fillets from overlapping.
+    </div>
+  </div>
+  <p class="caption"><b>Rack cutter and undercut.</b> The gear is a numerical approximation obtained by subtracting sampled rack positions from a blank disc. The straight flanks generate involutes, while the rounded tips generate root fillets (envelope curves). Green shows the exposed fillet envelope; red dashed curves trace the flank–fillet junctions and are not themselves the root boundary. Undercut occurs when the straight-flank end reaches deeper than <i>T</i>. Large positive profile shifts can instead produce pointed teeth below the blank addendum circle.</p>
+</section>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = id => document.getElementById(id);
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const inv = phi => Math.tan(phi) - phi;
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- tabs ---------- */
+const tabs = [...document.querySelectorAll('.tab')];
+let active = 'inv';
+tabs.forEach(b => b.addEventListener('click', () => {
+  active = b.dataset.tab;
+  tabs.forEach(t => t.setAttribute('aria-selected', t === b));
+  ['inv','tooth','mesh','rack'].forEach(k => $('p-'+k).hidden = k !== active);
+  drawAll();
+}));
+
+/* Mathematical references used in checking this model:
+   KHK, Involute Gear Profile (line of action, base pitch, undercut):
+   https://khkgears.net/new/gear_knowledge/gear_technical_reference/involute_gear_profile.html
+   DANotes, Spur Gears, Appendix B (rack motion and fillet envelopes):
+   https://www-mdp.eng.cam.ac.uk/web/library/enginfo/textbooks_dvd_only/DAN/gears/appendices.pdf
+   Drivetrain Hub, Helical Gears, Root Fillet/Form Diameter (tool rounding):
+   https://drivetrainhub.com/notebooks/gears/geometry/Chapter%203%20-%20Helical%20Gears.html
+   Circle involute geometry is additionally checked by direct differentiation.
+*/
+/* ---------- shared helpers ---------- */
+function setupCanvas(c){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const W = c.getAttribute('width')|0, H = c.getAttribute('height')|0;
+  c.width = W*dpr; c.height = H*dpr;
+  const g = c.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  return {g, W, H};
+}
+function grid(g,W,H){
+  g.fillStyle = css('--paper'); g.fillRect(0,0,W,H);
+  g.strokeStyle = css('--grid'); g.lineWidth = 1; g.beginPath();
+  for(let x=20;x<W;x+=20){g.moveTo(x+.5,0);g.lineTo(x+.5,H);}
+  for(let y=20;y<H;y+=20){g.moveTo(0,y+.5);g.lineTo(W,y+.5);}
+  g.stroke();
+}
+function circle(g,x,y,r,style,dash,lw){
+  g.save(); g.strokeStyle=style; g.lineWidth=lw||1.2; if(dash) g.setLineDash(dash);
+  g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.stroke(); g.restore();
+}
+function label(g,text,x,y,color,align){
+  g.save(); g.font='12px "IBM Plex Mono", monospace'; g.fillStyle=color||css('--ink-2');
+  g.textAlign=align||'left'; g.textBaseline='middle'; g.fillText(text,x,y); g.restore();
+}
+function dot(g,x,y,r,color){ g.fillStyle=color; g.beginPath(); g.arc(x,y,r,0,Math.PI*2); g.fill(); }
+
+/* Tooth profile for a standard gear, returned in gear-local coords (math orientation, y up).
+   One tooth is centred on angle 0; the +flank is at positive polar angles. */
+function gearGeom(m,N,alphaDeg){
+  const a = alphaDeg*Math.PI/180;
+  const rp = m*N/2, rb = rp*Math.cos(a), ra = rp+m, rd = rp-1.25*m;
+  const psiB = Math.PI/(2*N) + inv(a);                       // half-angle where involute starts (on base circle)
+  const tMax = Math.sqrt((ra/rb)**2 - 1);                    // parameter at addendum
+  const t0 = rd > rb ? Math.sqrt((rd/rb)**2 - 1) : 0;         // involute starts on the root circle when r_d > r_b
+  const psiA = psiB - inv(Math.atan(tMax));                  // half-angle at tip
+  // + flank (from base outward) as polar (r, theta)
+  const K = 64, flank = [];
+  for(let i=0;i<=K;i++){ const t = t0 + (tMax-t0)*i/K; flank.push([rb*Math.sqrt(1+t*t), psiB - inv(Math.atan(t))]); }
+  const psiR = psiB - inv(Math.atan(t0));                    // half-angle where the flank meets the root
+  // one tooth outline, counter-clockwise: root(-side) -> -flank up -> tip -> +flank down -> root(+side)
+  const tooth = [];
+  if(rd < rb){ tooth.push([rd, -psiB]); }                    // radial part below base circle
+  for(const [r,th] of flank) tooth.push([r,-th]);
+  for(let i=K;i>=0;i--){ const [r,th]=flank[i]; tooth.push([r,th]); }
+  if(rd < rb){ tooth.push([rd, psiB]); }
+  return {m,N,a,rp,rb,ra,rd,psiB,psiA,psiR,tMax,t0,tooth,flank};
+}
+function gearPath(g,G,cx,cy,rot,scale){
+  const pitch=2*Math.PI/G.N;
+  const point=(r,A,first=false)=>{
+    const x=cx+scale*r*Math.cos(A), y=cy-scale*r*Math.sin(A);
+    first?g.moveTo(x,y):g.lineTo(x,y);
+  };
+  g.beginPath();
+  for(let k=0;k<G.N;k++){
+    const base=rot+k*pitch;
+    point(G.rd,base-G.psiR,k===0);
+    for(const [r,psi] of G.flank) point(r,base-psi);
+    // Increasing mathematical angles: follow the ADDENDUM ARC, not its chord.
+    g.arc(cx,cy,scale*G.ra,-(base-G.psiA),-(base+G.psiA),true);
+    for(let j=G.flank.length-1;j>=0;j--){const [r,psi]=G.flank[j];point(r,base+psi);}
+    point(G.rd,base+G.psiR);
+    g.arc(cx,cy,scale*G.rd,-(base+G.psiR),-(base+pitch-G.psiR),true);
+  }
+  g.closePath();
+}
+function drawGear(g,G,cx,cy,rot,scale,fill,edge){
+  gearPath(g,G,cx,cy,rot,scale);
+  g.fillStyle=fill; g.fill(); g.strokeStyle=edge; g.lineWidth=1.4; g.stroke();
+  // hub
+  g.beginPath(); g.arc(cx,cy,Math.max(4,scale*G.rd*0.18),0,Math.PI*2); g.fillStyle=css('--paper'); g.fill(); g.strokeStyle=edge; g.stroke();
+  g.beginPath(); g.moveTo(cx-6,cy); g.lineTo(cx+6,cy); g.moveTo(cx,cy-6); g.lineTo(cx,cy+6); g.stroke();
+}
+
+/* ======================= 1. INVOLUTE ======================= */
+const inv_c = setupCanvas($('c-inv'));
+let invPlaying=false, invTime=+$('inv-t').value;
+function drawInv(){
+  const {g,W,H}=inv_c; grid(g,W,H);
+  const rb=+$('inv-r').value, t=+$('inv-t').value, osc=$('inv-osc').checked;
+  const modelP=s=>[rb*(Math.cos(s)+s*Math.sin(s)),rb*(Math.sin(s)-s*Math.cos(s))];
+  const [pX,pY]=modelP(t), tX=rb*Math.cos(t), tY=rb*Math.sin(t);
+  let xmin=-rb,xmax=rb,ymin=-rb,ymax=rb;
+  for(let i=0;i<=Math.max(1,Math.ceil(t/.015));i++){
+    const [x,y]=modelP(t*i/Math.max(1,Math.ceil(t/.015)));
+    xmin=Math.min(xmin,x);xmax=Math.max(xmax,x);ymin=Math.min(ymin,y);ymax=Math.max(ymax,y);
+  }
+  if(osc && t>0){xmin=Math.min(xmin,tX-rb*t);xmax=Math.max(xmax,tX+rb*t);ymin=Math.min(ymin,tY-rb*t);ymax=Math.max(ymax,tY+rb*t);}
+  const S=Math.min(1,(W-100)/(xmax-xmin),(H-120)/(ymax-ymin));
+  const ox=W/2-S*(xmin+xmax)/2, oy=(H-30)/2+S*(ymin+ymax)/2, R=S*rb;
+  const P=s=>{const [x,y]=modelP(s);return [ox+S*x,oy-S*y];};
+  const STEEL=css('--steel'),BRASS=css('--brass'),RED=css('--red'),INK=css('--ink'),INK2=css('--ink-2');
+  circle(g,ox,oy,R,STEEL,null,1.6);
+  label(g,'r_b = '+rb,ox,oy+R+14,STEEL,'center');
+  dot(g,ox,oy,3,INK);label(g,'O',ox-14,oy-8,INK2);
+  g.save();g.strokeStyle=BRASS;g.globalAlpha=.3;g.lineWidth=1;g.beginPath();
+  for(let i=0;i<=628;i++){const [x,y]=P(9.42*i/628);i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();g.restore();
+  g.strokeStyle=BRASS;g.lineWidth=2.4;g.beginPath();
+  const steps=Math.max(1,Math.ceil(t/.01));
+  for(let i=0;i<=steps;i++){const [x,y]=P(t*i/steps);i?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();
+  const Tx=ox+S*tX,Ty=oy-S*tY,px=ox+S*pX,py=oy-S*pY;
+  const turns=Math.floor(t/(2*Math.PI)),rem=t-turns*2*Math.PI;
+  if(turns) circle(g,ox,oy,R,RED,null,1.5);
+  g.strokeStyle=RED;g.lineWidth=3;g.beginPath();g.arc(ox,oy,R,0,-rem,true);g.stroke();
+  if(turns) label(g,'Unwound: '+turns+' full turn + '+rem.toFixed(2)+' rad',16,18,RED);
+  g.strokeStyle=RED;g.lineWidth=1.6;g.beginPath();g.moveTo(Tx,Ty);g.lineTo(px,py);g.stroke();
+  g.strokeStyle=INK2;g.setLineDash([3,4]);g.beginPath();g.moveTo(ox,oy);g.lineTo(Tx,Ty);g.moveTo(ox,oy);g.lineTo(px,py);g.stroke();g.setLineDash([]);
+  if(R*t>10){
+    const ex=(px-Tx)/(R*t)*8,ey=(py-Ty)/(R*t)*8,nx=(Tx-ox)/R*8,ny=(Ty-oy)/R*8;
+    g.strokeStyle=RED;g.lineWidth=1;g.beginPath();g.moveTo(Tx+ex,Ty+ey);g.lineTo(Tx+ex+nx,Ty+ey+ny);g.lineTo(Tx+nx,Ty+ny);g.stroke();
+  }
+  if(osc && t>0){circle(g,Tx,Ty,R*t,BRASS,[2,5],1);label(g,'ρ = r_b·t',Tx+6,Ty-10,BRASS);}
+  if($('inv-poly').checked){
+    const theta=t-Math.atan(t),full=Math.floor(theta/(2*Math.PI)),rest=theta-full*2*Math.PI,rr=R*.6;
+    if(full) circle(g,ox,oy,rr,INK,[2,3],1);
+    g.strokeStyle=INK;g.lineWidth=1.2;g.beginPath();g.arc(ox,oy,rr,0,-rest,true);g.stroke();
+    label(g,'θ = '+(full?full+' × 2π + ':'')+rest.toFixed(3)+' rad',16,40,INK);
+    g.setLineDash([2,3]);g.strokeStyle=INK2;g.beginPath();g.moveTo(ox,oy);g.lineTo(ox+R+15,oy);g.stroke();g.setLineDash([]);
+  }
+  dot(g,Tx,Ty,4,RED);label(g,t===0?'T = P(0)':'T',Tx+8,Ty+10,RED);
+  if(t>0){dot(g,px,py,4.5,BRASS);label(g,'P(t)',px+9,py-9,BRASS);}
+  if(t>.2){dot(g,ox+R,oy,3.5,BRASS);label(g,'t = 0',ox+R+8,oy+12,INK2);}
+  const phi=Math.atan(t);
+  $('inv-t-o').textContent=t.toFixed(2);$('inv-r-o').textContent=rb;
+  $('inv-s').textContent=(rb*t).toFixed(1);$('inv-rho').textContent=t>0?(rb*t).toFixed(1):'undefined';
+  $('inv-rr').textContent=(rb*Math.sqrt(1+t*t)).toFixed(1);
+  $('inv-phi').textContent=(phi*180/Math.PI).toFixed(1)+'°';$('inv-inv').textContent=(t-phi).toFixed(4)+' rad';
+}
+['inv-t','inv-r'].forEach(id=>$(id).addEventListener('input',()=>{invTime=+$('inv-t').value;drawInv();}));
+['inv-osc','inv-poly'].forEach(id=>$(id).addEventListener('change',drawInv));
+$('inv-reset').addEventListener('click',()=>{ $('inv-t').value=0; invTime=0; invPlaying=false; $('inv-play').textContent='Animate'; drawInv(); });
+$('inv-play').addEventListener('click',()=>{ invTime=+$('inv-t').value; invPlaying=!invPlaying; $('inv-play').textContent=invPlaying?'Pause':'Animate'; });
+
+/* ======================= 2. TOOTH ======================= */
+const th_c = setupCanvas($('c-tooth'));
+let thRot=0;
+/* Colour the parts of tooth 0: involute flanks (brass), radial continuation below the base circle (red),
+   tip arc (grey). Optionally continue the involute past the addendum and draw generating strings. */
+function toothAnatomy(g,G,cx,cy,rot,scale,detail){
+  const STEEL=css('--steel'), INK2=css('--ink-2'), INK3=css('--ink-3'), RED=css('--red'), BRASS=css('--brass');
+  const pt=(r,th)=>[cx+scale*r*Math.cos(rot+th), cy-scale*r*Math.sin(rot+th)];
+  const K=G.flank.length-1;
+  // Each involute flank, from max(rb,rd) to the tip; then continued faintly.
+  for(const sgn of [1,-1]){
+    g.save(); g.strokeStyle=BRASS; g.lineWidth=3; g.lineCap='round'; g.beginPath();
+    G.flank.forEach(([r,th],i)=>{ const [x,y]=pt(r,sgn*th); i?g.lineTo(x,y):g.moveTo(x,y); }); g.stroke();
+    if(detail){
+      g.lineWidth=1.2; g.setLineDash([3,4]); g.globalAlpha=.75; g.beginPath();
+      for(let i=0;i<=30;i++){ const t=G.tMax*(1+0.9*i/30), [x,y]=pt(G.rb*Math.sqrt(1+t*t), sgn*(G.psiB-inv(Math.atan(t)))); i?g.lineTo(x,y):g.moveTo(x,y); }
+      g.stroke();
+    }
+    g.restore();
+    const [sx,sy]=pt(G.flank[0][0],sgn*G.psiR); dot(g,sx,sy,detail?4:3,BRASS);  // start of the drawn involute (base circle, or root circle if r_d > r_b)
+    if(G.rd<G.rb){                                                                // radial part: not an involute
+      const [ex,ey]=pt(G.rd,sgn*G.psiB);
+      g.save(); g.strokeStyle=RED; g.lineWidth=2.4; g.setLineDash([5,3]); g.beginPath(); g.moveTo(sx,sy); g.lineTo(ex,ey); g.stroke(); g.restore();
+    }
+  }
+  // tip arc
+  g.save(); g.strokeStyle=INK3; g.lineWidth=3; g.beginPath(); g.arc(cx,cy,scale*G.ra,-(rot+G.psiA),-(rot-G.psiA),false); g.stroke(); g.restore();
+  if(detail){
+    // generating strings for the + flank: tangent to the base circle, normal to the curve
+    g.save(); g.strokeStyle=STEEL; g.lineWidth=1; g.setLineDash([2,3]);
+    for(let i=4;i<=K;i+=5){
+      const t=G.t0+(G.tMax-G.t0)*i/K, [r,th]=G.flank[i], [px,py]=pt(r,th), [tx,ty]=pt(G.rb,G.psiB-t);
+      g.beginPath(); g.moveTo(tx,ty); g.lineTo(px,py); g.stroke(); dot(g,tx,ty,2.2,STEEL);
+    }
+    g.restore();
+    // labels
+    const [lx,ly]=pt(G.ra*0.97,G.psiB*1.6); label(g,'involute of base circle',lx,ly-10,BRASS,'center');
+    const [ax,ay]=pt(G.ra,0); label(g,'tip arc (r_a)',ax+10,ay,INK3);
+    if(G.rd<G.rb){ const [rx,ry]=pt(G.rd,-G.psiB); label(g,'radial: no involute below r_b',rx-16,ry+30,RED); }
+    const [bx,by]=pt(G.flank[0][0],G.psiR); label(g,G.t0>0?'t = t₀':'t = 0',bx-6,by-12,BRASS,'right');
+    const [qx,qy]=pt(G.rp,-Math.PI/(2*G.N)); dot(g,qx,qy,4,INK2); label(g,'pitch point',qx+8,qy+14,INK2);
+  }
+}
+function drawTooth(){
+  const {g,W,H}=th_c; grid(g,W,H);
+  const m=+$('th-m').value, N=+$('th-N').value, a=+$('th-a').value;
+  const G=gearGeom(m,N,a);
+  const cx=($('th-cons').checked?W*0.3:W*0.5), cy=H*0.5;
+  const scale=Math.min(1.35, (Math.min(W,H)*0.46)/G.ra,
+                       (cx-18)/G.ra, (W-cx-18)/G.ra);
+  const STEEL=css('--steel'), INK2=css('--ink-2'), INK3=css('--ink-3'), RED=css('--red'), BRASS=css('--brass');
+  drawGear(g,G,cx,cy,thRot,scale,css('--gear-fill'),css('--gear-edge'));
+  circle(g,cx,cy,scale*G.rb,STEEL,null,1.4);
+  circle(g,cx,cy,scale*G.rp,INK2,[6,5],1.2);
+  circle(g,cx,cy,scale*G.ra,INK3,[2,4],1);
+  circle(g,cx,cy,scale*G.rd,INK3,[2,4],1);
+  // radial labels along 45° ray
+  const ang=-Math.PI/4;
+  [['r_d',G.rd,INK3],['r_b',G.rb,STEEL],['r_p',G.rp,INK2],['r_a',G.ra,INK3]].forEach(([n,r,c],i)=>{
+    label(g,n,cx+scale*r*Math.cos(ang)+6, cy+scale*r*Math.sin(ang)-6*(i%2?1:-1), c);
+  });
+  if($('th-cons').checked){
+    toothAnatomy(g,G,cx,cy,thRot,scale,false);
+    // zoom inset (top-right): the same tooth, magnified, with the involute continued past the tip
+    const Z = 3.2*scale, iw=360, ih=330, ix=W-iw-12, iy=12;
+    g.save(); g.fillStyle=css('--paper'); g.strokeStyle=css('--rule'); g.fillRect(ix,iy,iw,ih); g.strokeRect(ix+.5,iy+.5,iw,ih);
+    g.beginPath(); g.rect(ix,iy,iw,ih); g.clip();
+    // place tooth centre (at radius (rd+ra)/2, angle 0) at inset centre
+    const rc=(G.rd+G.ra)/2, zcx=ix+iw/2 - Z*rc, zcy=iy+ih/2;
+    drawGear(g,G,zcx,zcy,0,Z,css('--gear-fill'),css('--gear-edge'));
+    circle(g,zcx,zcy,Z*G.rb,STEEL,null,1.4); circle(g,zcx,zcy,Z*G.rp,INK2,[6,5],1.2);
+    circle(g,zcx,zcy,Z*G.ra,INK3,[2,4],1); circle(g,zcx,zcy,Z*G.rd,INK3,[2,4],1);
+    toothAnatomy(g,G,zcx,zcy,0,Z,true);
+    g.restore();
+    label(g,'zoom ×3.2',ix+8,iy+ih-10,INK3);
+  }
+  $('th-m-o').textContent=m; $('th-N-o').textContent=N; $('th-a-o').textContent=a+'°';
+  $('th-rp').textContent=G.rp.toFixed(1); $('th-rb').textContent=G.rb.toFixed(1); $('th-ra').textContent=G.ra.toFixed(1); $('th-rd').textContent=G.rd.toFixed(1);
+  $('th-p').textContent=(Math.PI*m).toFixed(2); $('th-pb').textContent=(Math.PI*m*Math.cos(G.a)).toFixed(2);
+  $('th-psi').textContent=(G.psiA*180/Math.PI).toFixed(2)+'°';
+}
+['th-m','th-N','th-a'].forEach(id=>$(id).addEventListener('input',drawTooth));
+$('th-cons').addEventListener('change',drawTooth);
+
+/* ======================= 3. MESH ======================= */
+const me_c = setupCanvas($('c-mesh'));
+let th1=0, mePlaying=true;
+function drawMesh(){
+  const {g,W,H}=me_c; grid(g,W,H);
+  const N1=+$('me-N1').value, N2=+$('me-N2').value, a=+$('me-a').value;
+  const m=1, G1=gearGeom(m,N1,a), G2=gearGeom(m,N2,a);
+  const C=m*(N1+N2)/2;
+  const scale=Math.min((W-60)/(G1.ra+C+G2.ra), (H-60)/(2*Math.max(G1.ra,G2.ra)));
+  const cy=H*0.5, o1x=(W-scale*(G1.ra+C+G2.ra))/2+scale*G1.ra; const o2x=o1x+scale*C;
+  const STEEL=css('--steel'), INK2=css('--ink-2'), RED=css('--red'), GREEN=css('--green'), INK=css('--ink');
+  const th2 = Math.PI + Math.PI/N2 - th1*N1/N2;
+  drawGear(g,G1,o1x,cy,th1,scale,css('--gear-fill'),css('--gear-edge'));
+  drawGear(g,G2,o2x,cy,th2,scale,css('--gear2-fill'),css('--gear2-edge'));
+  if($('me-circ').checked){
+    circle(g,o1x,cy,scale*G1.rb,STEEL,null,1.3); circle(g,o2x,cy,scale*G2.rb,STEEL,null,1.3);
+    circle(g,o1x,cy,scale*G1.rp,INK2,[6,5],1.1); circle(g,o2x,cy,scale*G2.rp,INK2,[6,5],1.1);
+  }
+  // line of action: through P=(o1x+rp1, cy), direction (sin a, cos a) in math coords -> screen (sin a, -cos a)
+  const A=G1.a, Px=o1x+scale*G1.rp, Py=cy;
+  const ux=Math.sin(A), uy=-Math.cos(A);
+  const T1x=o1x+scale*G1.rb*Math.cos(A), T1y=cy+scale*G1.rb*Math.sin(A);   // math (cos a, -sin a) -> screen y down
+  const T2x=o2x-scale*G2.rb*Math.cos(A), T2y=cy-scale*G2.rb*Math.sin(A);
+  g.save(); g.strokeStyle=RED; g.lineWidth=1; g.setLineDash([4,4]); g.beginPath();
+  g.moveTo(Px-ux*600,Py-uy*600); g.lineTo(Px+ux*600,Py+uy*600); g.stroke(); g.restore();
+  // path of contact: portion of T1T2 inside both addendum circles
+  const L = scale*(G1.rb+G2.rb)*Math.tan(A);            // |T1T2|
+  const s1 = scale*Math.sqrt(G1.ra**2-G1.rb**2);        // from T1, limited by gear1 addendum
+  const s2 = scale*Math.sqrt(G2.ra**2-G2.rb**2);        // from T2 backwards, by gear2 addendum
+  const sA = Math.max(scale*G1.rb*G1.t0, L-s2), sB = Math.min(L-scale*G2.rb*G2.t0, s1);
+  g.strokeStyle=RED; g.lineWidth=3; g.beginPath(); g.moveTo(T1x+ux*sA,T1y+uy*sA); g.lineTo(T1x+ux*sB,T1y+uy*sB); g.stroke();
+  dot(g,T1x,T1y,3.5,STEEL); dot(g,T2x,T2y,3.5,STEEL); label(g,'T₁',T1x+8,T1y+10,STEEL); label(g,'T₂',T2x-8,T2y-10,STEEL,'right');
+  dot(g,Px,Py,4.5,INK); label(g,'P',Px+8,Py+12,INK);
+  // pressure-angle marker at P: common tangent (vertical) vs line of action
+  g.save(); g.strokeStyle=INK2; g.setLineDash([2,3]); g.beginPath(); g.moveTo(Px,Py-70); g.lineTo(Px,Py+70); g.stroke(); g.restore();
+  g.strokeStyle=INK2; g.lineWidth=1; g.beginPath(); g.arc(Px,Py,36,-Math.PI/2,-Math.PI/2+A,false); g.stroke();
+  label(g,'α',Px+10,Py-46,INK2);
+  // contact points: gear1 tooth k's +flank start angle s = th1 + 2πk/N1 + psiB; string touches line of action when tangent-point angle = -A
+  let count=0;
+  for(let k=0;k<N1;k++){
+    let s = th1 + 2*Math.PI*k/N1 + G1.psiB + A;
+    s = ((s % (2*Math.PI)) + 2*Math.PI) % (2*Math.PI);          // unwound angle t ≥ 0
+    const d = scale*G1.rb*s;                                       // distance from T1 along line
+    if(d>=sA-1e-6 && d<=sB+1e-6){
+      const x=T1x+ux*d, y=T1y+uy*d; count++;
+      dot(g,x,y,6,GREEN); g.strokeStyle=css('--paper'); g.lineWidth=1.5; g.beginPath(); g.arc(x,y,6,0,7); g.stroke();
+    }
+  }
+  // rotation arrows
+  label(g,'ω₁ ↺',o1x,cy-scale*G1.ra-14,INK2,'center'); label(g,'ω₂ ↻',o2x,cy-scale*G2.ra-14,INK2,'center');
+  const path=Math.max(0,(sB-sA)/scale), pb=Math.PI*m*Math.cos(A);
+  const int1 = s1 > L+1e-9, int2 = s2 > L+1e-9;   // a tip reaches past the other gear's interference point
+  const interference=int1||int2, notes=[];
+  if(interference){
+    const who=int1&&int2?'Both gear tips extend':`Gear ${int1?'1':'2'} extends`;
+    notes.push(`${who} beyond the other base-circle tangency point. Clipping the red segment does not remove interference: the imposed motion is not a physically valid mesh. Numbers describe only the clipped involute construction.`);
+  }
+  if(path/pb<1-1e-10) notes.push('The clipped interval is shorter than one base pitch, so continuous involute contact is not possible.');
+  $('me-warn').hidden=!notes.length;$('me-warn').textContent=notes.join(' ');
+  $('me-path').previousElementSibling.textContent=interference?'clipped involute interval':'path of contact';
+  $('me-eps').previousElementSibling.textContent=interference?'clipped interval / base pitch':'contact ratio ε';
+  $('me-now').previousElementSibling.textContent=interference?'candidate pairs now':'tooth pairs in contact now';
+  $('me-N1-o').textContent=N1; $('me-N2-o').textContent=N2; $('me-a-o').textContent=a+'°'; $('me-w-o').textContent=(+$('me-w').value).toFixed(2);
+  $('me-ratio').textContent=(N2/N1).toFixed(3); $('me-C').textContent=C.toFixed(1)+' m';
+  $('me-path').textContent=path.toFixed(3)+' m'; $('me-eps').textContent=(path/pb).toFixed(3); $('me-now').textContent=count;
+}
+['me-N1','me-N2','me-a','me-w'].forEach(id=>$(id).addEventListener('input',drawMesh));
+$('me-circ').addEventListener('change',drawMesh);
+$('me-play').addEventListener('click',()=>{ mePlaying=!mePlaying; $('me-play').textContent=mePlaying?'Pause':'Play'; });
+$('me-step').addEventListener('click',()=>{ th1+=0.02; drawMesh(); });
+
+/* ======================= 4. RACK CUTTER ======================= */
+const rk_c = setupCanvas($('c-rack'));
+let rkTheta=0, rkPlaying=true, rkCache={key:null};
+function rackParams(){
+  const N=+$('rk-N').value, a=+$('rk-a').value*Math.PI/180, x=+$('rk-x').value, m=1;
+  const rp=m*N/2,rb=rp*Math.cos(a),ra=rp+m*(1+x),rd=rp-m*(1.25-x);
+  const sa=Math.sin(a),ca=Math.cos(a),c=.25*m;
+  const nominalRho=c/(1-sa);
+  // uc >= 0 exactly; at equality the two rounded tip arcs meet tangentially.
+  const maxRho=m*(Math.PI*ca/4-1.25*sa)/(1-sa);
+  const rho=Math.min(nominalRho,maxRho);
+  const vTip=(x-1.25)*m,vc=vTip+rho;
+  const uc=Math.max(0,Math.PI*m/4+(vc-x*m)*Math.tan(a)-rho/ca);
+  const h=1.25-rho/m*(1-sa),vEnd=(x-h)*m,uEnd=uc+rho*ca;
+  const psiB=Math.PI/(2*N)+inv(a)+2*x*Math.tan(a)/N;
+  const tAdd=Math.sqrt((ra/rb)**2-1),psiA=psiB-(tAdd-Math.atan(tAdd));
+  let tMax=tAdd;
+  if(psiA<0){
+    let lo=0,hi=tAdd;
+    for(let i=0;i<60;i++){const mid=(lo+hi)/2;if(mid-Math.atan(mid)>psiB)hi=mid;else lo=mid;}
+    tMax=(lo+hi)/2;
+  }
+  const t0=rd>rb?Math.sqrt((rd/rb)**2-1):0;
+  return {N,a,x,m,rp,rb,ra,rd,c,rho,vc,uc,h,vTip,vEnd,uEnd,psiB,psiA,tMax,t0};
+}
+/* Rack tooth k as a polygon in rack coords (u along pitch line, v radial outward from gear).
+   Straight flanks at angle a to the v-axis; tip fillet of radius rho tangent to flank and tip line. */
+function rackTooth(P,k){
+  const {a,x,m,rho,vc,uc}=P,ta=Math.tan(a);
+  const w=v=>Math.PI*m/4+(v-x*m)*ta,vTop=(x+1)*m;
+  const fil=sgn=>{
+    const pts=[];
+    for(let i=0;i<=32;i++){const ph=-Math.PI/2+(Math.PI/2-a)*i/32;pts.push([sgn*(uc+rho*Math.cos(ph)),vc+rho*Math.sin(ph)]);}
+    return pts;
+  };
+  return [[-w(vTop),vTop],...fil(-1).reverse(),...fil(1),[w(vTop),vTop]].map(([u,v])=>[u+k*Math.PI*m,v]);
+}
+/* rack coords -> gear frame at rolling angle th (gear fixed, rack rolls on pitch circle) */
+function rackMap(P,th){
+  const c=Math.cos(th), s=Math.sin(th), rp=P.rp;
+  return ([u,v])=>[ rp*c + (u-rp*th)*(-s) + v*c,  rp*s + (u-rp*th)*c + v*s ];
+}
+function cutGear(P,cw,ch,cx,cy,S,dpr){
+  const off=document.createElement('canvas');off.width=cw*dpr;off.height=ch*dpr;
+  const g=off.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);
+  g.fillStyle=css('--gear-fill');g.beginPath();g.arc(cx,cy,S*P.ra,0,2*Math.PI);g.fill();
+  g.globalCompositeOperation='destination-out';
+  const tooth=rackTooth(P,0),umax=Math.max(...tooth.map(p=>Math.abs(p[0])));
+  // Any intersecting point satisfies |u-rp*th| <= sqrt(ra²-rd²).
+  const limit=(umax+Math.sqrt(P.ra**2-P.rd**2))/P.rp;
+  const vmax=Math.sqrt(P.ra**2-P.rd**2+P.vTip**2);
+  const steps=Math.max(160,Math.ceil(2*limit*vmax*S/.65));
+  const sweep=[];
+  for(let i=0;i<=steps;i++){const M=rackMap(P,-limit+2*limit*i/steps);sweep.push(tooth.map(M));}
+  for(let k=0;k<P.N;k++){
+    const angle=2*Math.PI*k/P.N,c=Math.cos(angle),sn=Math.sin(angle);
+    for(const T of sweep){
+      g.beginPath();
+      T.forEach(([X,Y],i)=>{const px=cx+S*(c*X-sn*Y),py=cy-S*(sn*X+c*Y);i?g.lineTo(px,py):g.moveTo(px,py);});
+      g.closePath();g.fill();
+    }
+  }
+  g.globalCompositeOperation='source-over';
+  return off;
+}
+function drawRack(){
+  const {g,W,H}=rk_c; grid(g,W,H);
+  const P=rackParams(), N=P.N;
+  const S=Math.min(H*0.46, W*0.3-16)/P.ra;
+  const cx=W*0.3, cy=H*0.5;
+  const Z=3.2*S, iw=360, ih=330, ix=W-iw-12, iy=12, rc=(P.rd+P.ra)/2, zcx=ix+iw/2-Z*rc, zcy=iy+ih/2;
+  const key=[N,P.a,P.x,css('--gear-fill')].join('|');
+  const dpr=g.getTransform().a;
+  if(rkCache.key!==key){
+    const main=cutGear(P,W,H,cx,cy,S,dpr),zoom=cutGear(P,W,H,zcx,zcy,Z,dpr);
+    const mask=zoom.getContext('2d').getImageData(0,0,zoom.width,zoom.height);
+    rkCache={key,main,zoom,mask};
+  }
+  const STEEL=css('--steel'), INK2=css('--ink-2'), INK3=css('--ink-3'), RED=css('--red'), BRASS=css('--brass'), EDGE=css('--gear-edge');
+  g.drawImage(rkCache.main,0,0,W,H);
+  g.beginPath(); g.arc(cx,cy,Math.max(4,S*P.rd*0.18),0,7); g.fillStyle=css('--paper'); g.fill(); g.strokeStyle=EDGE; g.stroke();
+  circle(g,cx,cy,S*P.rb,STEEL,null,1.2); circle(g,cx,cy,S*P.rp,INK2,[6,5],1.1);
+  // --- rolling rack (animated), drawn on the main view
+  const th=rkTheta, M=rackMap(P,th);
+  const drawRackAt=(gg,ox,oy,sc,teethIdx,alpha)=>{
+    gg.save(); gg.globalAlpha=alpha; gg.fillStyle=css('--gear2-fill'); gg.strokeStyle=STEEL; gg.lineWidth=1.2;
+    for(const k of teethIdx){ gg.beginPath(); rackTooth(P,k).forEach(([u,v],i)=>{ const [X,Y]=M([u,v]); const px=ox+sc*X, py=oy-sc*Y; i?gg.lineTo(px,py):gg.moveTo(px,py); }); gg.closePath(); gg.fill(); gg.stroke(); }
+    // rack body (band behind the teeth) and pitch line
+    { const k0=teethIdx[0]-0.5, k1=teethIdx[teethIdx.length-1]+0.5, v0=P.x*P.m+P.m, v1=v0+0.7*P.m;
+      gg.beginPath(); [[k0,v0],[k1,v0],[k1,v1],[k0,v1]].forEach(([k,v],i)=>{ const [X,Y]=M([k*Math.PI*P.m,v]); const px=ox+sc*X, py=oy-sc*Y; i?gg.lineTo(px,py):gg.moveTo(px,py); }); gg.closePath(); gg.fill(); gg.stroke(); }
+    gg.setLineDash([6,5]); gg.strokeStyle=INK2; gg.beginPath();
+    const [x0,y0]=M([P.rp*th-4*P.m*Math.PI,0]), [x1,y1]=M([P.rp*th+4*P.m*Math.PI,0]); gg.moveTo(ox+sc*x0,oy-sc*y0); gg.lineTo(ox+sc*x1,oy-sc*y1); gg.stroke();
+    gg.restore();
+  };
+  const kc=Math.round(P.rp*th/(Math.PI*P.m)), ks=[]; for(let k=kc-3;k<=kc+3;k++) ks.push(k);
+  drawRackAt(g,cx,cy,S,ks,0.55);
+  // --- zoom inset: the space at angle 0 (cut by rack tooth k=0 around th≈0)
+  g.save(); g.fillStyle=css('--paper'); g.strokeStyle=css('--rule'); g.fillRect(ix,iy,iw,ih); g.strokeRect(ix+.5,iy+.5,iw,ih);
+  g.beginPath(); g.rect(ix,iy,iw,ih); g.clip();
+  g.drawImage(rkCache.zoom,0,0,W,H);
+  circle(g,zcx,zcy,Z*P.rb,STEEL,null,1.3); circle(g,zcx,zcy,Z*P.rp,INK2,[6,5],1.1);
+  circle(g,zcx,zcy,Z*P.ra,INK3,[2,4],1); circle(g,zcx,zcy,Z*P.rd,INK3,[2,4],1);
+  // Sampled rack-tooth positions; independent of the root-fillet overlay.
+  if($('rk-positions').checked){
+    // ghost positions of rack tooth 0
+    g.save(); g.strokeStyle=STEEL; g.lineWidth=0.8; g.globalAlpha=0.45;
+    for(let j=-6;j<=6;j++){ const t=j*0.06, Mj=rackMap(P,t); g.beginPath(); rackTooth(P,0).forEach(([u,v],i)=>{ const [X,Y]=Mj([u,v]); const px=zcx+Z*X, py=zcy-Z*Y; i?g.lineTo(px,py):g.moveTo(px,py); }); g.closePath(); g.stroke(); }
+    g.restore();
+  }
+  if($('rk-env').checked){
+    const GREEN=css('--green');
+    // Exact envelope of the moving fillet circle. In the rotating rack frame,
+    // C' = -(u-rp*t)e_r + vc*e_t, so its normal is proportional to vc*e_r+(u-rp*t)e_t.
+    // Keep only exposed branches, using the sampled cutter subtraction as a mask.
+    const material=(X,Y)=>{
+      const px=Math.floor((zcx+Z*X)*dpr),py=Math.floor((zcy-Z*Y)*dpr),mask=rkCache.mask;
+      return px>=0&&py>=0&&px<mask.width&&py<mask.height&&mask.data[4*(py*mask.width+px)+3]>110;
+    };
+    g.save();g.strokeStyle=GREEN;g.lineWidth=2.4;g.lineCap='round';
+    for(const sgn of [1,-1]){
+      g.beginPath();let pen=false;
+      const qmax=-P.vc/Math.tan(P.a);
+      for(let i=0;i<=600;i++){
+        const q=qmax*i/600,t=sgn*(P.uc-q)/P.rp,c=Math.cos(t),sn=Math.sin(t),len=Math.hypot(P.vc,q);
+        const nx=(P.vc*c-sgn*q*sn)/len,ny=(P.vc*sn+sgn*q*c)/len;
+        const [X,Y]=rackMap(P,t)([sgn*P.uc,P.vc]);
+        const ex=X+P.rho*nx,ey=Y+P.rho*ny,delta=1.7/Z;
+        if(Math.hypot(ex,ey)>P.ra+1e-9||!material(ex+delta*nx,ey+delta*ny)){pen=false;continue;}
+        const px=zcx+Z*ex,py=zcy-Z*ey;pen?g.lineTo(px,py):g.moveTo(px,py);pen=true;
+      }
+      g.stroke();
+    }
+    g.restore();
+  }
+  // Trajectories of the actual straight-flank/fillet junctions (not root envelopes).
+  const {uEnd,vEnd}=P;
+  g.strokeStyle=RED; g.lineWidth=1.4; g.setLineDash([4,3]);
+  for(const sgn of [1,-1]){ g.beginPath(); for(let i=0;i<=120;i++){ const t=-0.5+ i/120; const [X,Y]=rackMap(P,t)([sgn*uEnd,vEnd]); const px=zcx+Z*X, py=zcy-Z*Y; i?g.lineTo(px,py):g.moveTo(px,py); } g.stroke(); }
+  g.setLineDash([]);
+  // ideal involute flanks of the two teeth bounding this space, plus radial placeholder
+  if($('rk-ideal').checked){
+    const {psiB,tMax,t0}=P, pitch=2*Math.PI/N;
+    for(const [cen,sgn] of [[pitch/2,-1],[-pitch/2,1]]){
+      g.strokeStyle=BRASS; g.lineWidth=2.2; g.beginPath();
+      for(let i=0;i<=30;i++){ const t=t0+(tMax-t0)*i/30, r=P.rb*Math.sqrt(1+t*t), A=cen+sgn*(psiB-inv(Math.atan(t))); const px=zcx+Z*r*Math.cos(A), py=zcy-Z*r*Math.sin(A); i?g.lineTo(px,py):g.moveTo(px,py); }
+      g.stroke();
+      if(P.rd<P.rb){ const A=cen+sgn*psiB; g.strokeStyle=RED; g.lineWidth=1.2; g.setLineDash([5,3]); g.beginPath(); g.moveTo(zcx+Z*P.rb*Math.cos(A),zcy-Z*P.rb*Math.sin(A)); g.lineTo(zcx+Z*P.rd*Math.cos(A),zcy-Z*P.rd*Math.sin(A)); g.stroke(); g.setLineDash([]); }
+    }
+  }
+  // interference point T and the rack's tip-depth line, in the th=0 configuration
+  const Tx=zcx+Z*P.rb*Math.cos(P.a), Ty=zcy+Z*P.rb*Math.sin(P.a);
+  dot(g,Tx,Ty,4,INK2); label(g,'T',Tx+7,Ty+9,INK2);
+  const depthLine=P.rp+P.vEnd; // actual straight-flank end, not the deepest tip
+  g.strokeStyle=RED; g.lineWidth=1; g.setLineDash([2,3]); g.beginPath(); g.moveTo(zcx+Z*depthLine, iy); g.lineTo(zcx+Z*depthLine, iy+ih); g.stroke(); g.setLineDash([]);
+  label(g,'flank-end depth', zcx+Z*depthLine+4, iy+14, RED);
+  const Tdepth = P.rp - P.rp*Math.sin(P.a)**2;
+  g.strokeStyle=INK2; g.setLineDash([2,3]); g.beginPath(); g.moveTo(zcx+Z*Tdepth, iy); g.lineTo(zcx+Z*Tdepth, iy+ih); g.stroke(); g.setLineDash([]);
+  label(g,'depth of T', zcx+Z*Tdepth+4, iy+ih-24, INK2);
+  // the rack, when it passes through the inset region
+  const Mz=M; const ksz=[]; for(let k=kc-2;k<=kc+2;k++) ksz.push(k);
+  drawRackAt(g,zcx,zcy,Z,ksz,0.5);
+  g.restore();
+  label(g,'zoom ×3.2 — tooth space at angle 0',ix+8,iy+ih-10,INK3);
+  // readouts
+  const nmin=2*(P.h-P.x)/Math.sin(P.a)**2, under=N<nmin-1e-10;
+  $('rk-N-o').textContent=N; $('rk-a-o').textContent=(+$('rk-a').value)+'°'; $('rk-x-o').textContent=P.x.toFixed(2);
+  $('rk-nmin').textContent=nmin.toFixed(2);$('rk-nint').textContent=Math.ceil(nmin-1e-10);
+  $('rk-end').textContent=(P.h-P.x).toFixed(3)+' m';$('rk-tip').textContent=(1.25-P.x).toFixed(2)+' m';
+  $('rk-T').textContent=(P.rp*Math.sin(P.a)**2).toFixed(3)+' m';
+  $('rk-s').textContent=(Math.PI/2+2*P.x*Math.tan(P.a)).toFixed(3)+' m';
+  $('rk-rho').textContent=(P.rho/P.m).toFixed(4);$('rk-h').textContent=P.h.toFixed(4);
+  $('rk-r').textContent=P.ra.toFixed(2)+', '+P.rd.toFixed(2);
+  const notes=[];
+  if(under) notes.push(`Undercut: N = ${N} < Ncrit ≈ ${nmin.toFixed(2)}. The straight-flank end passes below T and part of the involute is removed.`);
+  if(P.psiA<0) notes.push('Pointed teeth: the ideal flanks meet below the blank addendum circle.');
+  $('rk-warn').hidden=!notes.length;$('rk-warn').textContent=notes.join(' ');
+}
+['rk-N','rk-a','rk-x'].forEach(id=>$(id).addEventListener('input',drawRack));
+$('rk-ideal').addEventListener('change',drawRack);
+$('rk-positions').addEventListener('change',drawRack);
+$('rk-env').addEventListener('change',drawRack);
+$('rk-play').addEventListener('click',()=>{ rkPlaying=!rkPlaying; $('rk-play').textContent=rkPlaying?'Pause':'Play'; });
+
+/* ---------- animation loop ---------- */
+function drawAll(){({inv:drawInv,tooth:drawTooth,mesh:drawMesh,rack:drawRack})[active]();}
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(active==='inv' && invPlaying){invTime+=dt*1.2;if(invTime>9.42)invTime=0;$('inv-t').value=invTime.toFixed(2);drawInv();}
+  if(active==='tooth' && $('th-spin').checked){ thRot+=dt*0.4; drawTooth(); }
+  if(active==='mesh' && mePlaying){ th1+=dt*(+$('me-w').value); drawMesh(); }
+  if(active==='rack' && rkPlaying){ rkTheta+=dt*0.35; if(rkTheta>Math.PI) rkTheta-=2*Math.PI; drawRack(); }
+  requestAnimationFrame(loop);
+}
+if(reduced){mePlaying=false;rkPlaying=false;$('me-play').textContent='Play';$('rk-play').textContent='Play';}
+drawAll();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawAll);
+new MutationObserver(drawAll).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
