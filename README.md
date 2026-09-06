@@ -281,7 +281,7 @@ shown both as the row picture (dot-product expansion) and the column picture (st
 
 The inverse problem of the nutrition calculator: choose the target nutrient totals $t$ (carbohydrate, fat, protein) and solve $Nv = t$ for the food amounts. When $\det N \neq 0$,
 
-$$v = N^{-1}t, \qquad N^{-1} = \frac{1}{\det N}\,\operatorname{adj}(N),$$
+$$v = N^{-1}t, \qquad N^{-1} = \frac{1}{\det N}\,\mathrm{adj}(N),$$
 
 computed in rational arithmetic.
 
@@ -319,7 +319,7 @@ An apple tree and the coordinate grid on the Gauss plane are redrawn under $w \m
 **Mathematical Background:**
 With $z = re^{i\theta}$ and $w = se^{i\varphi}$,
 $$z\,w = (rs)\,e^{i(\theta+\varphi)},$$
-so $|zw| = r|w|$ and $\operatorname{Arg}(zw) \equiv \operatorname{Arg} w + \theta \pmod{2\pi}$.
+so $|zw| = r|w|$ and $\mathrm{Arg}(zw) \equiv \mathrm{Arg} w + \theta \pmod{2\pi}$.
 
 **Controls:**
 - **Drag $z$** on the plane (Shift snaps to 15° and 0.25 steps), or use the $r$ and $\theta$ sliders
