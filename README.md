@@ -1,6 +1,6 @@
 # Mathematical Teaching Demonstrations
 
-A collection of 50 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. The demos are subject to rounding and approximation errors.
+A collection of 51 interactive, browser-based visualizations for teaching mathematical concepts. All applications are standalone HTML files requiring no installation—simply open in any modern browser. The demos are subject to rounding and approximation errors.
 
 ## Contents
 
@@ -42,6 +42,7 @@ A collection of 50 interactive, browser-based visualizations for teaching mathem
 | [The Chain Rule](https://so-okada.github.io/math_teaching_materials/chain-rule.html) | Calculus | Chain rule, difference quotients, tangent slopes |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
+| [Gabriel's Horn](https://so-okada.github.io/math_teaching_materials/gabriels_horn.html) | Calculus | Solid of revolution, improper integral, finite volume, divergent coating |
 | [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html) | Numerical Analysis | Root finding, tangent line iteration |
 | [Gradient Descent](https://so-okada.github.io/math_teaching_materials/gradient_descent.html) | Numerical Analysis | Steepest descent, learning rate, convergence |
 | [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html) | Analysis | Limit definition, series, compound interest |
@@ -835,6 +836,26 @@ where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three 
 
 ---
 
+### [Gabriel's Horn](https://so-okada.github.io/math_teaching_materials/gabriels_horn.html)
+**File:** `gabriels_horn.html`
+
+Rotatable 3D view of the horn obtained by rotating $y = 1/x$, $x \geq 1$, about the $x$-axis, with a movable cutoff plane and an exterior coating of radial thickness $t$.
+
+**Mathematical Background:**
+The volume inside the horn up to the cutoff $L$ is
+$$V_{\mathrm{inside}}(L) = \pi\int_1^L \frac{dx}{x^2} = \pi\left(1 - \frac{1}{L}\right) \to \pi,$$
+while the coating with outer radius $1/x + t$ has volume
+$$V_{\mathrm{coat}}(L,t) = \pi\int_1^L\left[\left(\frac{1}{x} + t\right)^2 - \frac{1}{x^2}\right]dx = 2\pi t \ln L + \pi t^2 (L-1),$$
+which diverges as $L \to \infty$ for every fixed $t > 0$.
+
+**Controls:**
+- **Cutoff $L$**: Logarithmic slider from $1$ to $10^6$
+- **Coating thickness $t$**: Radial thickness of the exterior coating
+- **Drag**: Rotate the 3D view
+- Log–log graph of both volumes against the cutoff
+
+---
+
 ## Numerical Analysis
 
 ### [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html)
@@ -1151,6 +1172,7 @@ The logistic map $x_{n+1} = r x_n(1 - x_n)$ from order to chaos: a cobweb plot a
 - `linear_transformations_of_the_plane.html`: Uses KaTeX (CDN)
 - `complex_multiplication.html`: Uses KaTeX (CDN)
 - `huygens_cycloidal_pendulum.html`: Uses MathJax (CDN)
+- `gabriels_horn.html`: Uses MathJax (CDN)
 
 ---
 
