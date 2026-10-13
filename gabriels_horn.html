@@ -1,6 +1,6 @@
 <!-- Part of https://github.com/so-okada/math_teaching_materials -->
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gabriel’s horn · volume and paint</title><script>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gabriel’s horn · volume, surface area and radial coating</title><script>
   window.MathJax = { tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] }, options: { enableMenu: false } };
 </script>
 <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.js"></script>
@@ -18,6 +18,7 @@
     --accent:         #2a78d6;
     --series-1:       #2a78d6;  /* interior */
     --series-2:       #eb6834;  /* coating  */
+    --series-area:    #16816a;  /* lateral surface area */
     --font-ui:        system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   @media (prefers-color-scheme: dark) {
@@ -34,6 +35,7 @@
       --accent:         #3987e5;
       --series-1:       #3987e5;
       --series-2:       #ee7a4c;
+      --series-area:    #5cc5a7;
     }
   }
   * { box-sizing: border-box; }
@@ -68,6 +70,7 @@
   canvas { display: block; width: 100%; height: 100%; }
   .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px; }
   .key { display: inline-block; width: 14px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: middle; opacity: 0.85; }
+  .key.dashed { height: 0; border-top: 2px dashed var(--text-secondary); border-radius: 0; }
   .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 8px; }
   .stat { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
   .stat b { display: block; font-size: 1.15rem; font-weight: 650; font-variant-numeric: tabular-nums; }
@@ -77,13 +80,89 @@
   .note { font-size: 0.82rem; color: var(--text-muted); }
   .accent { color: var(--series-2); }
   .blue { color: var(--series-1); }
+  .green { color: var(--series-area); }
+  .comparison-note { font-size: 0.88rem; color: var(--text-secondary); }
+  a { color: var(--accent); }
   @media (max-width: 760px) {
     .grid { grid-template-columns: 1fr; }
     .wide { grid-column: auto; }
     .stats { grid-template-columns: 1fr; }
     .stage { height: 280px; }
   }
-</style></head><body><main class="wrap"><header class="intro"><h1>Gabriel’s horn</h1><p class="sub">Rotate <strong>\(y=1/x\)</strong>, for <strong>\(x\geq 1\)</strong>, around the x-axis. The view shows the horn through \(x=10^6\). Move the cutoff plane to select how much horn and coating to measure, and adjust the coating thickness. All dimensions use the same arbitrary unit.</p></header><div class="grid"><section class="panel"><h2>3D horn · drag to rotate</h2><div class="stage"><canvas id="horn" aria-label="Rotatable three-dimensional view of the horn and its exterior coating"></canvas></div><div class="legend"><span><i class="key" style="background:var(--series-1)"></i>Interior</span><span><i class="key" style="background:var(--series-2)"></i>Exterior coating</span><span style="color:var(--text-muted)">Gray: beyond the cutoff</span><span>Drag to rotate</span></div></section><section class="panel controls"><div><div class="control-head"><label for="length">Cutoff <i>L</i></label><output id="lengthValue" class="value"></output></div><input id="length" type="range" min="0" max="6" step="0.001" value="2" aria-label="Logarithm of horn cutoff L"><div class="bounds"><span>L = 1</span><span>L = 1,000,000</span></div><p class="note">The slider moves the cutoff plane along the full horn. Its scale is logarithmic.</p></div><div><div class="control-head"><label for="thickness">Outer coating thickness <i>t</i></label><output id="thicknessValue" class="value"></output></div><input id="thickness" type="range" min="0.005" max="0.2" step="0.001" value="0.04"><div class="bounds"><span>0.005</span><span>0.200</span></div><p class="note">Thickness is measured radially: the outer radius is 1/x + t.</p></div><button id="reset">Reset controls</button></section><section class="panel wide"><h2>What changes as the horn extends?</h2><div class="stats"><div class="stat"><small>Volume inside, 1 ≤ x ≤ L</small><b id="inside" class="blue"></b><small>Approaches \(\pi\approx 3.141593\)</small></div><div class="stat"><small>Exterior coating volume</small><b id="paint" class="accent"></b><small id="ratio"></small></div><div class="stat"><small>Volume still missing from the infinite horn</small><b id="remaining"></b><small>\(\pi/L\to 0\)</small></div></div><p class="formula">\[V_{\mathrm{inside}}(L)=\pi\int_1^L\frac{dx}{x^2}=\pi\left(1-\frac1L\right).\]</p><p class="formula">\[V_{\mathrm{coat}}(L,t)=\pi\int_1^L\left[\left(\frac1x+t\right)^2-\frac1{x^2}\right]dx=2\pi t\ln L+\pi t^2(L-1).\]</p><p class="note">For every fixed \(t&gt;0\), the coating volume grows without bound as \(L\to\infty\), while the inside volume tends to \(\pi\).</p></section><section class="panel wide"><h2>Growth across cutoffs</h2><div class="stage" style="height:260px"><canvas id="plot" aria-label="Graph of inside volume and exterior coating volume against logarithmic cutoff"></canvas></div><div class="legend"><span><i class="key" style="background:var(--series-1)"></i>Volume inside, V<sub>inside</sub>(L)</span><span><i class="key" style="background:var(--series-2)"></i>Coating volume, V<sub>coat</sub>(L, t)</span></div><p class="note">Horizontal axis: log₁₀ L. Vertical axis: volume in cubic units, logarithmic scale; values below 10⁻² sit on the bottom edge. The dashed horizontal line marks π.</p></section></div></main>
+</style></head><body><main class="wrap">
+<header class="intro">
+  <h1>Gabriel’s horn</h1>
+  <p class="sub">Rotate <strong>\(y=1/x\)</strong>, for <strong>\(x\geq 1\)</strong>, around the x-axis: finite volume, infinite surface area. The view shows the horn through \(x=10^6\). Move the cutoff plane to measure the horn and its radial coating, and adjust the coating thickness. All lengths use the same arbitrary unit.</p>
+</header>
+<div class="grid">
+  <section class="panel">
+    <h2>3D horn · drag to rotate</h2>
+    <div class="stage"><canvas id="horn" aria-label="Rotatable three-dimensional view of the horn and its exterior radial coating"></canvas></div>
+    <div class="legend">
+      <span><i class="key" style="background:var(--series-1)"></i>Interior</span>
+      <span><i class="key" style="background:var(--series-2)"></i>Radial coating</span>
+      <span style="color:var(--text-muted)">Gray: beyond the cutoff</span><span>Drag to rotate</span>
+    </div>
+  </section>
+  <section class="panel controls">
+    <div>
+      <div class="control-head"><label for="length">Cutoff <i>L</i></label><output id="lengthValue" class="value"></output></div>
+      <input id="length" type="range" min="0" max="6" step="0.001" value="2" aria-label="Logarithm of horn cutoff L">
+      <div class="bounds"><span>L = 1</span><span>L = 1,000,000</span></div>
+      <p class="note">The slider moves the cutoff plane along the full horn. Its scale is logarithmic.</p>
+    </div>
+    <div>
+      <div class="control-head"><label for="thickness">Radial coating thickness <i>t</i></label><output id="thicknessValue" class="value"></output></div>
+      <input id="thickness" type="range" min="0.005" max="0.2" step="0.001" value="0.04">
+      <div class="bounds"><span>0.005</span><span>0.200</span></div>
+      <p class="note">Thickness is measured radially: the outer radius is 1/x + t.</p>
+    </div>
+    <button id="reset">Reset controls</button>
+  </section>
+  <section class="panel wide">
+    <h2>Volume and radial coating</h2>
+    <div class="stats">
+      <div class="stat"><small>Volume inside, 1 ≤ x ≤ L · cubic units</small><b id="inside" class="blue"></b><small>Approaches \(\pi\approx 3.141593\)</small></div>
+      <div class="stat"><small>Radial coating volume · cubic units</small><b id="paint" class="accent"></b><small id="ratio"></small></div>
+      <div class="stat"><small>Volume still missing · cubic units</small><b id="remaining"></b><small>\(\pi/L\to 0\)</small></div>
+    </div>
+    <p class="formula">\[V_{\mathrm{inside}}(L)=\pi\int_1^L\frac{dx}{x^2}=\pi\left(1-\frac1L\right).\]</p>
+    <p class="formula">\[V_{\mathrm{coat}}(L,t)=\pi\int_1^L\left[\left(\frac1x+t\right)^2-\frac1{x^2}\right]dx=2\pi t\ln L+\pi t^2(L-1).\]</p>
+    <p class="comparison-note">Coating volume, term by term: <strong id="coatLinear"></strong> from \(2\pi t\ln L\) + <strong id="coatQuadratic"></strong> from \(\pi t^2(L-1)\), in cubic units. <span id="quadraticShare"></span></p>
+    <p class="comparison-note">For every fixed \(t&gt;0\), the quadratic term eventually dominates as \(L\to\infty\). A fixed radial thickness is not uniformly thin relative to the shrinking radius: at the cutoff, \(t/(1/L)=tL=\) <strong id="relativeThickness"></strong>.</p>
+  </section>
+  <section class="panel wide">
+    <h2>Volume growth across cutoffs</h2>
+    <div class="stage" style="height:260px"><canvas id="plot" aria-label="Graph of inside volume and radial coating volume against logarithmic cutoff"></canvas></div>
+    <div class="legend">
+      <span><i class="key" style="background:var(--series-1)"></i>Volume inside, V<sub>inside</sub>(L)</span>
+      <span><i class="key" style="background:var(--series-2)"></i>Radial coating volume, V<sub>coat</sub>(L, t)</span>
+    </div>
+    <p class="note">Horizontal axis: log₁₀ L. Vertical axis: volume in cubic units, logarithmic scale; values below 10⁻² sit on the bottom edge. The dashed horizontal line marks π.</p>
+  </section>
+  <section class="panel wide">
+    <h2>Surface area and coating thickness</h2>
+    <p>The area of the horn’s curved side uses arc length: \(ds=\sqrt{1+x^{-4}}\,dx\). It excludes the end disks and does not depend on the coating thickness.</p>
+    <p class="formula">\[A(L)=2\pi\int_1^L\frac{\sqrt{1+x^{-4}}}{x}\,dx.\]</p>
+    <div class="stats">
+      <div class="stat"><small>Lateral surface area A(L) · square units</small><b id="area" class="green"></b><small id="areaExcess"></small></div>
+      <div class="stat"><small>Radial thin-layer limit · square units</small><b id="radialLimit"></b><small>\(2\pi\ln L\)</small></div>
+      <div class="stat"><small>Radial volume ÷ t · square units</small><b id="coatPerThickness" class="accent"></b><small>\(2\pi\ln L+\pi t(L-1)\)</small></div>
+    </div>
+    <p class="formula">\[2\pi\ln L\leq A(L)\leq 2\pi\ln L+\frac{\pi}{4}(1-L^{-4}).\]</p>
+    <p class="comparison-note">These bounds follow from \(1\leq\sqrt{1+u}\leq 1+u/2\) for \(u\geq0\). Thus the surface area diverges logarithmically, while the interior volume approaches π. For L &gt; 1, the area exceeds \(2\pi\ln L\) by less than π/4, so the two curves lie close together.</p>
+    <div class="stage" style="height:260px"><canvas id="areaPlot" aria-label="Graph comparing lateral surface area, the radial thin-layer limit, and radial coating volume divided by thickness, all in square units"></canvas></div>
+    <div class="legend">
+      <span><i class="key" style="background:var(--series-area)"></i>Surface area A(L)</span>
+      <span><i class="key dashed"></i>Radial limit 2π ln L</span>
+      <span><i class="key" style="background:var(--series-2)"></i>Radial volume ÷ t</span>
+    </div>
+    <p class="note">Horizontal axis: log₁₀ L. Vertical axis: square units, logarithmic scale; values below 10⁻² sit on the bottom edge. All three quantities are zero at L = 1.</p>
+    <p><strong>Radial thickness</strong> increases the radius at the same x. Even for a fixed \(L&gt;1\), dividing its volume by t and letting t decrease gives \(2\pi\ln L\), not \(A(L)\).</p>
+    <p><strong>Normal thickness</strong> is measured perpendicular to the surface. For a fixed finite segment, a sufficiently thin normal layer of thickness h has volume approximately \(hA(L)\): its volume divided by h tends to \(A(L)\) as \(h\to0^+\). This describes a layer on the curved side, with no coating on the end disks. The 3D view retains the radial model.</p>
+    <p class="note">Reference for the surface-of-revolution formula: <a href="https://openstax.org/books/calculus-volume-2/pages/2-4-arc-length-of-a-curve-and-surface-area">OpenStax, Calculus Volume 2, §2.4</a>.</p>
+  </section>
+</div></main>
 
 <footer style="text-align:center; padding:16px 20px 20px; border-top:1px solid #d0d0cc; font-family:var(--font-ui); font-size:0.88em; line-height:1.8;">
   <a href="https://so-okada.github.io/math_teaching_materials/" style="color:var(--accent);">https://so-okada.github.io/math_teaching_materials/</a><br>
@@ -95,10 +174,24 @@
 const $=id=>document.getElementById(id),slider=$('length'),thick=$('thickness');const PI=Math.PI;
 function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
 let C={};
-function refreshColors(){C={s1:cssVar('--series-1'),s2:cssVar('--series-2'),ink:cssVar('--text-primary'),sec:cssVar('--text-secondary'),muted:cssVar('--text-muted'),base:cssVar('--baseline'),grid:cssVar('--grid')}}
+function refreshColors(){C={s1:cssVar('--series-1'),s2:cssVar('--series-2'),area:cssVar('--series-area'),ink:cssVar('--text-primary'),sec:cssVar('--text-secondary'),muted:cssVar('--text-muted'),base:cssVar('--baseline'),grid:cssVar('--grid')}}
 function withAlpha(hex,al){const n=parseInt(hex.slice(1),16);return 'rgba('+(n>>16)+','+((n>>8)&255)+','+(n&255)+','+al+')'}
 refreshColors();
-function volumes(L,t){return {inside:PI*(1-1/L),coat:2*PI*t*Math.log(L)+PI*t*t*(L-1),remaining:PI/L}}
+function volumes(L,t){
+ const linear=2*PI*t*Math.log(L),quadratic=PI*t*t*(L-1);
+ return {inside:PI*(1-1/L),coat:linear+quadratic,remaining:PI/L,linear,quadratic};
+}
+function surfaceArea(L){
+ // A = 2π ln L + π[√2 - s + ln((1+s)/(1+√2))], s = √(1+L^-4).
+ // expm1/log1p and a rationalized difference avoid cancellation near L = 1.
+ const logL=Math.log(L),q=Math.expm1(-4*logL),s=Math.sqrt(2+q);
+ const delta=-q/(Math.SQRT2+s);
+ return 2*PI*logL+PI*(delta+Math.log1p(-delta/(1+Math.SQRT2)));
+}
+function areas(L,t){
+ const radialLimit=2*PI*Math.log(L);
+ return {area:surfaceArea(L),radialLimit,coatPerThickness:radialLimit+PI*t*(L-1)};
+}
 function fmt(v){return v>=10000?v.toExponential(3):v.toLocaleString('en-US',{maximumFractionDigits:6})}
 function setup(canvas){let dpr=window.devicePixelRatio||1,r=canvas.getBoundingClientRect();canvas.width=Math.round(r.width*dpr);canvas.height=Math.round(r.height*dpr);let c=canvas.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);return {c,w:r.width,h:r.height}}
 let yaw=-0.33,pitch=0.19;
@@ -142,15 +235,62 @@ let dragging=false,lastX=0,lastY=0;
 $('horn').addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;$('horn').setPointerCapture(e.pointerId)});
 $('horn').addEventListener('pointermove',e=>{if(!dragging)return;yaw=Math.max(-1.25,Math.min(1.25,yaw+(e.clientX-lastX)*.008));pitch=Math.max(-.85,Math.min(.85,pitch+(e.clientY-lastY)*.008));lastX=e.clientX;lastY=e.clientY;drawHorn(10**Number(slider.value),Number(thick.value))});
 $('horn').addEventListener('pointerup',()=>dragging=false);$('horn').addEventListener('pointercancel',()=>dragging=false);
-function drawPlot(L,t){let {c,w,h}=setup($('plot')),l=48,r=w-18,top=18,b=h-36;c.clearRect(0,0,w,h);
-// Logarithmic vertical axis: one decade per gridline, from 10^-2 up to the decade above the largest value.
-const e0=-2,e1=Math.max(1,Math.ceil(Math.log10(volumes(1e6,t).coat*1.05)));
-const sup=n=>String(n).split('').map(ch=>ch==='-'?'⁻':'⁰¹²³⁴⁵⁶⁷⁸⁹'[+ch]).join('');
-let px=z=>l+(r-l)*z/6,py=v=>{let e=Math.log10(Math.max(v,10**e0));return b-(b-top)*(e-e0)/(e1-e0)};
-c.font='11px system-ui';c.lineWidth=1;
-for(let e=e0;e<=e1;e++){let y=py(10**e);c.strokeStyle=C.grid;c.beginPath();c.moveTo(l,y);c.lineTo(r,y);c.stroke();c.fillStyle=C.muted;c.textAlign='right';c.fillText(e===0?'1':e===1?'10':'10'+sup(e),l-6,y+4)}
-c.textAlign='left';c.strokeStyle=C.base;c.beginPath();c.moveTo(l,top);c.lineTo(l,b);c.lineTo(r,b);c.stroke();c.fillStyle=C.muted;for(let k=0;k<=6;k++){let x=px(k);c.fillText(k===0?'1':'10'+(['⁰','¹','²','³','⁴','⁵','⁶'][k]),x-8,b+17)}c.strokeStyle=C.muted;c.setLineDash([4,4]);c.beginPath();c.moveTo(l,py(PI));c.lineTo(r,py(PI));c.stroke();c.setLineDash([]);c.fillStyle=C.muted;c.fillText('π',r-12,py(PI)-5);
-for(let [fn,col] of [[v=>v.inside,C.s1],[v=>v.coat,C.s2]]){c.strokeStyle=col;c.lineWidth=3;c.beginPath();for(let i=0;i<=360;i++){let z=6*i/360,point=volumes(10**z,t);i?c.lineTo(px(z),py(fn(point))):c.moveTo(px(z),py(fn(point)))}c.stroke();let v=volumes(L,t);c.fillStyle=col;c.beginPath();c.arc(px(Math.log10(L)),py(fn(v)),5,0,2*PI);c.fill()}
-c.strokeStyle=C.sec;c.setLineDash([4,5]);c.beginPath();c.moveTo(px(Math.log10(L)),top);c.lineTo(px(Math.log10(L)),b);c.stroke();c.setLineDash([])}
-function update(){let L=10**Number(slider.value),t=Number(thick.value),v=volumes(L,t);$('lengthValue').textContent='L = '+fmt(L);$('thicknessValue').textContent='t = '+t.toFixed(3);$('inside').textContent=fmt(v.inside);$('paint').textContent=fmt(v.coat);$('remaining').textContent=fmt(v.remaining);$('ratio').textContent=L>1?'Coating / inside = '+fmt(v.coat/v.inside):'Both volumes start at zero.';drawHorn(L,t);drawPlot(L,t)}slider.addEventListener('input',update);thick.addEventListener('input',update);$('reset').addEventListener('click',()=>{slider.value=2;thick.value=.04;yaw=-.33;pitch=.19;update()});window.addEventListener('resize',update);if(window.matchMedia)window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{refreshColors();update()});update();
+function drawLogPlot(id,L,measure,series,reference=null){
+ let {c,w,h}=setup($(id)),l=48,r=w-18,top=18,b=h-36;
+ c.clearRect(0,0,w,h);
+ const endValues=measure(1e6),selected=measure(L);
+ // Each graph has its own units and a logarithmic vertical scale.
+ const maxValue=Math.max(...series.map(([key])=>endValues[key]),reference||0);
+ const e0=-2,e1=Math.max(1,Math.ceil(Math.log10(maxValue*1.05)));
+ const sup=n=>String(n).split('').map(ch=>ch==='-'?'⁻':'⁰¹²³⁴⁵⁶⁷⁸⁹'[+ch]).join('');
+ const px=z=>l+(r-l)*z/6;
+ const py=v=>b-(b-top)*(Math.log10(Math.max(v,10**e0))-e0)/(e1-e0);
+ c.font='11px system-ui';c.lineWidth=1;
+ for(let e=e0;e<=e1;e++){
+  let y=py(10**e);c.strokeStyle=C.grid;c.beginPath();c.moveTo(l,y);c.lineTo(r,y);c.stroke();
+  c.fillStyle=C.muted;c.textAlign='right';c.fillText(e===0?'1':e===1?'10':'10'+sup(e),l-6,y+4);
+ }
+ c.textAlign='left';c.strokeStyle=C.base;c.beginPath();c.moveTo(l,top);c.lineTo(l,b);c.lineTo(r,b);c.stroke();
+ c.fillStyle=C.muted;
+ for(let k=0;k<=6;k++){let x=px(k);c.fillText(k===0?'1':'10'+sup(k),x-8,b+17)}
+ if(reference!==null){
+  c.strokeStyle=C.muted;c.setLineDash([4,4]);c.beginPath();c.moveTo(l,py(reference));c.lineTo(r,py(reference));c.stroke();
+  c.setLineDash([]);c.fillStyle=C.muted;c.fillText('π',r-12,py(reference)-5);
+ }
+ for(let [key,col,dash=[]] of series){
+  c.strokeStyle=col;c.lineWidth=dash.length?2:3;c.setLineDash(dash);c.beginPath();
+  for(let i=0;i<=360;i++){
+   let z=6*i/360,y=py(measure(10**z)[key]);
+   i?c.lineTo(px(z),y):c.moveTo(px(z),y);
+  }
+  c.stroke();c.setLineDash([]);
+  c.fillStyle=col;c.beginPath();c.arc(px(Math.log10(L)),py(selected[key]),dash.length?3:5,0,2*PI);c.fill();
+ }
+ c.strokeStyle=C.sec;c.setLineDash([4,5]);c.beginPath();c.moveTo(px(Math.log10(L)),top);c.lineTo(px(Math.log10(L)),b);c.stroke();c.setLineDash([]);
+}
+function drawPlot(L,t){
+ drawLogPlot('plot',L,x=>volumes(x,t),[['inside',C.s1],['coat',C.s2]],PI);
+}
+function drawAreaPlot(L,t){
+ drawLogPlot('areaPlot',L,x=>areas(x,t),[
+  ['coatPerThickness',C.s2],['area',C.area],['radialLimit',C.sec,[6,4]]
+ ]);
+}
+function update(){
+ const L=10**Number(slider.value),t=Number(thick.value),v=volumes(L,t),a=areas(L,t);
+ $('lengthValue').textContent='L = '+fmt(L);$('thicknessValue').textContent='t = '+t.toFixed(3);
+ $('inside').textContent=fmt(v.inside);$('paint').textContent=fmt(v.coat);$('remaining').textContent=fmt(v.remaining);
+ $('ratio').textContent=L>1?'Coating / inside = '+fmt(v.coat/v.inside):'Both volumes start at zero.';
+ $('coatLinear').textContent=fmt(v.linear);$('coatQuadratic').textContent=fmt(v.quadratic);
+ $('quadraticShare').textContent=L>1?'The quadratic term contributes '+(100*v.quadratic/v.coat).toFixed(2)+'%.':'Both terms start at zero.';
+ $('relativeThickness').textContent=fmt(t*L);
+ $('area').textContent=fmt(a.area);$('radialLimit').textContent=fmt(a.radialLimit);$('coatPerThickness').textContent=fmt(a.coatPerThickness);
+ $('areaExcess').textContent='Area − 2π ln L = '+fmt(a.area-a.radialLimit);
+ drawHorn(L,t);drawPlot(L,t);drawAreaPlot(L,t);
+}
+slider.addEventListener('input',update);thick.addEventListener('input',update);
+$('reset').addEventListener('click',()=>{slider.value=2;thick.value=.04;yaw=-.33;pitch=.19;update()});
+window.addEventListener('resize',update);
+if(window.matchMedia)window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{refreshColors();update()});
+update();
 </script></body></html>

@@ -42,7 +42,7 @@ A collection of 51 interactive, browser-based visualizations for teaching mathem
 | [The Chain Rule](https://so-okada.github.io/math_teaching_materials/chain-rule.html) | Calculus | Chain rule, difference quotients, tangent slopes |
 | [Fundamental Theorem of Calculus](https://so-okada.github.io/math_teaching_materials/ftc_vertical.html) | Calculus | FTC Part 1, derivative of integral |
 | [Riemann Sum Quadrature](https://so-okada.github.io/math_teaching_materials/quadrature_xn.html) | Calculus | Numerical integration, convergence |
-| [Gabriel's Horn](https://so-okada.github.io/math_teaching_materials/gabriels_horn.html) | Calculus | Solid of revolution, improper integral, finite volume, divergent coating |
+| [Gabriel's Horn](https://so-okada.github.io/math_teaching_materials/gabriels_horn.html) | Calculus | Finite volume, infinite surface area, radial versus normal coating thickness |
 | [Newton's Method](https://so-okada.github.io/math_teaching_materials/newton_method.html) | Numerical Analysis | Root finding, tangent line iteration |
 | [Gradient Descent](https://so-okada.github.io/math_teaching_materials/gradient_descent.html) | Numerical Analysis | Steepest descent, learning rate, convergence |
 | [Napier's Number e](https://so-okada.github.io/math_teaching_materials/napier_number.html) | Analysis | Limit definition, series, compound interest |
@@ -839,20 +839,42 @@ where $\Delta x = 1/N$ and $x_i^*$ is a sample point in each subinterval. Three 
 ### [Gabriel's Horn](https://so-okada.github.io/math_teaching_materials/gabriels_horn.html)
 **File:** `gabriels_horn.html`
 
-Rotatable 3D view of the horn obtained by rotating $y = 1/x$, $x \geq 1$, about the $x$-axis, with a movable cutoff plane and an exterior coating of radial thickness $t$.
+Rotatable 3D view of the horn obtained by rotating $y = 1/x$, $x \geq 1$, about the $x$-axis, with a movable cutoff plane and an exterior coating of radial thickness $t$. Separate graphs and live readouts compare volumes (cubic units) and areas (square units).
 
 **Mathematical Background:**
 The volume inside the horn up to the cutoff $L$ is
 $$V_{\mathrm{inside}}(L) = \pi\int_1^L \frac{dx}{x^2} = \pi\left(1 - \frac{1}{L}\right) \to \pi,$$
-while the coating with outer radius $1/x + t$ has volume
+while its lateral surface area (excluding end disks) is
+$$A(L)=2\pi\int_1^L\frac{\sqrt{1+x^{-4}}}{x}\,dx.$$
+The arc-length factor $\sqrt{1+x^{-4}}$ is essential. Since $1\leq\sqrt{1+u}\leq1+u/2$ for $u\geq0$,
+$$2\pi\ln L\leq A(L)\leq2\pi\ln L+\frac{\pi}{4}(1-L^{-4}).$$
+Thus $A(L)=2\pi\ln L+O(1)$ diverges logarithmically, while the interior volume tends to $\pi$.
+
+The radial coating with outer radius $1/x + t$ has volume
 $$V_{\mathrm{coat}}(L,t) = \pi\int_1^L\left[\left(\frac{1}{x} + t\right)^2 - \frac{1}{x^2}\right]dx = 2\pi t \ln L + \pi t^2 (L-1),$$
-which diverges as $L \to \infty$ for every fixed $t > 0$.
+which diverges as $L \to \infty$ for every fixed $t > 0$. Its quadratic term eventually dominates: $V_{\mathrm{coat}}(L,t)\sim\pi t^2L$. The page displays both terms and their relative contribution.
+
+**Radial and normal thickness:** Radial thickness increases the radius at a fixed $x$; normal thickness is measured perpendicular to the surface. For every fixed finite $L>1$,
+$$\lim_{t\to0^+}\frac{V_{\mathrm{coat}}(L,t)}{t}=2\pi\ln L<A(L).$$
+A layer swept out along the outward normals to the curved side instead satisfies $V_{\mathrm{normal}}(L,h)/h\to A(L)$ as $h\to0^+$: an infinitesimal surface patch of area $dA$ sweeps volume $h\,dA$ to first order. End disks are not coated in this comparison. This is a fixed-$L$ limit, not a uniform approximation along the infinite horn. The radial thickness relative to the horn radius at $x$ is $tx$, which grows without bound for fixed $t>0$. The 3D view continues to show the radial coating.
+
+At $t=0.04$ and $L=10^6$, the radial volume is approximately $5030.015436$: its linear term contributes $3.472217$ and its quadratic term $5026.543219$. In comparison, $A(L)\approx87.515373$ and $2\pi\ln L\approx86.805413$, in square units. Values are rounded independently.
+
+**Numerical evaluation:** With $s=\sqrt{1+L^{-4}}$, integration gives the exact expression
+$$A(L)=2\pi\ln L+\pi\left[\sqrt2-s+\ln\left(\frac{1+s}{1+\sqrt2}\right)\right].$$
+The implementation uses `Math.expm1`, `Math.log1p`, and a rationalized square-root difference to retain accuracy near $L=1$. In particular, $A(1)=0$ and
+$$A(L)-2\pi\ln L\longrightarrow\pi\left[\sqrt2-1+\ln\left(\frac{2}{1+\sqrt2}\right)\right].$$
 
 **Controls:**
 - **Cutoff $L$**: Logarithmic slider from $1$ to $10^6$
 - **Coating thickness $t$**: Radial thickness of the exterior coating
 - **Drag**: Rotate the 3D view
-- Log–log graph of both volumes against the cutoff
+- **Reset controls**: Restore $L=100$, $t=0.04$, and the initial view
+- Separate log–log graphs of the two volumes and of $A(L)$, $2\pi\ln L$, and $V_{\mathrm{coat}}(L,t)/t$
+
+**References:** [OpenStax, *Calculus Volume 2*, §2.4, Theorem 2.6](https://openstax.org/books/calculus-volume-2/pages/2-4-arc-length-of-a-curve-and-surface-area) for the surface-of-revolution formula; [Gilbert Strang, *Calculus*, §8.3, exercise 21](https://ocw.mit.edu/courses/res-18-001-calculus-fall-2023/mitres_18_001_f17_ch08.pdf) for Gabriel's horn.
+
+**Checks:** Run `node --test tests/gabriels_horn.test.cjs`. Tests compare the area calculation with independent quadrature, check the limits and slider range, and exercise the controls and canvas drawing calls with a lightweight DOM harness. This does not replace a browser layout check.
 
 ---
 
